@@ -51,6 +51,7 @@ button{cursor:pointer;font-family:inherit;}
   color:#EDEEE6;
   padding:18px 0;
   position:sticky;top:0;height:100vh;overflow-y:auto;
+  display:flex;flex-direction:column;
 }
 #sidebar .brand{
   padding:0 18px 16px 18px;
@@ -166,9 +167,45 @@ td.num,th.num{text-align:right;font-family:'Consolas','Courier New',monospace;}
 .flex{display:flex;gap:8px;align-items:center;}
 .grow{flex:1;}
 hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
+
+/* ---- login screen ---- */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(160deg,var(--indigo) 0%,var(--indigo-2) 100%);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+#loginScreen.active{display:flex;}
+.login-card{background:var(--paper);border-radius:14px;padding:34px 34px 28px 34px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center;border:1px solid var(--line);}
+.login-card img.login-logo{max-width:120px;max-height:70px;object-fit:contain;margin-bottom:10px;}
+.login-card h2{margin-bottom:2px;}
+.login-card .sub{font-size:12px;color:var(--ink-soft);margin-bottom:18px;}
+.login-card .field{text-align:left;margin-bottom:12px;}
+.login-card input{width:100%;}
+.login-err{color:var(--bad);font-size:12.5px;min-height:16px;margin-bottom:8px;}
+
+/* ---- concept chips ---- */
+.chiprow{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px 0;}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper-2);border:1px solid var(--line);border-radius:20px;padding:3px 6px 3px 12px;font-size:12.5px;}
+.chip button{background:none;border:none;color:var(--bad);font-weight:700;cursor:pointer;padding:0 4px;}
+
+/* ---- mini charts ---- */
+.chartcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;}
+.chartcard h4{font-size:13px;margin-bottom:6px;}
+
+/* ---- sidebar footer / session ---- */
+#sidebar .userbox{margin-top:auto;padding:14px 18px;border-top:1px dashed rgba(255,255,255,.25);font-size:12px;color:rgba(255,255,255,.75);}
+#sidebar .userbox b{color:#fff;display:block;font-size:13px;}
+#sidebar .userbox button{margin-top:6px;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 9px;border-radius:5px;font-size:11.5px;}
 </style>
 </head>
 <body>
+<div id="loginScreen">
+  <div class="login-card">
+    <div id="loginLogoWrap"></div>
+    <h2>Artesanías D Mitzy</h2>
+    <div class="sub">Sistema Administrativo — inicia sesión para continuar</div>
+    <div class="field"><label>Usuario</label><input id="loginUsuario" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')intentarLogin()"></div>
+    <div class="login-err" id="loginError"></div>
+    <button class="btn clay" style="width:100%" onclick="intentarLogin()">Iniciar sesión</button>
+  </div>
+</div>
 <div id="app">
   <nav id="sidebar">
     <div class="brand">
@@ -176,27 +213,36 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
       <div class="sub">Sistema Administrativo</div>
     </div>
     <div class="navgroup">
-      <button class="navbtn active" data-view="dashboard"><span class="ic">◆</span> Panel general</button>
+      <button class="navbtn active" data-view="dashboard"><span class="ic">🏠</span> Panel general</button>
     </div>
     <div class="navgroup">
       <div class="navlabel">Operación</div>
-      <button class="navbtn" data-view="produccion"><span class="ic">✂</span> Producción</button>
-      <button class="navbtn" data-view="costeo"><span class="ic">Σ</span> Costeo</button>
-      <button class="navbtn" data-view="inventario"><span class="ic">▤</span> Inventario</button>
-      <button class="navbtn" data-view="compras"><span class="ic">⇩</span> Compras</button>
-      <button class="navbtn" data-view="ventas"><span class="ic">⇧</span> Ventas / POS</button>
-      <button class="navbtn" data-view="gastos"><span class="ic">⌘</span> Gastos</button>
+      <button class="navbtn" data-view="produccion"><span class="ic">🧵</span> Producción</button>
+      <button class="navbtn" data-view="costeo"><span class="ic">🧮</span> Costeo</button>
+      <button class="navbtn" data-view="inventario"><span class="ic">📦</span> Inventario</button>
+      <button class="navbtn" data-view="compras"><span class="ic">🛒</span> Compras</button>
+      <button class="navbtn" data-view="ventas"><span class="ic">🛍️</span> Ventas / POS</button>
+      <button class="navbtn" data-view="gastos"><span class="ic">💸</span> Gastos</button>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">Personal</div>
+      <button class="navbtn" data-view="nomina"><span class="ic">🧑‍🤝‍🧑</span> Nómina</button>
     </div>
     <div class="navgroup">
       <div class="navlabel">Carteras</div>
-      <button class="navbtn" data-view="cxc"><span class="ic">$→</span> Por cobrar</button>
-      <button class="navbtn" data-view="cxp"><span class="ic">$←</span> Por pagar</button>
+      <button class="navbtn" data-view="cxc"><span class="ic">📥</span> Por cobrar</button>
+      <button class="navbtn" data-view="cxp"><span class="ic">📤</span> Por pagar</button>
     </div>
     <div class="navgroup">
       <div class="navlabel">Sistema</div>
-      <button class="navbtn" data-view="reportes"><span class="ic">▦</span> Reportes</button>
-      <button class="navbtn" data-view="respaldo"><span class="ic">☁</span> Respaldo / Nube</button>
-      <button class="navbtn" data-view="config"><span class="ic">⚙</span> Configuración</button>
+      <button class="navbtn" data-view="reportes"><span class="ic">📊</span> Reportes</button>
+      <button class="navbtn" data-view="respaldo"><span class="ic">☁️</span> Respaldo / Nube</button>
+      <button class="navbtn" data-view="config"><span class="ic">⚙️</span> Configuración</button>
+    </div>
+    <div class="userbox" id="userbox" style="display:none">
+      <b id="userboxNombre"></b>
+      <span id="userboxRol"></span>
+      <div><button onclick="cerrarSesion()">Cerrar sesión</button></div>
     </div>
   </nav>
 
@@ -205,10 +251,15 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     <!-- ============ DASHBOARD ============ -->
     <section class="view active" id="view-dashboard">
       <div class="topbar">
-        <div class="titles"><div class="eyebrow">Panel general</div><h1>Hoy en el taller</h1></div>
+        <div class="titles" id="bienvenidaTitulo"><div class="eyebrow">Panel general</div><h1>Hoy en el taller</h1></div>
         <span class="pill" id="fechaHoy"></span>
       </div>
       <div class="grid cols-4" id="kpiRow"></div>
+
+      <div class="grid cols-2" style="margin-top:16px">
+        <div class="chartcard"><h4>Pares producidos — últimos 7 días</h4><div id="chartProduccion"></div></div>
+        <div class="chartcard"><h4>Ventas — últimos 7 días</h4><div id="chartVentas"></div></div>
+      </div>
 
       <div class="section-title"><h3>Producción reciente</h3><div class="actions"><button class="btn ghost sm" onclick="go('produccion')">Ver módulo →</button></div></div>
       <div class="tblwrap"><table class="tbl"><thead><tr><th>Folio</th><th>Fecha</th><th class="num">Pares</th><th class="num">Costo unitario</th><th>Estado</th></tr></thead><tbody id="dashOrdenes"></tbody></table></div>
@@ -300,6 +351,7 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
         <div class="titles"><div class="eyebrow">Punto de venta</div><h1>Ventas</h1></div>
         <div class="actions flex">
           <button class="btn ghost" onclick="verCatalogoClientes()">Clientes</button>
+          <button class="btn ghost" onclick="abrirCatalogoProductos()">📖 Catálogo</button>
           <button class="btn ghost" onclick="abrirDisenoFactura()">🎨 Diseño de factura</button>
           <button class="btn clay" onclick="abrirVenta(null)">+ Nueva venta</button>
         </div>
@@ -318,9 +370,27 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
         <button class="btn clay" onclick="abrirGasto(null)">+ Registrar gasto</button>
       </div>
       <p class="muted">Los gastos clasificados como "Fabricación indirecta" pueden prorratearse entre las órdenes del periodo desde el módulo de Costeo (ver Configuración).</p>
+      <div class="grid cols-4" id="gastosResumenCat"></div>
+      <div class="section-title"><h3>Movimientos</h3></div>
       <div class="tblwrap"><table class="tbl">
         <thead><tr><th>Folio</th><th>Fecha</th><th>Categoría</th><th>Concepto</th><th class="num">Importe</th><th>Condición</th><th>Acciones</th></tr></thead>
         <tbody id="tblGastos"></tbody>
+      </table></div>
+    </section>
+
+    <!-- ============ NOMINA ============ -->
+    <section class="view" id="view-nomina">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Personal</div><h1>Nómina</h1></div>
+        <div class="actions flex">
+          <button class="btn ghost" onclick="abrirEmpleados()">Empleados</button>
+          <button class="btn clay" onclick="abrirNomina(null)">+ Nueva nómina</button>
+        </div>
+      </div>
+      <p class="muted">Registra los pagos de mano de obra por periodo. Cada nómina guardada se refleja automáticamente como gasto (categoría "Nómina") para tus reportes mensuales.</p>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Folio</th><th>Periodo</th><th class="num">Empleados</th><th class="num">Total</th><th>Acciones</th></tr></thead>
+        <tbody id="tblNomina"></tbody>
       </table></div>
     </section>
 
@@ -349,6 +419,19 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     <!-- ============ REPORTES ============ -->
     <section class="view" id="view-reportes">
       <div class="topbar"><div class="titles"><div class="eyebrow">Consulta</div><h1>Reportes en Excel y PDF</h1></div></div>
+
+      <div class="card" style="margin-bottom:20px">
+        <h3>Reporte mensual</h3>
+        <p class="muted">Elige un mes para ver el resumen de producción, ventas, gastos y utilidad de ese periodo, y descargarlo.</p>
+        <div class="flex" style="margin-bottom:12px">
+          <input type="month" id="mesReporte">
+          <button class="btn clay sm" onclick="renderResumenMensual()">Ver resumen</button>
+          <button class="btn ghost sm" onclick="exportMesExcel()">Excel del mes</button>
+          <button class="btn ghost sm" onclick="exportMesPDF()">PDF del mes</button>
+        </div>
+        <div id="resumenMensual"></div>
+      </div>
+
       <p class="muted">Genera archivos descargables por módulo, listos para consultar fuera del sistema o adjuntar a tu respaldo por correo.</p>
       <div class="grid cols-3" id="reportCards"></div>
     </section>
@@ -407,6 +490,19 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
         <p class="muted">Estas tasas replican tu hoja "CTO" (inversión por par y costo unitario). Edítalas si cambian tus consumos o precios.</p>
         <button class="btn ghost" onclick="go('inventario')">Ir a Inventario para editar materiales →</button>
       </div>
+
+      <div class="card" style="max-width:640px;margin-top:14px">
+        <h3>Conceptos de producción</h3>
+        <p class="muted">Agrega o quita las opciones que aparecen en los recuadros de cuña, suela, planta y cerco al capturar una orden de producción.</p>
+        <div id="conceptosUI"></div>
+      </div>
+
+      <div class="card" style="max-width:640px;margin-top:14px">
+        <h3>Usuarios y contraseñas</h3>
+        <p class="muted">Crea un candado de acceso local: mientras no exista ningún usuario, el sistema abre sin pedir nada. En cuanto crees el primero, la próxima vez pedirá iniciar sesión. Esto protege el acceso casual, no sustituye una seguridad de nivel bancario (los datos siguen guardados en este equipo).</p>
+        <div id="usuariosResumen"></div>
+        <button class="btn clay" onclick="abrirUsuarios()">Administrar usuarios</button>
+      </div>
     </section>
 
   </main>
@@ -424,10 +520,21 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
    ================================================================= */
 
 const SIZES = [17,18,19,20,21,22,23,24,25,26,27];
-const CUÑAS = ['CANELA','NEGRA','BLANCA','CANELA 1','OTRA'];
-const SUELAS = ['GOTA','CACAHUATE','BLANCA','CANELA 1','CANELA 2','CREPE','OTRA'];
-const PLANTAS = ['VAC','PASADA','CERCO','CALIFORNIA','NEGRO','OTRA'];
-const CERCOS = ['NATURAL','NEGRO','OTRO'];
+const DEFAULT_CUÑAS = ['CANELA','NEGRA','BLANCA','CANELA 1','OTRA'];
+const DEFAULT_SUELAS = ['GOTA','CACAHUATE','BLANCA','CANELA 1','CANELA 2','CREPE','OTRA'];
+const DEFAULT_PLANTAS = ['VAC','PASADA','CERCO','CALIFORNIA','NEGRO','OTRA'];
+const DEFAULT_CERCOS = ['NATURAL','NEGRO','OTRO'];
+let CUÑAS = [...DEFAULT_CUÑAS];
+let SUELAS = [...DEFAULT_SUELAS];
+let PLANTAS = [...DEFAULT_PLANTAS];
+let CERCOS = [...DEFAULT_CERCOS];
+function sincronizarConceptos(){
+  if(!STATE.conceptos) STATE.conceptos = {cuñas:[...DEFAULT_CUÑAS], suelas:[...DEFAULT_SUELAS], plantas:[...DEFAULT_PLANTAS], cercos:[...DEFAULT_CERCOS]};
+  CUÑAS = STATE.conceptos.cuñas && STATE.conceptos.cuñas.length ? STATE.conceptos.cuñas : [...DEFAULT_CUÑAS];
+  SUELAS = STATE.conceptos.suelas && STATE.conceptos.suelas.length ? STATE.conceptos.suelas : [...DEFAULT_SUELAS];
+  PLANTAS = STATE.conceptos.plantas && STATE.conceptos.plantas.length ? STATE.conceptos.plantas : [...DEFAULT_PLANTAS];
+  CERCOS = STATE.conceptos.cercos && STATE.conceptos.cercos.length ? STATE.conceptos.cercos : [...DEFAULT_CERCOS];
+}
 
 const DEFAULT_MATERIALES = [
   {id:'m1',  nombre:'CHINELA VAQUETA',      clasificacion:'directa',   base:'TOTAL',        inver:6.475, costo:1.8,  unidad:'pza', stock:0, minimo:20},
@@ -474,7 +581,12 @@ function emptyState(){
     clientes: {},      // nombre -> [{fecha,tipo,concepto,monto,ref}]  (cartera / cuentas por cobrar)
     clientesInfo: {},  // nombre -> {telefono, correo, direccion, notas}  (catálogo / alta de clientes)
     proveedores: {},
-    folios:{ orden:1, compra:1, venta:1, gasto:1 }
+    catalogo: [],       // [{id, nombre, descripcion, precio, imagenBase64, activo}]  (catálogo de productos para PDF)
+    conceptos: { cuñas:[...DEFAULT_CUÑAS], suelas:[...DEFAULT_SUELAS], plantas:[...DEFAULT_PLANTAS], cercos:[...DEFAULT_CERCOS] },
+    empleados: [],      // [{id, nombre, puesto, salarioDiario, activo}]
+    nomina: [],         // [{id, folio, periodoInicio, periodoFin, items:[{empleadoId,nombre,dias,salarioDiario,extras,descuentos,total}], total}]
+    usuarios: [],        // [{id, usuario, hash, rol, activo}]
+    folios:{ orden:1, compra:1, venta:1, gasto:1, nomina:1 }
   };
 }
 
@@ -490,11 +602,17 @@ async function load(){
     STATE = raw ? JSON.parse(raw) : emptyState();
     if(!STATE.materiales || !STATE.materiales.length) STATE.materiales = JSON.parse(JSON.stringify(DEFAULT_MATERIALES));
     if(!STATE.folios) STATE.folios = { orden:1, compra:1, venta:1, gasto:1 };
+    if(!STATE.folios.nomina) STATE.folios.nomina = 1;
     if(!STATE.clientesInfo) STATE.clientesInfo = {};
+    if(!STATE.catalogo) STATE.catalogo = [];
+    if(!STATE.empleados) STATE.empleados = [];
+    if(!STATE.nomina) STATE.nomina = [];
+    if(!STATE.usuarios) STATE.usuarios = [];
     if(!STATE.config.facturaTamano) STATE.config.facturaTamano = 'carta';
     if(!STATE.config.facturaColor) STATE.config.facturaColor = '#2F4858';
     if(STATE.config.facturaPie===undefined) STATE.config.facturaPie = 'Gracias por su compra — Artesanías D Mitzy.';
-  }catch(e){ STATE = emptyState(); }
+    sincronizarConceptos();
+  }catch(e){ STATE = emptyState(); sincronizarConceptos(); }
 }
 function save(){
   const json = JSON.stringify(STATE);
@@ -645,7 +763,7 @@ function bajaProductoTerminadoPorOrden(ordenId){
 let ordenDraft = null;
 
 function nuevaLinea(){
-  return {id:uid('l'), planta:'CERCO', cuña:'CANELA', suela:'BLANCA', cerco:'NATURAL', marca:'', cliente:'', comentarios:'',
+  return {id:uid('l'), modelo:'', planta:'CERCO', cuña:'CANELA', suela:'BLANCA', cerco:'NATURAL', marca:'', cliente:'', comentarios:'',
     tallas: Object.fromEntries(SIZES.map(s=>[s,0]))};
 }
 
@@ -666,6 +784,7 @@ function renderOrdenModal(){
         <option value="__custom__">Otro / capturar…</option>
       </select>
       <input ${bloqueado?'disabled':''} style="margin-top:3px" placeholder="Cliente" value="${l.cliente||''}" oninput="ordenDraft.lineas[${i}].cliente=this.value"></td>
+      <td><input ${bloqueado?'disabled':''} style="width:90px" placeholder="Modelo" value="${l.modelo||''}" oninput="ordenDraft.lineas[${i}].modelo=this.value"></td>
       <td><input ${bloqueado?'disabled':''} placeholder="Marca" value="${l.marca||''}" oninput="ordenDraft.lineas[${i}].marca=this.value"></td>
       <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].planta=this.value">${PLANTAS.map(p=>`<option ${l.planta===p?'selected':''}>${p}</option>`).join('')}</select></td>
       <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].cuña=this.value">${CUÑAS.map(p=>`<option ${l.cuña===p?'selected':''}>${p}</option>`).join('')}</select></td>
@@ -688,7 +807,7 @@ function renderOrdenModal(){
     </div>
     <div class="tblwrap lines-table" style="overflow-x:auto">
     <table class="tbl"><thead><tr>
-      <th>Cliente</th><th>Marca</th><th>Planta</th><th>Cuña</th><th>Suela</th><th>Cerco</th>
+      <th>Cliente</th><th>Modelo</th><th>Marca</th><th>Planta</th><th>Cuña</th><th>Suela</th><th>Cerco</th>
       ${SIZES.map(s=>`<th class="num">${s}</th>`).join('')}<th class="num">Total</th><th>Comentarios</th><th></th>
     </tr></thead><tbody id="lineasBody">${filas}</tbody></table>
     </div>
@@ -897,7 +1016,7 @@ let ventaDraft = null;
 function ventaItems(v){
   if(v.items && v.items.length) return v.items;
   // compatibilidad con ventas guardadas antes de esta actualización (una sola línea)
-  return [{loteId:v.loteId, modelo:v.modelo, ordenFolio:v.ordenFolio, cantidad:v.cantidad, precioUnitario:v.precioUnitario,
+  return [{loteId:v.loteId, modelo:v.modelo, descripcion:v.modelo, ordenFolio:v.ordenFolio, cantidad:v.cantidad, precioUnitario:v.precioUnitario,
     costoUnitario: v.cantidad?(v.costo/v.cantidad):0, importe:v.total, costoImporte:v.costo}];
 }
 function disponibleParaEdicion(loteId){
@@ -929,7 +1048,10 @@ function renderVentaModal(){
 
   const filasCarrito = ventaDraft.items.map((it,i)=>`
     <tr>
-      <td>${it.modelo}<div class="muted" style="font-size:11px">Origen ${it.ordenFolio||'-'} · costo ${money(it.costoUnitario)}/par</div></td>
+      <td>
+        <input style="width:180px" value="${(it.descripcion!=null?it.descripcion:it.modelo)||''}" onchange="actualizarItemCarrito(${i},'descripcion',this.value)">
+        <div class="muted" style="font-size:11px">Origen ${it.ordenFolio||'-'} · costo ${money(it.costoUnitario)}/par · <a href="#" onclick="actualizarItemCarrito(${i},'descripcion','${(it.modelo||'').replace(/'/g,"\\'")}');return false;">usar nombre del modelo</a></div>
+      </td>
       <td><input type="number" min="1" style="width:64px" value="${it.cantidad}" onchange="actualizarItemCarrito(${i},'cantidad',this.value)"></td>
       <td><input type="number" step="0.01" min="0" style="width:90px" value="${it.precioUnitario}" onchange="actualizarItemCarrito(${i},'precioUnitario',this.value)"></td>
       <td class="num mono">${money(it.cantidad*it.precioUnitario)}</td>
@@ -991,7 +1113,7 @@ function agregarItemCarrito(){
   if(cantidad<=0 || cantidad>disp){ toast('Cantidad inválida (disponible: '+disp+').'); return; }
   const existente = ventaDraft.items.find(it=>it.loteId===loteId);
   if(existente){ existente.cantidad = Number(existente.cantidad)+cantidad; }
-  else{ ventaDraft.items.push({loteId, ordenFolio:lote.ordenFolio, modelo:lote.modelo, cantidad, precioUnitario:0, costoUnitario:lote.costoUnitario}); }
+  else{ ventaDraft.items.push({loteId, ordenFolio:lote.ordenFolio, modelo:lote.modelo, descripcion:lote.modelo, cantidad, precioUnitario:0, costoUnitario:lote.costoUnitario}); }
   renderVentaModal();
 }
 function actualizarItemCarrito(i, campo, val){
@@ -1002,6 +1124,8 @@ function actualizarItemCarrito(i, campo, val){
     if(v<1) v=1;
     if(v>disp){ v=disp; toast('Solo hay '+disp+' pares disponibles de ese producto.'); }
     it.cantidad = v;
+  } else if(campo==='descripcion'){
+    it.descripcion = val;
   } else {
     it.precioUnitario = Number(val)||0;
   }
@@ -1056,7 +1180,7 @@ function guardarVentaPOS(){
     id: ventaDraft.id, folio: ventaDraft.folio, fecha: ventaDraft.fecha, cliente: ventaDraft.cliente, condicion: ventaDraft.condicion,
     items: ventaDraft.items, total, costo, utilidad,
     ordenFolio: [...new Set(ventaDraft.items.map(it=>it.ordenFolio))].join(', '),
-    modelo: ventaDraft.items.map(it=>`${it.modelo} x${it.cantidad}`).join(' · '),
+    modelo: ventaDraft.items.map(it=>`${(it.descripcion!=null?it.descripcion:it.modelo)} x${it.cantidad}`).join(' · '),
     cantidad: ventaDraft.items.reduce((s,it)=>s+it.cantidad,0),
   };
 
@@ -1076,7 +1200,7 @@ function verDetalleVenta(id){
   openModal(`
     <h3>Detalle de venta — ${v.folio}</h3>
     <div class="tblwrap"><table class="tbl"><thead><tr><th>Producto</th><th>Origen</th><th class="num">Pares</th><th class="num">Precio unit.</th><th class="num">Importe</th></tr></thead>
-    <tbody>${items.map(it=>`<tr><td>${it.modelo}</td><td>${it.ordenFolio||'-'}</td><td class="num mono">${it.cantidad}</td><td class="num mono">${money(it.precioUnitario)}</td><td class="num mono">${money(it.importe!=null?it.importe:it.cantidad*it.precioUnitario)}</td></tr>`).join('')}</tbody></table></div>
+    <tbody>${items.map(it=>`<tr><td>${(it.descripcion!=null?it.descripcion:it.modelo)||''}</td><td>${it.ordenFolio||'-'}</td><td class="num mono">${it.cantidad}</td><td class="num mono">${money(it.precioUnitario)}</td><td class="num mono">${money(it.importe!=null?it.importe:it.cantidad*it.precioUnitario)}</td></tr>`).join('')}</tbody></table></div>
     <div class="grid cols-3" style="margin-top:10px">
       <div><div class="muted">Cliente</div><b>${v.cliente}</b></div>
       <div><div class="muted">Total</div><b>${money(v.total)}</b></div>
@@ -1161,9 +1285,12 @@ function abrirDisenoFactura(){
           <option value="ticket" ${cfg.facturaTamano==='ticket'?'selected':''}>Ticket angosto (impresora térmica 80 mm)</option>
         </select>
       </div>
-      <div class="field"><label>Color de acento</label><input id="dfColor" type="color" value="${cfg.facturaColor||'#2F4858'}"></div>
+      <div class="field"><label>Color de acento</label>
+        <div class="flex"><input id="dfColor" type="color" value="${cfg.facturaColor||'#2F4858'}">
+        ${cfg.logoBase64?`<button type="button" class="btn ghost sm" onclick="extraerColorDeLogo()">Tomar color del logo</button>`:''}</div>
+      </div>
       <div class="field" style="grid-column:1/-1"><label>Logotipo (opcional)</label>
-        <input id="dfLogo" type="file" accept="image/*">
+        <input id="dfLogo" type="file" accept="image/*" onchange="previsualizarLogoNuevo()">
         ${cfg.logoBase64?`<div class="smallnote">Ya tienes un logo cargado. <a href="#" onclick="quitarLogo();return false;">Quitar logo</a></div>`:''}
       </div>
       <div class="field" style="grid-column:1/-1"><label>Pie de página / nota (garantía, cuenta bancaria, agradecimiento…)</label>
@@ -1174,6 +1301,52 @@ function abrirDisenoFactura(){
     <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button><button class="btn clay" onclick="guardarDisenoFactura()">Guardar diseño</button></div>
   `);
 }
+function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+function colorDominante(imgSrc){
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.onload = ()=>{
+      try{
+        const c = document.createElement('canvas');
+        c.width=40; c.height=40;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img,0,0,40,40);
+        const data = ctx.getImageData(0,0,40,40).data;
+        const cuentas = {};
+        for(let i=0;i<data.length;i+=4){
+          const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
+          if(a<180) continue; // ignora transparencia
+          const brillo = (r+g+b)/3;
+          if(brillo>235 || brillo<20) continue; // ignora blancos/negros casi puros de fondo
+          const key = [Math.round(r/24)*24, Math.round(g/24)*24, Math.round(b/24)*24].join(',');
+          cuentas[key] = (cuentas[key]||0)+1;
+        }
+        const top = Object.entries(cuentas).sort((a,b)=>b[1]-a[1])[0];
+        if(!top){ resolve(null); return; }
+        const [r,g,b] = top[0].split(',').map(Number);
+        resolve(rgbToHex(r,g,b));
+      }catch(e){ resolve(null); }
+    };
+    img.onerror = ()=>resolve(null);
+    img.src = imgSrc;
+  });
+}
+let LOGO_PREVIO_NUEVO = null;
+function previsualizarLogoNuevo(){
+  const file = document.getElementById('dfLogo').files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{ LOGO_PREVIO_NUEVO = e.target.result; };
+  reader.readAsDataURL(file);
+}
+async function extraerColorDeLogo(){
+  const fuente = LOGO_PREVIO_NUEVO || STATE.config.logoBase64;
+  if(!fuente){ toast('Primero carga un logo.'); return; }
+  toast('Analizando colores del logo…');
+  const color = await colorDominante(fuente);
+  if(color){ document.getElementById('dfColor').value = color; toast('Color tomado del logo — puedes ajustarlo si quieres.'); }
+  else toast('No pude detectar un color claro en esa imagen; ajústalo manualmente.');
+}
 function guardarDisenoFactura(){
   STATE.config.facturaTamano = document.getElementById('dfTamano').value;
   STATE.config.facturaColor = document.getElementById('dfColor').value;
@@ -1181,13 +1354,194 @@ function guardarDisenoFactura(){
   const file = document.getElementById('dfLogo').files[0];
   if(file){
     const reader = new FileReader();
-    reader.onload = e=>{ STATE.config.logoBase64 = e.target.result; save(); toast('Diseño de factura guardado.'); closeModal(); };
+    reader.onload = e=>{ STATE.config.logoBase64 = e.target.result; LOGO_PREVIO_NUEVO=null; save(); renderAll(); toast('Diseño de factura guardado.'); closeModal(); };
     reader.readAsDataURL(file);
   } else {
-    save(); toast('Diseño de factura guardado.'); closeModal();
+    save(); renderAll(); toast('Diseño de factura guardado.'); closeModal();
   }
 }
-function quitarLogo(){ STATE.config.logoBase64=null; save(); abrirDisenoFactura(); }
+function quitarLogo(){ STATE.config.logoBase64=null; save(); renderAll(); abrirDisenoFactura(); }
+
+/* ---------- Catálogo de productos (PDF con fotos y precios) ---------- */
+function abrirCatalogoProductos(){
+  const items = STATE.catalogo||[];
+  openModal(`
+    <h3>Catálogo de productos</h3>
+    <p class="muted">Arma la lista de productos que quieres mostrar a tus clientes: nombre, foto, descripción y precio. Con "Descargar catálogo PDF" se genera un documento con tu logo y color de marca.</p>
+    <div class="flex" style="margin-bottom:10px; flex-wrap:wrap">
+      <button class="btn clay sm" onclick="abrirItemCatalogo(null)">+ Nuevo producto</button>
+      <button class="btn ghost sm" onclick="importarModelosInventario()">Importar modelos del inventario</button>
+      <button class="btn ghost sm" onclick="generarCatalogoProductosPDF()">Descargar catálogo PDF</button>
+    </div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Foto</th><th>Nombre</th><th class="num">Precio</th><th>En catálogo</th><th></th></tr></thead>
+    <tbody>${items.map(it=>`<tr>
+      <td>${it.imagenBase64?`<img src="${it.imagenBase64}" style="width:36px;height:36px;object-fit:cover;border-radius:4px">`:'<span class="muted">—</span>'}</td>
+      <td>${it.nombre}</td>
+      <td class="num mono">${money(it.precio||0)}</td>
+      <td><span class="badge ${it.activo!==false?'ok':'bad'}">${it.activo!==false?'Sí':'No'}</span></td>
+      <td class="flex"><button class="btn ghost sm" onclick="abrirItemCatalogo('${it.id}')">Editar</button><button class="btn danger sm" onclick="borrarItemCatalogo('${it.id}')">Eliminar</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" class="muted">Sin productos en el catálogo todavía. Agrega uno o impórtalos del inventario.</td></tr>'}</tbody></table></div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+function abrirItemCatalogo(id){
+  const it = id ? (STATE.catalogo||[]).find(x=>x.id===id) : null;
+  openModal(`
+    <h3>${it?'Editar producto':'Nuevo producto'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Nombre</label><input id="catNombre" value="${it?it.nombre:''}" placeholder="Ej. Huarache Cuña Canela"></div>
+      <div class="field"><label>Precio</label><input id="catPrecio" type="number" step="0.01" value="${it?it.precio||0:0}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Descripción (opcional)</label><textarea id="catDescripcion" rows="2">${it?it.descripcion||'':''}</textarea></div>
+      <div class="field" style="grid-column:1/-1"><label>Foto (opcional)</label>
+        <input id="catImagen" type="file" accept="image/*">
+        ${it&&it.imagenBase64?`<div class="smallnote">Ya tiene una foto cargada. <a href="#" onclick="quitarImagenCatalogo('${it.id}');return false;">Quitar foto</a></div>`:''}
+      </div>
+      <div class="field"><label>Mostrar en el catálogo</label><select id="catActivo"><option value="si" ${!it||it.activo!==false?'selected':''}>Sí</option><option value="no" ${it&&it.activo===false?'selected':''}>No</option></select></div>
+    </div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="abrirCatalogoProductos()">Cancelar</button>
+      ${it?`<button class="btn danger" onclick="borrarItemCatalogo('${id}')">Eliminar</button>`:''}
+      <button class="btn clay" onclick="guardarItemCatalogo('${id||''}')">Guardar producto</button>
+    </div>
+  `);
+}
+function guardarItemCatalogo(id){
+  if(!STATE.catalogo) STATE.catalogo=[];
+  const nombre = document.getElementById('catNombre').value.trim();
+  if(!nombre){ toast('Escribe un nombre para el producto.'); return; }
+  const precio = Number(document.getElementById('catPrecio').value)||0;
+  const descripcion = document.getElementById('catDescripcion').value.trim();
+  const activo = document.getElementById('catActivo').value==='si';
+  const file = document.getElementById('catImagen').files[0];
+
+  const aplicar = (imagenBase64)=>{
+    let item = id ? STATE.catalogo.find(x=>x.id===id) : null;
+    if(item){
+      Object.assign(item, {nombre, precio, descripcion, activo});
+      if(imagenBase64!==undefined) item.imagenBase64 = imagenBase64;
+    } else {
+      STATE.catalogo.push({id:uid('cat'), nombre, precio, descripcion, activo, imagenBase64: imagenBase64||null});
+    }
+    save(); abrirCatalogoProductos(); toast('Producto guardado.');
+  };
+  if(file){
+    const reader = new FileReader();
+    reader.onload = e=> aplicar(e.target.result);
+    reader.readAsDataURL(file);
+  } else {
+    aplicar(undefined);
+  }
+}
+function quitarImagenCatalogo(id){
+  const it = STATE.catalogo.find(x=>x.id===id);
+  if(it){ it.imagenBase64=null; save(); }
+  abrirItemCatalogo(id);
+}
+function borrarItemCatalogo(id){
+  if(!confirm('¿Eliminar este producto del catálogo?')) return;
+  STATE.catalogo = STATE.catalogo.filter(x=>x.id!==id);
+  save(); abrirCatalogoProductos();
+}
+function importarModelosInventario(){
+  if(!STATE.catalogo) STATE.catalogo=[];
+  const existentes = new Set(STATE.catalogo.map(c=>c.nombre));
+  const modelos = new Set();
+  STATE.productoTerminado.forEach(pt=>{ if(pt.modelo && !existentes.has(pt.modelo)) modelos.add(pt.modelo); });
+  let agregados = 0;
+  modelos.forEach(m=>{ STATE.catalogo.push({id:uid('cat'), nombre:m, descripcion:'', precio:0, imagenBase64:null, activo:true}); agregados++; });
+  save();
+  abrirCatalogoProductos();
+  toast(agregados ? `${agregados} producto(s) importado(s) del inventario — recuerda ponerles precio.` : 'No hay modelos nuevos en el inventario para importar.');
+}
+async function generarCatalogoProductosPDF(){
+  const items = (STATE.catalogo||[]).filter(it=>it.activo!==false);
+  if(!items.length){ toast('Agrega al menos un producto activo al catálogo.'); return; }
+  toast('Generando catálogo…');
+
+  // precargar dimensiones de las fotos para no deformarlas
+  const dims = {};
+  await Promise.all(items.filter(it=>it.imagenBase64).map(it=> new Promise(res=>{
+    const img = new Image();
+    img.onload = ()=>{ dims[it.id] = {w:img.naturalWidth, h:img.naturalHeight}; res(); };
+    img.onerror = ()=> res();
+    img.src = it.imagenBase64;
+  })));
+
+  const cfg = STATE.config;
+  const accent = hexToRgb(cfg.facturaColor);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const pageW = 216, pageH = 279, margin = 16;
+  let y = margin;
+
+  function header(continuacion){
+    let tx = margin;
+    if(cfg.logoBase64){
+      try{ doc.addImage(cfg.logoBase64, margin, y, 22, 12); tx = margin+28; }catch(e){}
+    }
+    doc.setTextColor(...accent);
+    doc.setFontSize(18);
+    doc.text(cfg.nombre||'Artesanías D Mitzy', tx, y+8);
+    doc.setFontSize(11);
+    doc.text(continuacion?'Catálogo de productos (continuación)':'Catálogo de productos', tx, y+15);
+    doc.setTextColor(120,120,120);
+    doc.setFontSize(8);
+    doc.text(new Date().toLocaleDateString('es-MX'), pageW-margin-30, y+8);
+    doc.setTextColor(20,20,20);
+    y += 22;
+    doc.setDrawColor(...accent); doc.setLineWidth(0.5); doc.line(margin,y,pageW-margin,y);
+    y += 8;
+  }
+  header(false);
+
+  const cols = 2, gap = 8;
+  const cellW = (pageW - margin*2 - gap*(cols-1))/cols;
+  const imgH = 55;
+  const cellH = imgH + 26;
+  let col = 0;
+
+  items.forEach(it=>{
+    if(y + cellH > pageH - margin){ doc.addPage(); y = margin; header(true); col = 0; }
+    const x = margin + col*(cellW+gap);
+
+    doc.setFillColor(246,246,246);
+    doc.rect(x, y, cellW, imgH, 'F');
+    if(it.imagenBase64 && dims[it.id]){
+      const d = dims[it.id];
+      const ratio = d.w/d.h;
+      let dw = cellW, dh = cellW/ratio;
+      if(dh > imgH){ dh = imgH; dw = imgH*ratio; }
+      const ix = x + (cellW-dw)/2, iy = y + (imgH-dh)/2;
+      try{
+        const fmt = it.imagenBase64.indexOf('image/png')>-1 ? 'PNG' : 'JPEG';
+        doc.addImage(it.imagenBase64, fmt, ix, iy, dw, dh);
+      }catch(e){ /* imagen inválida, se omite */ }
+    } else {
+      doc.setFontSize(8); doc.setTextColor(170,170,170);
+      doc.text('Sin foto', x+cellW/2-8, y+imgH/2);
+      doc.setTextColor(20,20,20);
+    }
+    doc.setDrawColor(224,224,224); doc.rect(x, y, cellW, imgH);
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(20,20,20);
+    doc.text(it.nombre||'Producto', x, y+imgH+6, {maxWidth:cellW});
+    doc.setFont('helvetica','normal');
+    if(it.descripcion){
+      doc.setFontSize(8); doc.setTextColor(120,120,120);
+      const lineas = doc.splitTextToSize(it.descripcion, cellW);
+      doc.text(lineas.slice(0,2), x, y+imgH+11);
+    }
+    doc.setTextColor(...accent); doc.setFont('helvetica','bold'); doc.setFontSize(11.5);
+    doc.text(money(it.precio||0), x, y+cellH-2);
+    doc.setFont('helvetica','normal'); doc.setTextColor(20,20,20);
+
+    col++;
+    if(col>=cols){ col=0; y += cellH+10; }
+  });
+
+  doc.save(`Catalogo_${(cfg.nombre||'ArtesaniasDMitzy').replace(/\s+/g,'')}_${todayStr()}.pdf`);
+  toast('Catálogo PDF generado.');
+}
 
 /* =================================================================
    GASTOS
@@ -1202,6 +1556,7 @@ function abrirGasto(id){
         <option ${g.categoria==='Fabricación indirecta'?'selected':''}>Fabricación indirecta</option>
         <option ${g.categoria==='Administración'?'selected':''}>Administración</option>
         <option ${g.categoria==='Venta'?'selected':''}>Venta</option>
+        <option ${g.categoria==='Nómina'?'selected':''}>Nómina</option>
       </select></div>
       <div class="field"><label>Concepto</label><input id="gtConcepto" value="${g.concepto}"></div>
       <div class="field"><label>Importe ($)</label><input id="gtImporte" type="number" step="0.01" value="${g.importe}"></div>
@@ -1241,6 +1596,166 @@ function eliminarGasto(id){
   if(g.condicion==='credito') movCartera('proveedores', g.proveedor||'Gastos varios', {tipo:'abono', concepto:'Cancelación de gasto '+g.folio, monto:g.importe, fecha:todayStr()});
   STATE.gastos = STATE.gastos.filter(x=>x.id!==id);
   save(); renderAll();
+}
+
+/* =================================================================
+   NÓMINA — empleados y registro de pagos por periodo
+   ================================================================= */
+function abrirEmpleados(){
+  const emp = STATE.empleados||[];
+  openModal(`
+    <h3>Empleados</h3>
+    <div class="flex" style="margin-bottom:10px"><button class="btn clay sm" onclick="abrirEmpleado(null)">+ Nuevo empleado</button></div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Puesto</th><th class="num">Salario diario</th><th>Activo</th><th></th></tr></thead>
+    <tbody>${emp.map(e=>`<tr>
+      <td>${e.nombre}</td><td>${e.puesto||'-'}</td><td class="num mono">${money(e.salarioDiario||0)}</td>
+      <td><span class="badge ${e.activo!==false?'ok':'bad'}">${e.activo!==false?'Sí':'No'}</span></td>
+      <td class="flex"><button class="btn ghost sm" onclick="abrirEmpleado('${e.id}')">Editar</button><button class="btn danger sm" onclick="borrarEmpleado('${e.id}')">Eliminar</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" class="muted">Sin empleados registrados.</td></tr>'}</tbody></table></div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+function abrirEmpleado(id){
+  const e = id ? STATE.empleados.find(x=>x.id===id) : {id:'', nombre:'', puesto:'', salarioDiario:0, activo:true};
+  openModal(`
+    <h3>${id?'Editar empleado':'Nuevo empleado'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Nombre</label><input id="empNombre" value="${e.nombre}"></div>
+      <div class="field"><label>Puesto</label><input id="empPuesto" value="${e.puesto||''}" placeholder="Cortador, costurera, armado…"></div>
+      <div class="field"><label>Salario diario</label><input id="empSalario" type="number" step="0.01" value="${e.salarioDiario||0}"></div>
+      <div class="field"><label>Activo</label><select id="empActivo"><option value="si" ${e.activo!==false?'selected':''}>Sí</option><option value="no" ${e.activo===false?'selected':''}>No</option></select></div>
+    </div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="abrirEmpleados()">Cancelar</button>
+      ${id?`<button class="btn danger" onclick="borrarEmpleado('${id}')">Eliminar</button>`:''}
+      <button class="btn clay" onclick="guardarEmpleado('${id||''}')">Guardar empleado</button>
+    </div>
+  `);
+}
+function guardarEmpleado(id){
+  if(!STATE.empleados) STATE.empleados=[];
+  const nombre = document.getElementById('empNombre').value.trim();
+  if(!nombre){ toast('Escribe el nombre del empleado.'); return; }
+  const data = {
+    nombre,
+    puesto: document.getElementById('empPuesto').value.trim(),
+    salarioDiario: Number(document.getElementById('empSalario').value)||0,
+    activo: document.getElementById('empActivo').value==='si',
+  };
+  if(id){ Object.assign(STATE.empleados.find(x=>x.id===id), data); }
+  else{ STATE.empleados.push(Object.assign({id:uid('emp')}, data)); }
+  save(); abrirEmpleados(); toast('Empleado guardado.');
+}
+function borrarEmpleado(id){
+  if(!confirm('¿Eliminar este empleado del catálogo?')) return;
+  STATE.empleados = STATE.empleados.filter(x=>x.id!==id);
+  save(); abrirEmpleados();
+}
+
+let nominaDraft = null;
+function abrirNomina(id){
+  const existing = id ? STATE.nomina.find(x=>x.id===id) : null;
+  nominaDraft = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id: uid('nm'), folio: folio('NOM','nomina'), periodoInicio: todayStr(), periodoFin: todayStr(),
+    items: (STATE.empleados||[]).filter(e=>e.activo!==false).map(e=>({empleadoId:e.id, nombre:e.nombre, dias:6, salarioDiario:e.salarioDiario||0, extras:0, descuentos:0}))
+  };
+  renderNominaModal();
+}
+function renderNominaModal(){
+  const filas = nominaDraft.items.map((it,i)=>{
+    const total = (Number(it.dias)||0)*(Number(it.salarioDiario)||0) + (Number(it.extras)||0) - (Number(it.descuentos)||0);
+    return `<tr>
+      <td>${it.nombre}</td>
+      <td><input type="number" min="0" step="0.5" style="width:60px" value="${it.dias}" onchange="nominaDraft.items[${i}].dias=this.value;renderNominaModal()"></td>
+      <td><input type="number" min="0" step="0.01" style="width:80px" value="${it.salarioDiario}" onchange="nominaDraft.items[${i}].salarioDiario=this.value;renderNominaModal()"></td>
+      <td><input type="number" min="0" step="0.01" style="width:80px" value="${it.extras}" onchange="nominaDraft.items[${i}].extras=this.value;renderNominaModal()"></td>
+      <td><input type="number" min="0" step="0.01" style="width:80px" value="${it.descuentos}" onchange="nominaDraft.items[${i}].descuentos=this.value;renderNominaModal()"></td>
+      <td class="num mono">${money(total)}</td>
+      <td><button class="btn danger sm" onclick="nominaDraft.items.splice(${i},1);renderNominaModal()">✕</button></td>
+    </tr>`;
+  }).join('');
+  const totalNomina = nominaDraft.items.reduce((s,it)=>s+(Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0),0);
+  const disponibles = (STATE.empleados||[]).filter(e=>!nominaDraft.items.some(it=>it.empleadoId===e.id));
+  openModal(`
+    <h3>Nómina — ${nominaDraft.folio}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Periodo inicio</label><input type="date" value="${nominaDraft.periodoInicio}" onchange="nominaDraft.periodoInicio=this.value"></div>
+      <div class="field"><label>Periodo fin</label><input type="date" value="${nominaDraft.periodoFin}" onchange="nominaDraft.periodoFin=this.value"></div>
+    </div>
+    ${disponibles.length?`<div class="flex" style="margin-bottom:8px"><select id="nomEmpAgregar">${disponibles.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('')}</select><button class="btn ghost sm" onclick="agregarEmpleadoNomina()">+ Agregar a la nómina</button></div>`:''}
+    <div class="tblwrap"><table class="tbl">
+      <thead><tr><th>Empleado</th><th>Días</th><th>Salario diario</th><th>Extras</th><th>Descuentos</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody>${filas || '<tr><td colspan="7" class="muted">Agrega empleados a esta nómina.</td></tr>'}</tbody>
+    </table></div>
+    <div style="margin-top:10px"><div class="muted">Total de la nómina</div><b style="font-size:20px">${money(totalNomina)}</b></div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="nominaDraft=null;closeModal()">Cancelar</button>
+      <button class="btn clay" onclick="guardarNomina()">Guardar nómina</button>
+    </div>
+  `);
+}
+function agregarEmpleadoNomina(){
+  const id = document.getElementById('nomEmpAgregar').value;
+  const e = STATE.empleados.find(x=>x.id===id);
+  if(!e) return;
+  nominaDraft.items.push({empleadoId:e.id, nombre:e.nombre, dias:6, salarioDiario:e.salarioDiario||0, extras:0, descuentos:0});
+  renderNominaModal();
+}
+function guardarNomina(){
+  if(!nominaDraft.items.length){ toast('Agrega al menos un empleado a la nómina.'); return; }
+  const total = nominaDraft.items.reduce((s,it)=>s+(Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0),0);
+  nominaDraft.total = total;
+
+  // si ya existía, primero quitamos su gasto vinculado para reemplazarlo
+  if(STATE.gastos){
+    STATE.gastos = STATE.gastos.filter(g=>g.nominaId!==nominaDraft.id);
+  }
+  const gasto = {
+    id: uid('gt'), folio: folio('GT','gasto'), fecha: nominaDraft.periodoFin, categoria:'Nómina',
+    concepto: `Nómina ${nominaDraft.folio} (${nominaDraft.periodoInicio} a ${nominaDraft.periodoFin})`,
+    importe: total, condicion:'contado', nominaId: nominaDraft.id
+  };
+  STATE.gastos.push(gasto);
+
+  const idx = STATE.nomina.findIndex(n=>n.id===nominaDraft.id);
+  if(idx>=0) STATE.nomina[idx]=nominaDraft; else STATE.nomina.push(nominaDraft);
+  save(); nominaDraft=null; closeModal(); renderAll();
+  toast('Nómina guardada y registrada como gasto.');
+}
+function eliminarNomina(id){
+  if(!confirm('¿Eliminar esta nómina? También se eliminará el gasto que generó.')) return;
+  STATE.gastos = (STATE.gastos||[]).filter(g=>g.nominaId!==id);
+  STATE.nomina = STATE.nomina.filter(n=>n.id!==id);
+  save(); renderAll();
+}
+function verNominaPDF(id){
+  const n = STATE.nomina.find(x=>x.id===id);
+  if(!n) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, `Nómina ${n.folio} — ${n.periodoInicio} a ${n.periodoFin}`);
+  doc.autoTable({
+    head:[['Empleado','Días','Salario diario','Extras','Descuentos','Total']],
+    body: n.items.map(it=>{
+      const total = (Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0);
+      return [it.nombre, it.dias, money(it.salarioDiario), money(it.extras||0), money(it.descuentos||0), money(total)];
+    }),
+    startY:36, styles:{fontSize:9}, headStyles:{fillColor:[47,72,88]}
+  });
+  const y = doc.lastAutoTable.finalY+10;
+  doc.setFontSize(13); doc.text('TOTAL: '+money(n.total), 14, y);
+  doc.save(`Nomina_${n.folio}.pdf`);
+  toast('PDF de nómina generado.');
+}
+function renderNomina(){
+  const tbl = document.getElementById('tblNomina');
+  if(!tbl) return;
+  tbl.innerHTML = (STATE.nomina||[]).slice().reverse().map(n=>`
+    <tr>
+      <td>${n.folio}</td><td>${n.periodoInicio} a ${n.periodoFin}</td>
+      <td class="num mono">${n.items.length}</td><td class="num mono">${money(n.total)}</td>
+      <td class="flex"><button class="btn ghost sm" onclick="verNominaPDF('${n.id}')">PDF</button><button class="btn ghost sm" onclick="abrirNomina('${n.id}')">Editar</button><button class="btn danger sm" onclick="eliminarNomina('${n.id}')">Eliminar</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" class="muted">Sin nóminas registradas. Primero da de alta a tus empleados.</td></tr>';
 }
 
 /* =================================================================
@@ -1310,6 +1825,12 @@ function verDetalleCartera(tipo, nombre){
    ================================================================= */
 function renderDashboard(){
   document.getElementById('fechaHoy').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const bienvenida = document.getElementById('bienvenidaTitulo');
+  const logo = STATE.config.logoBase64 ? `<img src="${STATE.config.logoBase64}" style="height:36px;object-fit:contain;margin-bottom:6px">` : '';
+  const saludo = SESION_ACTUAL ? `Hola, ${SESION_ACTUAL.usuario} 👋` : 'Hoy en el taller';
+  bienvenida.innerHTML = `${logo}<div class="eyebrow">Panel general</div><h1>${saludo}</h1>`;
+
   const ordenesConf = STATE.ordenes.filter(o=>o.estado==='confirmada');
   const paresMes = ordenesConf.reduce((s,o)=>s+o.necesidades.total,0);
   const ventasTotal = STATE.ventas.reduce((s,v)=>s+v.total,0);
@@ -1329,6 +1850,16 @@ function renderDashboard(){
     <div class="card kpi good"><div class="num">${STATE.productoTerminado.reduce((s,p)=>s+p.paresDisponibles,0)}</div><div class="lbl">Pares disponibles para venta</div></div>
   `;
 
+  const dias7 = [...Array(7)].map((_,i)=>{
+    const d = new Date(); d.setDate(d.getDate()-(6-i));
+    return d.toISOString().slice(0,10);
+  });
+  const etiquetaDia = f=>{ const d=new Date(f+'T00:00:00'); return d.toLocaleDateString('es-MX',{weekday:'short'}).replace('.',''); };
+  const serieProd = dias7.map(f=>({label:etiquetaDia(f), value: ordenesConf.filter(o=>o.fecha===f).reduce((s,o)=>s+o.necesidades.total,0)}));
+  const serieVentas = dias7.map(f=>({label:etiquetaDia(f), value: STATE.ventas.filter(v=>v.fecha===f).reduce((s,v)=>s+v.total,0)}));
+  document.getElementById('chartProduccion').innerHTML = miniBarChart(serieProd, 'var(--clay)', v=>num(v));
+  document.getElementById('chartVentas').innerHTML = miniBarChart(serieVentas, 'var(--indigo)', v=>money(v));
+
   document.getElementById('dashOrdenes').innerHTML = STATE.ordenes.slice(-6).reverse().map(o=>`
     <tr><td>${o.folio}</td><td>${o.fecha}</td><td class="num mono">${o.necesidades?o.necesidades.total:'-'}</td>
     <td class="num mono">${o.costeo?money(o.costeo.costoUnitario):'-'}</td>
@@ -1342,6 +1873,18 @@ function renderDashboard(){
 
   const bajos = STATE.materiales.filter(m=>m.stock<=m.minimo);
   document.getElementById('dashStockBajo').innerHTML = bajos.map(m=>`<tr><td>${m.nombre}</td><td><span class="badge info">${m.clasificacion}</span></td><td class="num mono">${num(m.stock,2)}</td><td class="num mono">${num(m.minimo,2)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Todos los materiales están en niveles adecuados.</td></tr>';
+}
+function miniBarChart(data, color, fmt){
+  const max = Math.max(1, ...data.map(d=>d.value));
+  const w=320, h=110, slot = w/data.length, bw = slot-14;
+  const bars = data.map((d,i)=>{
+    const bh = Math.max(2,(d.value/max)*66);
+    const x = i*slot+7;
+    const y = 78-bh;
+    return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="3" fill="${color}"></rect>
+      <text x="${x+bw/2}" y="90" font-size="8" text-anchor="middle" fill="#6B5E52">${d.label}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} 96" style="width:100%;height:100px">${bars}</svg>`;
 }
 
 /* ---------- RENDER — PRODUCCIÓN ---------- */
@@ -1436,6 +1979,11 @@ function renderVentas(){
 
 /* ---------- RENDER — GASTOS ---------- */
 function renderGastos(){
+  const categorias = ['Fabricación indirecta','Administración','Venta','Nómina'];
+  document.getElementById('gastosResumenCat').innerHTML = categorias.map(cat=>{
+    const total = STATE.gastos.filter(g=>g.categoria===cat).reduce((s,g)=>s+Number(g.importe||0),0);
+    return `<div class="card kpi ${cat==='Nómina'?'good':cat==='Fabricación indirecta'?'warn':'alt'}"><div class="num">${money(total)}</div><div class="lbl">${cat}</div></div>`;
+  }).join('');
   document.getElementById('tblGastos').innerHTML = STATE.gastos.slice().reverse().map(g=>`
     <tr>
       <td>${g.folio}</td><td>${g.fecha}</td><td>${g.categoria}</td><td>${g.concepto}</td>
@@ -1473,6 +2021,7 @@ function renderReportes(){
     {t:'Compras', fn:()=>exportExcelModulo('Compras')},
     {t:'Ventas', fn:()=>exportExcelModulo('Ventas')},
     {t:'Gastos', fn:()=>exportExcelModulo('Gastos')},
+    {t:'Nómina', fn:()=>exportExcelModulo('Nomina')},
     {t:'Cuentas por cobrar', fn:()=>exportExcelModulo('CxC')},
     {t:'Cuentas por pagar', fn:()=>exportExcelModulo('CxP')},
     {t:'Libro completo (todas las hojas)', fn:()=>exportExcelCompleto()},
@@ -1487,6 +2036,88 @@ function renderReportes(){
     </div>`).join('');
 }
 
+/* ---------- Reporte mensual ---------- */
+function mesActualDefault(){
+  const el = document.getElementById('mesReporte');
+  if(el && !el.value) el.value = todayStr().slice(0,7);
+  return el ? el.value : todayStr().slice(0,7);
+}
+function calcResumenMes(mes){
+  const ordenesMes = STATE.ordenes.filter(o=>o.estado==='confirmada' && (o.fecha||'').slice(0,7)===mes);
+  const ventasMes = STATE.ventas.filter(v=>(v.fecha||'').slice(0,7)===mes);
+  const gastosMes = STATE.gastos.filter(g=>(g.fecha||'').slice(0,7)===mes);
+  const comprasMes = STATE.compras.filter(c=>(c.fecha||'').slice(0,7)===mes);
+  const pares = ordenesMes.reduce((s,o)=>s+(o.costeo?o.costeo.pares:0),0);
+  const inversionProd = ordenesMes.reduce((s,o)=>s+(o.costeo?o.costeo.inversionTotal:0),0);
+  const ventasTotal = ventasMes.reduce((s,v)=>s+v.total,0);
+  const utilidadVentas = ventasMes.reduce((s,v)=>s+v.utilidad,0);
+  const gastosTotal = gastosMes.reduce((s,g)=>s+Number(g.importe||0),0);
+  const comprasTotal = comprasMes.reduce((s,c)=>s+Number(c.importe||0),0);
+  const utilidadNeta = utilidadVentas - gastosTotal;
+  return {mes,ordenesMes,ventasMes,gastosMes,comprasMes,pares,inversionProd,ventasTotal,utilidadVentas,gastosTotal,comprasTotal,utilidadNeta};
+}
+function renderResumenMensual(){
+  const mes = mesActualDefault();
+  const r = calcResumenMes(mes);
+  const [y,m] = mes.split('-');
+  const nombreMes = new Date(Number(y),Number(m)-1,1).toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+  document.getElementById('resumenMensual').innerHTML = `
+    <p class="smallnote" style="text-transform:capitalize">${nombreMes}</p>
+    <div class="grid cols-4">
+      <div class="card kpi"><div class="num">${num(r.pares)}</div><div class="lbl">Pares producidos</div></div>
+      <div class="card kpi alt"><div class="num">${money(r.ventasTotal)}</div><div class="lbl">Ventas del mes</div></div>
+      <div class="card kpi warn"><div class="num">${money(r.gastosTotal)}</div><div class="lbl">Gastos del mes (incl. nómina)</div></div>
+      <div class="card kpi ${r.utilidadNeta>=0?'good':''}"><div class="num">${money(r.utilidadNeta)}</div><div class="lbl">Utilidad neta estimada</div></div>
+    </div>
+    <div class="grid cols-3" style="margin-top:10px">
+      <div class="card"><div class="muted">Compras del mes</div><b>${money(r.comprasTotal)}</b></div>
+      <div class="card"><div class="muted">Inversión en producción</div><b>${money(r.inversionProd)}</b></div>
+      <div class="card"><div class="muted">Órdenes confirmadas</div><b>${r.ordenesMes.length}</b></div>
+    </div>`;
+}
+function exportMesExcel(){
+  const mes = mesActualDefault();
+  const r = calcResumenMes(mes);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom([
+    {Concepto:'Pares producidos', Valor:r.pares},
+    {Concepto:'Inversión en producción', Valor:r.inversionProd},
+    {Concepto:'Ventas del mes', Valor:r.ventasTotal},
+    {Concepto:'Utilidad de ventas', Valor:r.utilidadVentas},
+    {Concepto:'Gastos del mes', Valor:r.gastosTotal},
+    {Concepto:'Compras del mes', Valor:r.comprasTotal},
+    {Concepto:'Utilidad neta estimada', Valor:r.utilidadNeta},
+  ]), 'Resumen');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(r.ordenesMes.map(o=>({Folio:o.folio,Fecha:o.fecha,Pares:o.costeo.pares,'Costo unitario':o.costeo.costoUnitario}))), 'Produccion');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(r.ventasMes.map(v=>({Factura:v.folio,Fecha:v.fecha,Cliente:v.cliente,Total:v.total,Utilidad:v.utilidad}))), 'Ventas');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(r.gastosMes.map(g=>({Folio:g.folio,Fecha:g.fecha,Categoria:g.categoria,Concepto:g.concepto,Importe:g.importe}))), 'Gastos');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(r.comprasMes.map(c=>({Folio:c.folio,Fecha:c.fecha,Proveedor:c.proveedor,Importe:c.importe}))), 'Compras');
+  XLSX.writeFile(wb, `ArtesaniasDMitzy_Reporte_${mes}.xlsx`);
+  toast('Reporte mensual (Excel) generado.');
+}
+function exportMesPDF(){
+  const mes = mesActualDefault();
+  const r = calcResumenMes(mes);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Reporte mensual — '+mes);
+  doc.autoTable({
+    head:[['Concepto','Valor']],
+    body:[
+      ['Pares producidos', num(r.pares)],
+      ['Inversión en producción', money(r.inversionProd)],
+      ['Ventas del mes', money(r.ventasTotal)],
+      ['Utilidad de ventas', money(r.utilidadVentas)],
+      ['Gastos del mes', money(r.gastosTotal)],
+      ['Compras del mes', money(r.comprasTotal)],
+      ['Utilidad neta estimada', money(r.utilidadNeta)],
+    ],
+    startY:33, styles:{fontSize:10}, headStyles:{fillColor:[47,72,88]}
+  });
+  doc.save(`ArtesaniasDMitzy_Reporte_${mes}.pdf`);
+  toast('Reporte mensual (PDF) generado.');
+}
+
 function renderAll(){
   renderDashboard();
   renderProduccion();
@@ -1495,15 +2126,187 @@ function renderAll(){
   renderCompras();
   renderVentas();
   renderGastos();
+  renderNomina();
   renderCartera('clientes','cxcKpis','tblCxcResumen');
   renderCartera('proveedores','cxpKpis','tblCxpResumen');
   renderReportes();
+  renderConceptosUI();
+  renderUsuariosResumen();
   document.getElementById('cfgNombre').value = STATE.config.nombre||'';
   document.getElementById('cfgRfc').value = STATE.config.rfc||'';
   document.getElementById('cfgDireccion').value = STATE.config.direccion||'';
   document.getElementById('cfgCorreo').value = STATE.config.correo||'';
   document.getElementById('cfgManoObra').value = STATE.config.manoObraDefault||0;
   document.getElementById('cfgProrratear').value = STATE.config.prorratear||'si';
+  actualizarUserbox();
+}
+
+/* =================================================================
+   CONCEPTOS DE PRODUCCIÓN EDITABLES
+   ================================================================= */
+const CONCEPTO_LABELS = {cuñas:'Cuña', suelas:'Suela', plantas:'Planta', cercos:'Cerco'};
+function renderConceptosUI(){
+  const cont = document.getElementById('conceptosUI');
+  if(!cont) return;
+  cont.innerHTML = Object.keys(CONCEPTO_LABELS).map(tipo=>`
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)">${CONCEPTO_LABELS[tipo]}</label>
+      <div class="chiprow">${(STATE.conceptos[tipo]||[]).map(v=>`<span class="chip">${v} <button onclick="quitarConcepto('${tipo}','${v.replace(/'/g,"\\'")}')">✕</button></span>`).join('')}</div>
+      <div class="flex"><input id="conceptoNuevo_${tipo}" placeholder="Nuevo valor de ${CONCEPTO_LABELS[tipo].toLowerCase()}" style="flex:1" onkeydown="if(event.key==='Enter')agregarConcepto('${tipo}')"><button class="btn ghost sm" onclick="agregarConcepto('${tipo}')">Agregar</button></div>
+    </div>
+  `).join('');
+}
+function agregarConcepto(tipo){
+  const input = document.getElementById('conceptoNuevo_'+tipo);
+  const valor = input.value.trim().toUpperCase();
+  if(!valor){ toast('Escribe un valor primero.'); return; }
+  if(!STATE.conceptos[tipo]) STATE.conceptos[tipo]=[];
+  if(STATE.conceptos[tipo].includes(valor)){ toast('Ese valor ya existe.'); return; }
+  STATE.conceptos[tipo].push(valor);
+  save(); sincronizarConceptos(); renderConceptosUI();
+  toast('Concepto agregado.');
+}
+function quitarConcepto(tipo, valor){
+  if(!confirm(`¿Quitar "${valor}" de la lista de ${CONCEPTO_LABELS[tipo].toLowerCase()}?`)) return;
+  STATE.conceptos[tipo] = (STATE.conceptos[tipo]||[]).filter(v=>v!==valor);
+  save(); sincronizarConceptos(); renderConceptosUI();
+}
+
+/* =================================================================
+   USUARIOS Y CONTRASEÑAS / INICIO DE SESIÓN
+   ================================================================= */
+let SESION_ACTUAL = null;
+async function hashTexto(txt){
+  try{
+    const enc = new TextEncoder().encode(txt);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){
+    // respaldo simple si crypto.subtle no está disponible (contextos no seguros)
+    let h=0; for(let i=0;i<txt.length;i++){ h=(h*31+txt.charCodeAt(i))>>>0; }
+    return 'x'+h.toString(16);
+  }
+}
+function renderUsuariosResumen(){
+  const cont = document.getElementById('usuariosResumen');
+  if(!cont) return;
+  const n = (STATE.usuarios||[]).length;
+  cont.innerHTML = n
+    ? `<p class="smallnote">${n} usuario(s) configurado(s). El sistema pedirá inicio de sesión al abrir.</p>`
+    : `<p class="smallnote">Sin usuarios configurados todavía — el sistema está abierto sin pedir sesión.</p>`;
+}
+function abrirUsuarios(){
+  const users = STATE.usuarios||[];
+  openModal(`
+    <h3>Usuarios</h3>
+    <div class="flex" style="margin-bottom:10px"><button class="btn clay sm" onclick="abrirUsuario(null)">+ Nuevo usuario</button></div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Usuario</th><th>Rol</th><th>Activo</th><th></th></tr></thead>
+    <tbody>${users.map(u=>`<tr>
+      <td>${u.usuario}</td><td>${u.rol}</td>
+      <td><span class="badge ${u.activo!==false?'ok':'bad'}">${u.activo!==false?'Sí':'No'}</span></td>
+      <td class="flex"><button class="btn ghost sm" onclick="abrirUsuario('${u.id}')">Editar</button><button class="btn danger sm" onclick="borrarUsuario('${u.id}')">Eliminar</button></td>
+    </tr>`).join('') || '<tr><td colspan="4" class="muted">Sin usuarios todavía.</td></tr>'}</tbody></table></div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal();renderAll()">Cerrar</button></div>
+  `);
+}
+function abrirUsuario(id){
+  const u = id ? STATE.usuarios.find(x=>x.id===id) : {id:'', usuario:'', rol:'Administrador', activo:true};
+  openModal(`
+    <h3>${id?'Editar usuario':'Nuevo usuario'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Usuario</label><input id="usrUsuario" value="${u.usuario}" ${id?'disabled':''}></div>
+      <div class="field"><label>Rol</label><select id="usrRol">
+        <option ${u.rol==='Administrador'?'selected':''}>Administrador</option>
+        <option ${u.rol==='Vendedor'?'selected':''}>Vendedor</option>
+        <option ${u.rol==='Producción'?'selected':''}>Producción</option>
+      </select></div>
+      <div class="field"><label>${id?'Nueva contraseña (dejar vacío para no cambiarla)':'Contraseña'}</label><input id="usrPassword" type="password"></div>
+      <div class="field"><label>Activo</label><select id="usrActivo"><option value="si" ${u.activo!==false?'selected':''}>Sí</option><option value="no" ${u.activo===false?'selected':''}>No</option></select></div>
+    </div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="abrirUsuarios()">Cancelar</button>
+      ${id?`<button class="btn danger" onclick="borrarUsuario('${id}')">Eliminar</button>`:''}
+      <button class="btn clay" onclick="guardarUsuario('${id||''}')">Guardar usuario</button>
+    </div>
+  `);
+}
+async function guardarUsuario(id){
+  const usuario = document.getElementById('usrUsuario').value.trim();
+  if(!usuario){ toast('Escribe un nombre de usuario.'); return; }
+  const rol = document.getElementById('usrRol').value;
+  const activo = document.getElementById('usrActivo').value==='si';
+  const password = document.getElementById('usrPassword').value;
+  if(!STATE.usuarios) STATE.usuarios=[];
+  let u = id ? STATE.usuarios.find(x=>x.id===id) : null;
+  if(!u && STATE.usuarios.some(x=>x.usuario.toLowerCase()===usuario.toLowerCase())){
+    toast('Ya existe un usuario con ese nombre.'); return;
+  }
+  if(!u){
+    if(!password){ toast('Captura una contraseña.'); return; }
+    u = {id:uid('usr'), usuario, hash:'', rol, activo};
+    STATE.usuarios.push(u);
+  } else {
+    u.rol = rol; u.activo = activo;
+  }
+  if(password){ u.hash = await hashTexto(password); }
+  save(); abrirUsuarios(); toast('Usuario guardado.');
+}
+function borrarUsuario(id){
+  if(!confirm('¿Eliminar este usuario?')) return;
+  STATE.usuarios = STATE.usuarios.filter(x=>x.id!==id);
+  save(); abrirUsuarios();
+}
+
+async function mostrarLogin(){
+  const overlay = document.getElementById('loginScreen');
+  const wrap = document.getElementById('loginLogoWrap');
+  wrap.innerHTML = STATE.config.logoBase64 ? `<img class="login-logo" src="${STATE.config.logoBase64}">` : '';
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginUsuario').value='';
+  document.getElementById('loginPassword').value='';
+  overlay.classList.add('active');
+}
+async function intentarLogin(){
+  const usuario = document.getElementById('loginUsuario').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errBox = document.getElementById('loginError');
+  const u = (STATE.usuarios||[]).find(x=>x.usuario.toLowerCase()===usuario.toLowerCase() && x.activo!==false);
+  if(!u){ errBox.textContent='Usuario no encontrado o inactivo.'; return; }
+  const hash = await hashTexto(password);
+  if(hash!==u.hash){ errBox.textContent='Contraseña incorrecta.'; return; }
+  SESION_ACTUAL = {id:u.id, usuario:u.usuario, rol:u.rol};
+  try{ sessionStorage.setItem('admy_session', JSON.stringify(SESION_ACTUAL)); }catch(e){}
+  document.getElementById('loginScreen').classList.remove('active');
+  actualizarUserbox();
+  renderAll();
+}
+function cerrarSesion(){
+  SESION_ACTUAL = null;
+  try{ sessionStorage.removeItem('admy_session'); }catch(e){}
+  mostrarLogin();
+}
+function actualizarUserbox(){
+  const box = document.getElementById('userbox');
+  if(!box) return;
+  if(SESION_ACTUAL){
+    box.style.display='block';
+    document.getElementById('userboxNombre').textContent = SESION_ACTUAL.usuario;
+    document.getElementById('userboxRol').textContent = SESION_ACTUAL.rol;
+  } else {
+    box.style.display='none';
+  }
+}
+async function verificarSesionInicial(){
+  if(!STATE.usuarios || !STATE.usuarios.length) return; // sin usuarios configurados: acceso abierto
+  try{
+    const raw = sessionStorage.getItem('admy_session');
+    if(raw){
+      const s = JSON.parse(raw);
+      const u = STATE.usuarios.find(x=>x.id===s.id && x.activo!==false);
+      if(u){ SESION_ACTUAL = {id:u.id, usuario:u.usuario, rol:u.rol}; actualizarUserbox(); return; }
+    }
+  }catch(e){}
+  await mostrarLogin();
 }
 
 function guardarConfig(){
@@ -1535,9 +2338,17 @@ function dataCompras(){ return STATE.compras.map(c=>({Folio:c.folio,Fecha:c.fech
 function dataVentas(){ return STATE.ventas.map(v=>({Factura:v.folio,Fecha:v.fecha,Cliente:v.cliente,'Orden origen':v.ordenFolio,Modelo:v.modelo,Cantidad:v.cantidad,'Precio unitario':v.precioUnitario,Total:v.total,Costo:v.costo,Utilidad:v.utilidad,Condición:v.condicion})); }
 function dataGastos(){ return STATE.gastos.map(g=>({Folio:g.folio,Fecha:g.fecha,Categoría:g.categoria,Concepto:g.concepto,Importe:g.importe,Condición:g.condicion})); }
 function dataCartera(tipo){ const out=[]; Object.entries(STATE[tipo]).forEach(([n,movs])=>movs.forEach(m=>out.push({Nombre:n,Fecha:m.fecha,Concepto:m.concepto,Tipo:m.tipo,Importe:m.monto}))); return out; }
+function dataNomina(){
+  const out=[];
+  (STATE.nomina||[]).forEach(n=>n.items.forEach(it=>{
+    const total = (Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0);
+    out.push({Folio:n.folio,'Periodo inicio':n.periodoInicio,'Periodo fin':n.periodoFin,Empleado:it.nombre,Días:it.dias,'Salario diario':it.salarioDiario,Extras:it.extras||0,Descuentos:it.descuentos||0,Total:total});
+  }));
+  return out;
+}
 
 function exportExcelModulo(nombre){
-  const map = {Ordenes:dataOrdenes, Costeo:dataCosteo, Inventario:dataInventario, Compras:dataCompras, Ventas:dataVentas, Gastos:dataGastos, CxC:()=>dataCartera('clientes'), CxP:()=>dataCartera('proveedores')};
+  const map = {Ordenes:dataOrdenes, Costeo:dataCosteo, Inventario:dataInventario, Compras:dataCompras, Ventas:dataVentas, Gastos:dataGastos, Nomina:dataNomina, CxC:()=>dataCartera('clientes'), CxP:()=>dataCartera('proveedores')};
   const rows = map[nombre]();
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom(rows.length?rows:[{Aviso:'Sin datos'}]), nombre.slice(0,31));
@@ -1552,6 +2363,7 @@ function exportExcelCompleto(){
   XLSX.utils.book_append_sheet(wb, sheetFrom(dataCompras()), 'Compras');
   XLSX.utils.book_append_sheet(wb, sheetFrom(dataVentas()), 'Ventas');
   XLSX.utils.book_append_sheet(wb, sheetFrom(dataGastos()), 'Gastos');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataNomina()), 'Nomina');
   XLSX.utils.book_append_sheet(wb, sheetFrom(dataCartera('clientes')), 'CxC');
   XLSX.utils.book_append_sheet(wb, sheetFrom(dataCartera('proveedores')), 'CxP');
   XLSX.writeFile(wb, `ArtesaniasDMitzy_Completo_${todayStr()}.xlsx`);
@@ -1574,6 +2386,7 @@ function exportPDFModulo(titulo){
     'Compras': [['Folio','Fecha','Proveedor','Material','Cantidad','Importe','Cond.'], STATE.compras.map(c=>[c.folio,c.fecha,c.proveedor,(materialById(c.materialId)||{}).nombre,num(c.cantidad,2),money(c.importe),c.condicion])],
     'Ventas': [['Factura','Fecha','Cliente','Origen','Cant.','Total','Utilidad','Cond.'], STATE.ventas.map(v=>[v.folio,v.fecha,v.cliente,v.ordenFolio,v.cantidad,money(v.total),money(v.utilidad),v.condicion])],
     'Gastos': [['Folio','Fecha','Categoría','Concepto','Importe','Cond.'], STATE.gastos.map(g=>[g.folio,g.fecha,g.categoria,g.concepto,money(g.importe),g.condicion])],
+    'Nómina': [['Folio','Periodo','Empleado','Días','Salario diario','Total'], (STATE.nomina||[]).flatMap(n=>n.items.map(it=>[n.folio, n.periodoInicio+' a '+n.periodoFin, it.nombre, it.dias, money(it.salarioDiario), money((Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0))]))],
     'Cuentas por cobrar': [['Cliente','Cargos','Abonos','Saldo'], Object.entries(STATE.clientes).map(([n,m])=>{const s=saldoCartera(m);return [n,money(s.cargos),money(s.abonos),money(s.saldo)];})],
     'Cuentas por pagar': [['Proveedor','Cargos','Abonos','Saldo'], Object.entries(STATE.proveedores).map(([n,m])=>{const s=saldoCartera(m);return [n,money(s.cargos),money(s.abonos),money(s.saldo)];})],
   };
@@ -1593,8 +2406,8 @@ function generarFichaOrdenPDF(id){
   pdfHeader(doc, 'Ficha de orden de producción '+o.folio);
   doc.setFontSize(9);
   doc.text('Fecha: '+o.fecha+'    Estado: '+o.estado+'    Pares totales: '+(o.necesidades?o.necesidades.total:0), 14, 34);
-  const headLineas = ['Cliente','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
-  const bodyLineas = o.lineas.map(l=>[l.cliente||'EXTRA', l.marca||'-', l.planta, l.cuña, l.suela, l.cerco, ...SIZES.map(sz=>l.tallas[sz]||0), SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0), l.comentarios||'']);
+  const headLineas = ['Cliente','Modelo','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
+  const bodyLineas = o.lineas.map(l=>[l.cliente||'EXTRA', l.modelo||'-', l.marca||'-', l.planta, l.cuña, l.suela, l.cerco, ...SIZES.map(sz=>l.tallas[sz]||0), SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0), l.comentarios||'']);
   doc.autoTable({head:[headLineas], body:bodyLineas, startY:40, styles:{fontSize:6.5}, headStyles:{fillColor:[47,72,88]}});
   let y = doc.lastAutoTable.finalY+8;
   if(o.necesidades){
@@ -1716,7 +2529,7 @@ function generarHojaCorteExcel(id){
 
 function dataOrdenLineasSolo(o){
   return o.lineas.map(l=>{
-    const row = {Cliente:l.cliente||'EXTRA', Marca:l.marca||'', Planta:l.planta, Cuña:l.cuña, Suela:l.suela, Cerco:l.cerco};
+    const row = {Cliente:l.cliente||'EXTRA', Modelo:l.modelo||'', Marca:l.marca||'', Planta:l.planta, Cuña:l.cuña, Suela:l.suela, Cerco:l.cerco};
     SIZES.forEach(sz=>row[sz]=l.tallas[sz]||0);
     row['Total'] = SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0);
     row['Comentarios'] = l.comentarios||'';
@@ -1728,7 +2541,7 @@ function exportOrdenSoloExcel(id){
   const wb = XLSX.utils.book_new();
   const rows = dataOrdenLineasSolo(o);
   const ws = sheetFrom(rows.length?rows:[{Aviso:'Sin líneas capturadas'}]);
-  ws['!cols'] = [{wch:16},{wch:12},{wch:11},{wch:10},{wch:10},{wch:10}, ...SIZES.map(()=>({wch:5})), {wch:7},{wch:34}];
+  ws['!cols'] = [{wch:16},{wch:12},{wch:12},{wch:11},{wch:10},{wch:10},{wch:10}, ...SIZES.map(()=>({wch:5})), {wch:7},{wch:34}];
   XLSX.utils.book_append_sheet(wb, ws, ('Orden '+o.folio).slice(0,31));
   setLandscape(wb, true);
   XLSX.writeFile(wb, `OrdenProduccion_${o.folio}_SinCosto.xlsx`);
@@ -1740,8 +2553,8 @@ function exportOrdenSoloPDF(id){
   const doc = new jsPDF({orientation:'landscape'});
   pdfHeader(doc, 'Orden de producción '+o.folio+' (sin costos)');
   doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
-  const head = ['Cliente','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
-  const body = o.lineas.map(l=>[l.cliente||'EXTRA', l.marca||'-', l.planta, l.cuña, l.suela, l.cerco, ...SIZES.map(sz=>l.tallas[sz]||0), SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0), l.comentarios||'']);
+  const head = ['Cliente','Modelo','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
+  const body = o.lineas.map(l=>[l.cliente||'EXTRA', l.modelo||'-', l.marca||'-', l.planta, l.cuña, l.suela, l.cerco, ...SIZES.map(sz=>l.tallas[sz]||0), SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0), l.comentarios||'']);
   doc.autoTable({head:[head], body, startY:40, styles:{fontSize:7}, headStyles:{fillColor:[47,72,88]}});
   doc.save(`OrdenProduccion_${o.folio}_SinCosto.pdf`);
   toast('PDF de orden (sin costos, horizontal) generado.');
@@ -1845,7 +2658,7 @@ function verFacturaPDF(id){
   const head = esTicket ? [['Producto','Cant','P.Unit','Importe']] : [['Producto','Origen','Cantidad','Precio unit.','Importe']];
   const body = items.map(it=>{
     const importe = it.importe!=null ? it.importe : it.cantidad*it.precioUnitario;
-    return esTicket ? [it.modelo, it.cantidad, money(it.precioUnitario), money(importe)] : [it.modelo, it.ordenFolio||'-', it.cantidad, money(it.precioUnitario), money(importe)];
+    return esTicket ? [(it.descripcion!=null?it.descripcion:it.modelo), it.cantidad, money(it.precioUnitario), money(importe)] : [(it.descripcion!=null?it.descripcion:it.modelo), it.ordenFolio||'-', it.cantidad, money(it.precioUnitario), money(importe)];
   });
   doc.autoTable({head, body, startY:y, styles:{fontSize:esTicket?6.5:9}, headStyles:{fillColor:accent}, margin:{left:marginX, right:marginX}});
   y = doc.lastAutoTable.finalY + (esTicket?5:10);
@@ -1915,6 +2728,7 @@ function restaurarBackup(){
       if(note) note.textContent = info.dataFile;
     }catch(e){}
   }
+  await verificarSesionInicial();
 })();
 </script>
 </body>
