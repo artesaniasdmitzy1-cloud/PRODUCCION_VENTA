@@ -1,0 +1,44 @@
+{
+  "name": "artesanias-d-mitzy",
+  "version": "1.0.0",
+  "description": "Sistema administrativo de escritorio para Artesanías D Mitzy",
+  "main": "main.js",
+  "author": "Artesanías D Mitzy",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.artesaniasdmitzy.sistema",
+    "productName": "Artesanias D Mitzy",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Artesanias D Mitzy"
+    }
+  }
+}

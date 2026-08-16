@@ -1,0 +1,1921 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artesanías D Mitzy — Sistema Administrativo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --paper:#F7F2E9;
+  --paper-2:#EFE6D3;
+  --ink:#2B2320;
+  --ink-soft:#6B5E52;
+  --indigo:#2F4858;
+  --indigo-2:#233947;
+  --clay:#B5562F;
+  --clay-2:#94431F;
+  --gold:#C9A227;
+  --good:#3F7D53;
+  --bad:#B23A34;
+  --line:#DCD0B8;
+  --card:#FFFDF7;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{
+  font-family:Georgia,'Times New Roman',serif;
+  font-weight:700;
+  color:var(--indigo-2);
+  margin:0 0 4px 0;
+}
+.mono{font-family:'Consolas','Courier New',monospace;}
+a{color:var(--clay);}
+button{cursor:pointer;font-family:inherit;}
+
+/* ---- layout ---- */
+#app{display:flex;min-height:100vh;}
+#sidebar{
+  width:230px;flex:0 0 230px;
+  background:var(--indigo);
+  color:#EDEEE6;
+  padding:18px 0;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+#sidebar .brand{
+  padding:0 18px 16px 18px;
+  border-bottom:1px dashed rgba(255,255,255,.25);
+  margin-bottom:10px;
+}
+#sidebar .brand .logo{
+  font-family:Georgia,serif;font-size:20px;font-weight:700;color:#fff;line-height:1.15;
+}
+#sidebar .brand .sub{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-top:4px;}
+.navgroup{margin:10px 0;}
+.navlabel{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);padding:6px 18px;}
+.navbtn{
+  display:flex;align-items:center;gap:10px;
+  width:100%;text-align:left;background:none;border:none;color:#EDEEE6;
+  padding:9px 18px;font-size:13.5px;border-left:3px solid transparent;
+}
+.navbtn:hover{background:rgba(255,255,255,.06);}
+.navbtn.active{background:rgba(255,255,255,.1);border-left-color:var(--clay);color:#fff;font-weight:600;}
+.navbtn .ic{width:18px;text-align:center;opacity:.85;}
+
+#main{flex:1;min-width:0;padding:22px 28px 60px 28px;}
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.topbar .titles{border-bottom:2px dashed var(--gold);padding-bottom:8px;}
+.topbar .titles .eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--clay);}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:12.5px;color:var(--ink-soft);}
+
+.view{display:none;}
+.view.active{display:block;}
+
+.grid{display:grid;gap:14px;}
+.grid.cols-4{grid-template-columns:repeat(4,1fr);}
+.grid.cols-3{grid-template-columns:repeat(3,1fr);}
+.grid.cols-2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:1000px){.grid.cols-4{grid-template-columns:repeat(2,1fr);}.grid.cols-3{grid-template-columns:repeat(2,1fr);}}
+
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;
+}
+.card.kpi .num{font-family:Georgia,serif;font-size:26px;font-weight:700;color:var(--indigo-2);}
+.card.kpi .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-top:2px;}
+.card.kpi{border-top:3px solid var(--clay);}
+.card.kpi.alt{border-top-color:var(--indigo);}
+.card.kpi.warn{border-top-color:var(--gold);}
+.card.kpi.good{border-top-color:var(--good);}
+
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:22px 0 10px 0;}
+.section-title h3{font-size:16px;}
+.section-title .actions{display:flex;gap:8px;}
+
+table{width:100%;border-collapse:collapse;background:var(--card);font-size:13px;}
+table.tbl{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+thead th{
+  background:var(--indigo);color:#fff;text-align:left;padding:8px 10px;font-size:11.5px;
+  text-transform:uppercase;letter-spacing:.04em;font-weight:600;
+}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--line);}
+tbody tr:hover{background:var(--paper-2);}
+tbody tr:last-child td{border-bottom:none;}
+td.num,th.num{text-align:right;font-family:'Consolas','Courier New',monospace;}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);}
+.tblwrap table{border:none;}
+
+.btn{
+  border:1px solid var(--indigo);background:var(--indigo);color:#fff;
+  padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;
+}
+.btn:hover{background:var(--indigo-2);}
+.btn.clay{background:var(--clay);border-color:var(--clay);}
+.btn.clay:hover{background:var(--clay-2);}
+.btn.ghost{background:transparent;color:var(--indigo);border:1px solid var(--indigo);}
+.btn.ghost:hover{background:var(--indigo);color:#fff;}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:5px;}
+.btn.danger{background:var(--bad);border-color:var(--bad);}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#2B2320;}
+.btn[disabled]{opacity:.45;cursor:not-allowed;}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.02em;}
+.badge.ok{background:#E4F0E7;color:var(--good);}
+.badge.warn{background:#FBF1D6;color:#8A6D0B;}
+.badge.bad{background:#F7E3E1;color:var(--bad);}
+.badge.info{background:#E4EBEF;color:var(--indigo);}
+
+.formgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
+.formgrid.c2{grid-template-columns:repeat(2,1fr);}
+.formgrid.c3{grid-template-columns:repeat(3,1fr);}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);}
+.field input,.field select,.field textarea{
+  border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:13.5px;background:#fff;color:var(--ink);
+  font-family:inherit;
+}
+.field textarea{resize:vertical;min-height:50px;}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap;}
+.tab{padding:8px 14px;font-size:13px;border:none;background:none;border-bottom:2px solid transparent;color:var(--ink-soft);font-weight:600;}
+.tab.active{color:var(--clay);border-bottom-color:var(--clay);}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(43,35,32,.5);z-index:50;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px;}
+.modal-bg.active{display:flex;}
+.modal{background:var(--paper);border-radius:var(--radius);max-width:820px;width:100%;padding:20px 22px;border:1px solid var(--line);}
+.modal h3{border-bottom:2px dashed var(--gold);padding-bottom:8px;margin-bottom:14px;}
+.modal .close-row{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
+
+.lines-table input, .lines-table select{width:100%;padding:4px 5px;font-size:12px;}
+.stitch{border-top:1px dashed var(--gold);margin:16px 0;}
+.muted{color:var(--ink-soft);font-size:12.5px;}
+.empty{padding:26px;text-align:center;color:var(--ink-soft);border:1px dashed var(--line);border-radius:var(--radius);background:var(--card);}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--indigo-2);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:99;display:none;}
+.right{text-align:right;}
+.smallnote{font-size:11.5px;color:var(--ink-soft);margin-top:4px;}
+.flex{display:flex;gap:8px;align-items:center;}
+.grow{flex:1;}
+hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar">
+    <div class="brand">
+      <div class="logo">Artesanías<br>D Mitzy</div>
+      <div class="sub">Sistema Administrativo</div>
+    </div>
+    <div class="navgroup">
+      <button class="navbtn active" data-view="dashboard"><span class="ic">◆</span> Panel general</button>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">Operación</div>
+      <button class="navbtn" data-view="produccion"><span class="ic">✂</span> Producción</button>
+      <button class="navbtn" data-view="costeo"><span class="ic">Σ</span> Costeo</button>
+      <button class="navbtn" data-view="inventario"><span class="ic">▤</span> Inventario</button>
+      <button class="navbtn" data-view="compras"><span class="ic">⇩</span> Compras</button>
+      <button class="navbtn" data-view="ventas"><span class="ic">⇧</span> Ventas / POS</button>
+      <button class="navbtn" data-view="gastos"><span class="ic">⌘</span> Gastos</button>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">Carteras</div>
+      <button class="navbtn" data-view="cxc"><span class="ic">$→</span> Por cobrar</button>
+      <button class="navbtn" data-view="cxp"><span class="ic">$←</span> Por pagar</button>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">Sistema</div>
+      <button class="navbtn" data-view="reportes"><span class="ic">▦</span> Reportes</button>
+      <button class="navbtn" data-view="respaldo"><span class="ic">☁</span> Respaldo / Nube</button>
+      <button class="navbtn" data-view="config"><span class="ic">⚙</span> Configuración</button>
+    </div>
+  </nav>
+
+  <main id="main">
+
+    <!-- ============ DASHBOARD ============ -->
+    <section class="view active" id="view-dashboard">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Panel general</div><h1>Hoy en el taller</h1></div>
+        <span class="pill" id="fechaHoy"></span>
+      </div>
+      <div class="grid cols-4" id="kpiRow"></div>
+
+      <div class="section-title"><h3>Producción reciente</h3><div class="actions"><button class="btn ghost sm" onclick="go('produccion')">Ver módulo →</button></div></div>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>Folio</th><th>Fecha</th><th class="num">Pares</th><th class="num">Costo unitario</th><th>Estado</th></tr></thead><tbody id="dashOrdenes"></tbody></table></div>
+
+      <div class="grid cols-2" style="margin-top:20px">
+        <div>
+          <div class="section-title"><h3>Clientes con saldo mayor</h3></div>
+          <div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="num">Saldo</th></tr></thead><tbody id="dashCxc"></tbody></table></div>
+        </div>
+        <div>
+          <div class="section-title"><h3>Proveedores con saldo mayor</h3></div>
+          <div class="tblwrap"><table class="tbl"><thead><tr><th>Proveedor</th><th class="num">Saldo</th></tr></thead><tbody id="dashCxp"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="section-title"><h3>Materiales con existencia baja</h3></div>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>Material</th><th>Almacén</th><th class="num">Existencia</th><th class="num">Mínimo</th></tr></thead><tbody id="dashStockBajo"></tbody></table></div>
+    </section>
+
+    <!-- ============ PRODUCCION ============ -->
+    <section class="view" id="view-produccion">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Operación</div><h1>Órdenes de producción</h1></div>
+        <button class="btn clay" onclick="abrirOrden(null)">+ Nueva orden de producción</button>
+      </div>
+      <p class="muted">Cada orden reproduce la lógica de tu hoja "OP": líneas por modelo (cuña / suela / planta / cerco / marca / cliente) capturadas por talla 17–27. Al confirmar la orden, el sistema calcula material requerido, descuenta inventario de materia prima y da entrada a producto terminado.</p>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Folio</th><th>Fecha</th><th class="num">Pares</th><th>Clientes</th><th class="num">Costo unit.</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="tblOrdenes"></tbody>
+      </table></div>
+    </section>
+
+    <!-- ============ COSTEO ============ -->
+    <section class="view" id="view-costeo">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Operación</div><h1>Costeo de producción</h1></div>
+      </div>
+      <p class="muted">Integra materia prima directa e indirecta consumida, mano de obra y (opcionalmente) gastos indirectos del periodo, para obtener el costo unitario y acumulado por orden — igual que tu hoja "CTO".</p>
+      <div class="grid cols-4" id="costeoKpis"></div>
+      <div class="section-title"><h3>Costo por orden</h3></div>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Folio</th><th>Fecha</th><th class="num">Pares</th><th class="num">Materia prima</th><th class="num">Mano de obra</th><th class="num">Gastos ind.</th><th class="num">Inversión total</th><th class="num">Costo unitario</th><th>Detalle</th></tr></thead>
+        <tbody id="tblCosteo"></tbody>
+      </table></div>
+    </section>
+
+    <!-- ============ INVENTARIO ============ -->
+    <section class="view" id="view-inventario">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Almacenes</div><h1>Inventario</h1></div>
+        <div class="actions flex">
+          <button class="btn ghost" onclick="abrirMaterial(null)">+ Material</button>
+          <button class="btn clay" onclick="abrirAjuste()">Ajuste manual</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="tabDirecta" onclick="switchTab(this,'tabDirecta')">Materia prima directa</button>
+        <button class="tab" data-tab="tabIndirecta" onclick="switchTab(this,'tabIndirecta')">Materia prima indirecta</button>
+        <button class="tab" data-tab="tabPT" onclick="switchTab(this,'tabPT')">Producto terminado</button>
+      </div>
+      <div id="tabDirecta" class="tabpane">
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Material</th><th>Unidad</th><th class="num">Existencia</th><th class="num">Mínimo</th><th class="num">Costo unit.</th><th class="num">Valor</th><th>Acciones</th></tr></thead><tbody id="tblInvDirecta"></tbody></table></div>
+      </div>
+      <div id="tabIndirecta" class="tabpane" style="display:none">
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Material</th><th>Unidad</th><th class="num">Existencia</th><th class="num">Mínimo</th><th class="num">Costo unit.</th><th class="num">Valor</th><th>Acciones</th></tr></thead><tbody id="tblInvIndirecta"></tbody></table></div>
+      </div>
+      <div id="tabPT" class="tabpane" style="display:none">
+        <p class="muted">Lotes de producto terminado generados al confirmar cada orden de producción. Cada lote conserva el folio de origen y su costo unitario para calcular la utilidad de cada venta.</p>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Lote</th><th>Folio origen</th><th>Modelo</th><th class="num">Pares disponibles</th><th class="num">Costo unit.</th><th class="num">Valor</th></tr></thead><tbody id="tblInvPT"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ============ COMPRAS ============ -->
+    <section class="view" id="view-compras">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Materia prima</div><h1>Compras</h1></div>
+        <button class="btn clay" onclick="abrirCompra(null)">+ Registrar compra</button>
+      </div>
+      <p class="muted">Cada compra clasifica el material como directa o indirecta, entra al almacén correspondiente y —si es a crédito— genera automáticamente el movimiento en cuentas por pagar.</p>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Folio</th><th>Fecha</th><th>Proveedor</th><th>Material</th><th>Almacén</th><th class="num">Cantidad</th><th class="num">Importe</th><th>Condición</th><th>Acciones</th></tr></thead>
+        <tbody id="tblCompras"></tbody>
+      </table></div>
+    </section>
+
+    <!-- ============ VENTAS ============ -->
+    <section class="view" id="view-ventas">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Punto de venta</div><h1>Ventas</h1></div>
+        <div class="actions flex">
+          <button class="btn ghost" onclick="verCatalogoClientes()">Clientes</button>
+          <button class="btn ghost" onclick="abrirDisenoFactura()">🎨 Diseño de factura</button>
+          <button class="btn clay" onclick="abrirVenta(null)">+ Nueva venta</button>
+        </div>
+      </div>
+      <p class="muted">Carrito de venta: agrega uno o varios productos, edita pares y precio por línea, da de alta clientes al vuelo y cobra. Descuenta del inventario de producto terminado y calcula utilidad contra el costo real de cada orden de origen.</p>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Factura</th><th>Fecha</th><th>Cliente</th><th>Origen (folio)</th><th class="num">Pares</th><th class="num">Total</th><th class="num">Utilidad</th><th>Condición</th><th>Acciones</th></tr></thead>
+        <tbody id="tblVentas"></tbody>
+      </table></div>
+    </section>
+
+    <!-- ============ GASTOS ============ -->
+    <section class="view" id="view-gastos">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Fabricación y operación</div><h1>Gastos</h1></div>
+        <button class="btn clay" onclick="abrirGasto(null)">+ Registrar gasto</button>
+      </div>
+      <p class="muted">Los gastos clasificados como "Fabricación indirecta" pueden prorratearse entre las órdenes del periodo desde el módulo de Costeo (ver Configuración).</p>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Folio</th><th>Fecha</th><th>Categoría</th><th>Concepto</th><th class="num">Importe</th><th>Condición</th><th>Acciones</th></tr></thead>
+        <tbody id="tblGastos"></tbody>
+      </table></div>
+    </section>
+
+    <!-- ============ CxC ============ -->
+    <section class="view" id="view-cxc">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Cartera</div><h1>Cuentas por cobrar</h1></div>
+        <button class="btn clay" onclick="abrirMovCxc(null)">+ Movimiento manual</button>
+      </div>
+      <div class="grid cols-3" id="cxcKpis"></div>
+      <div class="section-title"><h3>Saldos por cliente</h3></div>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="num">Cargos</th><th class="num">Abonos</th><th class="num">Saldo</th><th>Detalle</th></tr></thead><tbody id="tblCxcResumen"></tbody></table></div>
+    </section>
+
+    <!-- ============ CxP ============ -->
+    <section class="view" id="view-cxp">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Cartera</div><h1>Cuentas por pagar</h1></div>
+        <button class="btn clay" onclick="abrirMovCxp(null)">+ Movimiento manual</button>
+      </div>
+      <div class="grid cols-3" id="cxpKpis"></div>
+      <div class="section-title"><h3>Saldos por proveedor</h3></div>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>Proveedor</th><th class="num">Cargos</th><th class="num">Abonos</th><th class="num">Saldo</th><th>Detalle</th></tr></thead><tbody id="tblCxpResumen"></tbody></table></div>
+    </section>
+
+    <!-- ============ REPORTES ============ -->
+    <section class="view" id="view-reportes">
+      <div class="topbar"><div class="titles"><div class="eyebrow">Consulta</div><h1>Reportes en Excel y PDF</h1></div></div>
+      <p class="muted">Genera archivos descargables por módulo, listos para consultar fuera del sistema o adjuntar a tu respaldo por correo.</p>
+      <div class="grid cols-3" id="reportCards"></div>
+    </section>
+
+    <!-- ============ RESPALDO ============ -->
+    <section class="view" id="view-respaldo">
+      <div class="topbar"><div class="titles"><div class="eyebrow">Sistema</div><h1>Respaldo y resguardo en la nube</h1></div></div>
+      <div class="card" style="max-width:720px">
+        <h3>Cómo funciona el resguardo</h3>
+        <p class="respaldo-nota-navegador">Esta aplicación guarda toda la información <b>dentro de este navegador</b> (no en un servidor). Eso la hace privada y funciona sin internet, pero significa que <b>tú</b> debes respaldarla periódicamente. No es técnicamente posible que este sistema se conecte solo, de forma segura, a tu cuenta de Gmail o Drive — eso requeriría darle tus contraseñas, algo que este sistema nunca te pedirá.</p>
+        <p class="smallnote">Archivo de datos en este equipo: <span id="rutaArchivoDatos" class="mono">—</span></p>
+        <p>En su lugar, este botón hace dos cosas por ti:</p>
+        <ol>
+          <li>Descarga un archivo de respaldo (<span class="mono">.json</span>) con todos tus datos.</li>
+          <li>Abre Gmail con un correo ya redactado, listo para que adjuntes ese archivo descargado y lo envíes a tu propia cuenta (o la guardes en Drive).</li>
+        </ol>
+        <div class="flex" style="margin-top:12px">
+          <button class="btn clay" onclick="respaldarYCorreo()">☁ Descargar respaldo y abrir Gmail</button>
+          <button class="btn ghost" onclick="descargarBackup()">Solo descargar .json</button>
+        </div>
+        <hr class="dash">
+        <h3>Restaurar un respaldo</h3>
+        <p class="muted">Sube un archivo .json exportado previamente. Esto reemplaza todos los datos actuales del sistema.</p>
+        <input type="file" id="fileRestore" accept="application/json">
+        <div style="margin-top:8px"><button class="btn danger" onclick="restaurarBackup()">Restaurar desde archivo</button></div>
+        <hr class="dash">
+        <p class="smallnote">Recomendación: descarga un respaldo al terminar cada día de trabajo, y guarda la carpeta de descargas sincronizada con Google Drive de escritorio para tener copia automática en la nube.</p>
+      </div>
+    </section>
+
+    <!-- ============ CONFIG ============ -->
+    <section class="view" id="view-config">
+      <div class="topbar"><div class="titles"><div class="eyebrow">Sistema</div><h1>Configuración</h1></div></div>
+      <div class="card" style="max-width:640px">
+        <h3>Datos de la empresa</h3>
+        <div class="formgrid c2">
+          <div class="field"><label>Nombre</label><input id="cfgNombre"></div>
+          <div class="field"><label>RFC (opcional)</label><input id="cfgRfc"></div>
+        </div>
+        <div class="formgrid c2">
+          <div class="field"><label>Dirección</label><input id="cfgDireccion"></div>
+          <div class="field"><label>Correo de respaldo (Gmail)</label><input id="cfgCorreo" placeholder="tunombre@gmail.com"></div>
+        </div>
+        <hr class="dash">
+        <h3>Reglas de costeo</h3>
+        <div class="formgrid c2">
+          <div class="field"><label>Mano de obra por defecto (por orden)</label><input id="cfgManoObra" type="number" step="0.01"></div>
+          <div class="field"><label>Prorratear gastos de fabricación indirecta al costeo</label>
+            <select id="cfgProrratear"><option value="si">Sí</option><option value="no">No</option></select>
+          </div>
+        </div>
+        <button class="btn clay" onclick="guardarConfig()">Guardar configuración</button>
+      </div>
+      <div class="card" style="max-width:640px;margin-top:14px">
+        <h3>Catálogo de materiales y tasas por par</h3>
+        <p class="muted">Estas tasas replican tu hoja "CTO" (inversión por par y costo unitario). Edítalas si cambian tus consumos o precios.</p>
+        <button class="btn ghost" onclick="go('inventario')">Ir a Inventario para editar materiales →</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modalBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =================================================================
+   ARTESANÍAS D MITZY — SISTEMA ADMINISTRATIVO
+   Módulos: Producción · Costeo · Inventario · Compras · Ventas ·
+            Gastos · Cuentas por cobrar · Cuentas por pagar
+   Persistencia: localStorage (navegador local del equipo)
+   ================================================================= */
+
+const SIZES = [17,18,19,20,21,22,23,24,25,26,27];
+const CUÑAS = ['CANELA','NEGRA','BLANCA','CANELA 1','OTRA'];
+const SUELAS = ['GOTA','CACAHUATE','BLANCA','CANELA 1','CANELA 2','CREPE','OTRA'];
+const PLANTAS = ['VAC','PASADA','CERCO','CALIFORNIA','NEGRO','OTRA'];
+const CERCOS = ['NATURAL','NEGRO','OTRO'];
+
+const DEFAULT_MATERIALES = [
+  {id:'m1',  nombre:'CHINELA VAQUETA',      clasificacion:'directa',   base:'TOTAL',        inver:6.475, costo:1.8,  unidad:'pza', stock:0, minimo:20},
+  {id:'m2',  nombre:'VAC',                  clasificacion:'directa',   base:'PLANTA_VAC',    inver:6.475, costo:1.8,  unidad:'pza', stock:0, minimo:10},
+  {id:'m3',  nombre:'PASADA',               clasificacion:'directa',   base:'PLANTA_PASADA', inver:6.475, costo:2.7,  unidad:'pza', stock:0, minimo:10},
+  {id:'m4',  nombre:'CERCO',                clasificacion:'directa',   base:'CERCO_CALC',    inver:2,     costo:1.5,  unidad:'m',   stock:0, minimo:10},
+  {id:'m5',  nombre:'GUARDAFANGO',          clasificacion:'directa',   base:'TOTAL',         inver:1,     costo:5,    unidad:'pza', stock:0, minimo:10},
+  {id:'m6',  nombre:'REMACHE',              clasificacion:'indirecta', base:'TOTAL',         inver:14,    costo:0.26, unidad:'pza', stock:0, minimo:50},
+  {id:'m7',  nombre:'ADORNO FLOR',          clasificacion:'indirecta', base:'TOTAL',         inver:18,    costo:0.01, unidad:'pza', stock:0, minimo:50},
+  {id:'m8',  nombre:'PEGAMENTO',            clasificacion:'indirecta', base:'TOTAL',         inver:1,     costo:3.5,  unidad:'lt',  stock:0, minimo:5},
+  {id:'m9',  nombre:'CUÑA CANELA / NEGRA',  clasificacion:'directa',   base:'TOTAL',         inver:1,     costo:6,    unidad:'par', stock:0, minimo:10},
+  {id:'m10', nombre:'BOSTON',               clasificacion:'indirecta', base:'TOTAL',         inver:1,     costo:0.5,  unidad:'pza', stock:0, minimo:10},
+  {id:'m11', nombre:'ARGOLLA',              clasificacion:'indirecta', base:'TOTAL',         inver:1,     costo:12,   unidad:'pza', stock:0, minimo:10},
+  {id:'m12', nombre:'EVILLA',               clasificacion:'indirecta', base:'TOTAL',         inver:2,     costo:0.5,  unidad:'pza', stock:0, minimo:10},
+  {id:'m13', nombre:'PINTURA',              clasificacion:'indirecta', base:'TOTAL',         inver:2,     costo:0.75, unidad:'lt',  stock:0, minimo:5},
+  {id:'m14', nombre:'BOLSA DE EMPAQUE',     clasificacion:'indirecta', base:'TOTAL',         inver:1,     costo:0.5,  unidad:'pza', stock:0, minimo:20},
+  {id:'m15', nombre:'PERIODICO',            clasificacion:'indirecta', base:'TOTAL',         inver:1,     costo:1.1,  unidad:'kg',  stock:0, minimo:5},
+  {id:'m16', nombre:'HILO',                 clasificacion:'directa',   base:'TOTAL',         inver:2,     costo:0.45, unidad:'m',   stock:0, minimo:20},
+  {id:'m17', nombre:'GOTA',                 clasificacion:'directa',   base:'SUELA_GOTA',     inver:2,     costo:4.2,  unidad:'par', stock:0, minimo:10},
+  {id:'m18', nombre:'CANELA 1 (SUELA)',     clasificacion:'directa',   base:'SUELA_CANELA1',  inver:2,     costo:16,   unidad:'par', stock:0, minimo:10},
+  {id:'m19', nombre:'CREPE (SUELA)',        clasificacion:'directa',   base:'SUELA_CREPE',    inver:2,     costo:16,   unidad:'par', stock:0, minimo:10},
+];
+
+const BASE_LABELS = {
+  TOTAL:'Total de pares de la orden',
+  PLANTA_VAC:'Pares con planta = VAC',
+  PLANTA_PASADA:'Pares con planta = PASADA',
+  CERCO_CALC:'Total − VAC − PASADA',
+  SUELA_GOTA:'Pares con suela = GOTA',
+  SUELA_CANELA1:'Pares con suela = CANELA 1',
+  SUELA_CREPE:'Pares con suela = CREPE',
+};
+
+function emptyState(){
+  return {
+    config:{ nombre:'Artesanías D Mitzy', rfc:'', direccion:'', correo:'', manoObraDefault:6650, prorratear:'si',
+      facturaTamano:'carta', facturaColor:'#2F4858', facturaPie:'Gracias por su compra — Artesanías D Mitzy.', logoBase64:null },
+    materiales: JSON.parse(JSON.stringify(DEFAULT_MATERIALES)),
+    ordenes: [],
+    productoTerminado: [],
+    compras: [],
+    ventas: [],
+    gastos: [],
+    clientes: {},      // nombre -> [{fecha,tipo,concepto,monto,ref}]  (cartera / cuentas por cobrar)
+    clientesInfo: {},  // nombre -> {telefono, correo, direccion, notas}  (catálogo / alta de clientes)
+    proveedores: {},
+    folios:{ orden:1, compra:1, venta:1, gasto:1 }
+  };
+}
+
+let STATE = null;
+const IS_DESKTOP = typeof window.dataAPI !== 'undefined';
+
+async function load(){
+  let raw = null;
+  try{
+    raw = IS_DESKTOP ? await window.dataAPI.load() : localStorage.getItem('admy_data_v1');
+  }catch(e){ raw = null; }
+  try{
+    STATE = raw ? JSON.parse(raw) : emptyState();
+    if(!STATE.materiales || !STATE.materiales.length) STATE.materiales = JSON.parse(JSON.stringify(DEFAULT_MATERIALES));
+    if(!STATE.folios) STATE.folios = { orden:1, compra:1, venta:1, gasto:1 };
+    if(!STATE.clientesInfo) STATE.clientesInfo = {};
+    if(!STATE.config.facturaTamano) STATE.config.facturaTamano = 'carta';
+    if(!STATE.config.facturaColor) STATE.config.facturaColor = '#2F4858';
+    if(STATE.config.facturaPie===undefined) STATE.config.facturaPie = 'Gracias por su compra — Artesanías D Mitzy.';
+  }catch(e){ STATE = emptyState(); }
+}
+function save(){
+  const json = JSON.stringify(STATE);
+  if(IS_DESKTOP){ window.dataAPI.save(json); }
+  else{ localStorage.setItem('admy_data_v1', json); }
+}
+function uid(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function money(n){ n = Number(n)||0; return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function num(n,d){ n=Number(n)||0; return n.toLocaleString('es-MX',{minimumFractionDigits:d||0,maximumFractionDigits:d||2}); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(window._toastT); window._toastT=setTimeout(()=>t.style.display='none',2600); }
+function folio(prefix,key){ const n = STATE.folios[key]++; save(); return prefix+'-'+String(n).padStart(4,'0'); }
+
+/* ---------- navigation ---------- */
+function go(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  renderAll();
+}
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));
+function switchTab(btn,paneId){
+  const tabs = btn.parentElement.querySelectorAll('.tab');
+  tabs.forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  btn.parentElement.parentElement.querySelectorAll('.tabpane').forEach(p=>p.style.display='none');
+  document.getElementById(paneId).style.display='block';
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('active'); document.getElementById('modalBody').innerHTML=''; }
+function openModal(html){ document.getElementById('modalBody').innerHTML = html; document.getElementById('modalBg').classList.add('active'); }
+document.getElementById('modalBg').addEventListener('click',e=>{ if(e.target.id==='modalBg') closeModal(); });
+
+/* =================================================================
+   CÁLCULO DE NECESIDADES DE MATERIAL (réplica hoja CTO)
+   ================================================================= */
+function calcNecesidades(orden){
+  let total=0, vac=0, pasada=0, gota=0, canela1=0, crepe=0;
+  orden.lineas.forEach(l=>{
+    const t = SIZES.reduce((s,sz)=> s+(Number(l.tallas[sz])||0),0);
+    total += t;
+    if(l.planta==='VAC') vac+=t;
+    if(l.planta==='PASADA') pasada+=t;
+    if(l.suela==='GOTA') gota+=t;
+    if(l.suela==='CANELA 1') canela1+=t;
+    if(l.suela==='CREPE') crepe+=t;
+  });
+  const cerco = Math.max(0, total-vac-pasada);
+  const bases = {TOTAL:total,PLANTA_VAC:vac,PLANTA_PASADA:pasada,CERCO_CALC:cerco,SUELA_GOTA:gota,SUELA_CANELA1:canela1,SUELA_CREPE:crepe};
+  const detalle = STATE.materiales.map(m=>{
+    const baseCant = bases[m.base]||0;
+    const requerido = baseCant*m.inver;
+    const inversion = requerido*m.costo;
+    return {materialId:m.id, nombre:m.nombre, clasificacion:m.clasificacion, unidad:m.unidad, base:m.base, baseCant, inver:m.inver, costo:m.costo, requerido, inversion};
+  });
+  const invMateriales = detalle.reduce((s,d)=>s+d.inversion,0);
+  return {total,vac,pasada,cerco,gota,canela1,crepe,detalle,invMateriales};
+}
+
+function calcAcumulados(orden){
+  const porCuña = Object.fromEntries(CUÑAS.map(c=>[c, Object.fromEntries(SIZES.map(s=>[s,0]))]));
+  const porSuela = Object.fromEntries(SUELAS.map(c=>[c, Object.fromEntries(SIZES.map(s=>[s,0]))]));
+  const porPlanta = Object.fromEntries(PLANTAS.map(c=>[c, Object.fromEntries(SIZES.map(s=>[s,0]))]));
+  const porCerco = Object.fromEntries(CERCOS.map(c=>[c, Object.fromEntries(SIZES.map(s=>[s,0]))]));
+  orden.lineas.forEach(l=>{
+    SIZES.forEach(sz=>{
+      const cant = Number(l.tallas[sz])||0;
+      if(cant<=0) return;
+      if(porCuña[l.cuña]) porCuña[l.cuña][sz]+=cant;
+      if(porSuela[l.suela]) porSuela[l.suela][sz]+=cant;
+      if(porPlanta[l.planta]) porPlanta[l.planta][sz]+=cant;
+      if(porCerco[l.cerco]) porCerco[l.cerco][sz]+=cant;
+    });
+  });
+  function toRows(dict){
+    return Object.entries(dict).map(([nombre,tallas])=>{
+      const total = SIZES.reduce((s,sz)=>s+tallas[sz],0);
+      return {nombre, tallas, total};
+    }).filter(r=>r.total>0);
+  }
+  return { cuña:toRows(porCuña), suela:toRows(porSuela), planta:toRows(porPlanta), cerco:toRows(porCerco) };
+}
+
+function gastosIndirectosPeriodo(excludeCubiertos){
+  // suma de gastos categoría 'fabricacion' no marcados aún como aplicados
+  return STATE.gastos.filter(g=>g.categoria==='Fabricación indirecta').reduce((s,g)=>s+Number(g.importe||0),0);
+}
+function totalParesProducidos(){
+  return STATE.ordenes.filter(o=>o.estado==='confirmada').reduce((s,o)=>s+o.necesidades.total,0);
+}
+
+function calcCosteoOrden(orden){
+  const n = orden.necesidades;
+  const manoObra = Number(orden.manoObra||0);
+  let gastosInd = 0;
+  if(STATE.config.prorratear==='si'){
+    const totalGastosFab = gastosIndirectosPeriodo();
+    const totalPares = totalParesProducidos() || 1;
+    gastosInd = totalGastosFab * (n.total/totalPares);
+  }
+  const inversionTotal = n.invMateriales + manoObra + gastosInd;
+  const costoUnitario = n.total>0 ? inversionTotal/n.total : 0;
+  return {invMateriales:n.invMateriales, manoObra, gastosInd, inversionTotal, costoUnitario, pares:n.total};
+}
+
+/* =================================================================
+   INVENTARIO
+   ================================================================= */
+function materialById(id){ return STATE.materiales.find(m=>m.id===id); }
+function stockValor(list){ return list.reduce((s,m)=>s+ (m.stock*m.costo),0); }
+
+function consumirMateriales(orden){
+  orden.necesidades.detalle.forEach(d=>{
+    const m = materialById(d.materialId);
+    if(m) m.stock = Number((m.stock - d.requerido).toFixed(4));
+  });
+}
+function devolverMateriales(orden){
+  orden.necesidades.detalle.forEach(d=>{
+    const m = materialById(d.materialId);
+    if(m) m.stock = Number((m.stock + d.requerido).toFixed(4));
+  });
+}
+function altaProductoTerminado(orden, costeo){
+  orden.lineas.forEach(l=>{
+    const pares = SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0);
+    if(pares<=0) return;
+    STATE.productoTerminado.push({
+      id: uid('pt'),
+      ordenFolio: orden.folio,
+      ordenId: orden.id,
+      modelo: `${l.cuña} / ${l.suela} / ${l.planta}${l.marca?(' / '+l.marca):''}`,
+      cliente: l.cliente||'',
+      paresDisponibles: pares,
+      paresOriginales: pares,
+      costoUnitario: costeo.costoUnitario,
+      fecha: orden.fecha
+    });
+  });
+}
+function bajaProductoTerminadoPorOrden(ordenId){
+  STATE.productoTerminado = STATE.productoTerminado.filter(pt=>pt.ordenId!==ordenId || pt.paresDisponibles!==pt.paresOriginales);
+  // conservador: si ya se vendió parte, no se puede revertir automáticamente
+}
+
+/* =================================================================
+   PRODUCCIÓN — modal de captura
+   ================================================================= */
+let ordenDraft = null;
+
+function nuevaLinea(){
+  return {id:uid('l'), planta:'CERCO', cuña:'CANELA', suela:'BLANCA', cerco:'NATURAL', marca:'', cliente:'', comentarios:'',
+    tallas: Object.fromEntries(SIZES.map(s=>[s,0]))};
+}
+
+function abrirOrden(id){
+  const existente = id ? STATE.ordenes.find(o=>o.id===id) : null;
+  ordenDraft = existente ? JSON.parse(JSON.stringify(existente)) : {
+    id: uid('op'), folio: folio('OP','orden'), fecha: todayStr(), estado:'borrador',
+    lineas:[nuevaLinea()], manoObra: STATE.config.manoObraDefault
+  };
+  renderOrdenModal();
+}
+function renderOrdenModal(){
+  const bloqueado = ordenDraft.estado==='confirmada';
+  let filas = ordenDraft.lineas.map((l,i)=>`
+    <tr>
+      <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].cliente=this.value">
+        <option value="" ${!l.cliente?'selected':''}>EXTRA (sin cliente)</option>
+        <option value="__custom__">Otro / capturar…</option>
+      </select>
+      <input ${bloqueado?'disabled':''} style="margin-top:3px" placeholder="Cliente" value="${l.cliente||''}" oninput="ordenDraft.lineas[${i}].cliente=this.value"></td>
+      <td><input ${bloqueado?'disabled':''} placeholder="Marca" value="${l.marca||''}" oninput="ordenDraft.lineas[${i}].marca=this.value"></td>
+      <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].planta=this.value">${PLANTAS.map(p=>`<option ${l.planta===p?'selected':''}>${p}</option>`).join('')}</select></td>
+      <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].cuña=this.value">${CUÑAS.map(p=>`<option ${l.cuña===p?'selected':''}>${p}</option>`).join('')}</select></td>
+      <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].suela=this.value">${SUELAS.map(p=>`<option ${l.suela===p?'selected':''}>${p}</option>`).join('')}</select></td>
+      <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].cerco=this.value">${CERCOS.map(p=>`<option ${l.cerco===p?'selected':''}>${p}</option>`).join('')}</select></td>
+      ${SIZES.map(sz=>`<td><input ${bloqueado?'disabled':''} type="number" min="0" style="width:44px" value="${l.tallas[sz]||0}" oninput="ordenDraft.lineas[${i}].tallas[${sz}]=this.value;actualizarTotalesModal()"></td>`).join('')}
+      <td class="num mono" id="lineTotal_${i}">${SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0)}</td>
+      <td><input ${bloqueado?'disabled':''} style="width:120px" placeholder="Notas para corte/producción" value="${l.comentarios||''}" oninput="ordenDraft.lineas[${i}].comentarios=this.value"></td>
+      <td>${bloqueado?'':`<button class="btn danger sm" onclick="ordenDraft.lineas.splice(${i},1);renderOrdenModal()">✕</button>`}</td>
+    </tr>`).join('');
+
+  const totalGeneral = ordenDraft.lineas.reduce((s,l)=>s+SIZES.reduce((s2,sz)=>s2+(Number(l.tallas[sz])||0),0),0);
+
+  openModal(`
+    <h3>Orden de producción — ${ordenDraft.folio} ${bloqueado?'<span class="badge ok">Confirmada</span>':'<span class="badge warn">Borrador</span>'}</h3>
+    <div class="formgrid c3">
+      <div class="field"><label>Fecha</label><input type="date" value="${ordenDraft.fecha}" ${bloqueado?'disabled':''} onchange="ordenDraft.fecha=this.value"></div>
+      <div class="field"><label>Mano de obra del día ($)</label><input type="number" step="0.01" value="${ordenDraft.manoObra}" ${bloqueado?'disabled':''} oninput="ordenDraft.manoObra=this.value"></div>
+      <div class="field"><label>Total de pares</label><input value="${totalGeneral}" disabled></div>
+    </div>
+    <div class="tblwrap lines-table" style="overflow-x:auto">
+    <table class="tbl"><thead><tr>
+      <th>Cliente</th><th>Marca</th><th>Planta</th><th>Cuña</th><th>Suela</th><th>Cerco</th>
+      ${SIZES.map(s=>`<th class="num">${s}</th>`).join('')}<th class="num">Total</th><th>Comentarios</th><th></th>
+    </tr></thead><tbody id="lineasBody">${filas}</tbody></table>
+    </div>
+    ${bloqueado?'':'<button class="btn ghost sm" style="margin-top:8px" onclick="ordenDraft.lineas.push(nuevaLinea());renderOrdenModal()">+ Agregar línea</button>'}
+    <hr class="stitch">
+    <div id="previewNecesidades"></div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="closeModal()">Cerrar</button>
+      ${bloqueado?`
+        <button class="btn clay" onclick="abrirReportesOrden('${ordenDraft.id}')">Reportes de esta orden</button>
+      `:`
+        <button class="btn ghost" onclick="guardarOrden(false)">Guardar borrador</button>
+        <button class="btn clay" onclick="guardarOrden(true)">Confirmar orden (afecta inventario)</button>
+      `}
+    </div>
+  `);
+  actualizarTotalesModal();
+}
+function actualizarTotalesModal(){
+  ordenDraft.lineas.forEach((l,i)=>{
+    const t = SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0);
+    const el = document.getElementById('lineTotal_'+i);
+    if(el) el.textContent = t;
+  });
+  const nec = calcNecesidades(ordenDraft);
+  const prev = document.getElementById('previewNecesidades');
+  if(prev){
+    prev.innerHTML = `
+      <h4 style="font-size:13px">Vista previa — material requerido</h4>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>Material</th><th>Clasif.</th><th>Base de cálculo</th><th class="num">Cantidad base</th><th class="num">Requerido</th><th class="num">Inversión</th></tr></thead>
+      <tbody>${nec.detalle.map(d=>`<tr><td>${d.nombre}</td><td><span class="badge ${d.clasificacion==='directa'?'info':'warn'}">${d.clasificacion}</span></td><td class="muted">${BASE_LABELS[d.base]}</td><td class="num mono">${num(d.baseCant,2)}</td><td class="num mono">${num(d.requerido,2)} ${d.unidad}</td><td class="num mono">${money(d.inversion)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="5" class="right"><b>Inversión total en materiales</b></td><td class="num mono"><b>${money(nec.invMateriales)}</b></td></tr></tfoot>
+      </table></div>`;
+  }
+}
+function guardarOrden(confirmar){
+  const nec = calcNecesidades(ordenDraft);
+  if(nec.total<=0){ toast('Captura al menos una talla con cantidad.'); return; }
+  ordenDraft.necesidades = nec;
+  if(confirmar){
+    // validar existencias
+    const faltantes = nec.detalle.filter(d=>{
+      const m = materialById(d.materialId);
+      return m && (m.stock - d.requerido) < 0;
+    });
+    if(faltantes.length){
+      const lista = faltantes.map(f=>`• ${f.nombre}: faltan ${num(f.requerido-materialById(f.materialId).stock,2)} ${f.unidad}`).join('<br>');
+      if(!confirm('Existencia insuficiente en:\n'+faltantes.map(f=>f.nombre).join(', ')+'\n\n¿Confirmar de todos modos? (el inventario quedará en negativo)')) return;
+    }
+    ordenDraft.estado = 'confirmada';
+    ordenDraft.costeo = calcCosteoOrden(ordenDraft);
+    consumirMateriales(ordenDraft);
+    altaProductoTerminado(ordenDraft, ordenDraft.costeo);
+  }
+  const idx = STATE.ordenes.findIndex(o=>o.id===ordenDraft.id);
+  if(idx>=0) STATE.ordenes[idx]=ordenDraft; else STATE.ordenes.push(ordenDraft);
+  save(); closeModal(); renderAll();
+  toast(confirmar? 'Orden confirmada. Inventario e insumos actualizados.' : 'Borrador guardado.');
+}
+function eliminarOrden(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  if(!o) return;
+  if(o.estado==='confirmada' && !confirm('Esta orden ya afectó inventario. Al eliminarla se revertirá el consumo de materiales y se retirará el producto terminado no vendido aún. ¿Continuar?')) return;
+  if(o.estado==='confirmada'){
+    devolverMateriales(o);
+    const vendido = STATE.productoTerminado.some(pt=>pt.ordenId===id && pt.paresDisponibles<pt.paresOriginales);
+    if(vendido) toast('Aviso: parte de esta orden ya se vendió; el lote de producto terminado se conservó.');
+    else STATE.productoTerminado = STATE.productoTerminado.filter(pt=>pt.ordenId!==id);
+  }
+  STATE.ordenes = STATE.ordenes.filter(x=>x.id!==id);
+  save(); renderAll(); toast('Orden eliminada.');
+}
+
+/* =================================================================
+   MATERIALES / AJUSTES DE INVENTARIO
+   ================================================================= */
+function abrirMaterial(id){
+  const m = id ? materialById(id) : {id:'', nombre:'', clasificacion:'directa', base:'TOTAL', inver:1, costo:0, unidad:'pza', stock:0, minimo:5};
+  openModal(`
+    <h3>${id?'Editar material':'Nuevo material'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Nombre</label><input id="mNombre" value="${m.nombre}"></div>
+      <div class="field"><label>Clasificación</label><select id="mClas"><option value="directa" ${m.clasificacion==='directa'?'selected':''}>Directa</option><option value="indirecta" ${m.clasificacion==='indirecta'?'selected':''}>Indirecta</option></select></div>
+      <div class="field"><label>Unidad</label><input id="mUnidad" value="${m.unidad}"></div>
+      <div class="field"><label>Costo unitario</label><input id="mCosto" type="number" step="0.0001" value="${m.costo}"></div>
+      <div class="field"><label>Consumo por par (inver.)</label><input id="mInver" type="number" step="0.0001" value="${m.inver}"></div>
+      <div class="field"><label>Base de cálculo (orden de producción)</label>
+        <select id="mBase">${Object.keys(BASE_LABELS).map(k=>`<option value="${k}" ${m.base===k?'selected':''}>${BASE_LABELS[k]}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Existencia actual</label><input id="mStock" type="number" step="0.0001" value="${m.stock}"></div>
+      <div class="field"><label>Existencia mínima</label><input id="mMinimo" type="number" step="0.0001" value="${m.minimo}"></div>
+    </div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      ${id?`<button class="btn danger" onclick="borrarMaterial('${id}')">Eliminar</button>`:''}
+      <button class="btn clay" onclick="guardarMaterial('${id}')">Guardar</button>
+    </div>
+  `);
+}
+function guardarMaterial(id){
+  const data = {
+    nombre: document.getElementById('mNombre').value.trim(),
+    clasificacion: document.getElementById('mClas').value,
+    unidad: document.getElementById('mUnidad').value.trim()||'pza',
+    costo: Number(document.getElementById('mCosto').value)||0,
+    inver: Number(document.getElementById('mInver').value)||0,
+    base: document.getElementById('mBase').value,
+    stock: Number(document.getElementById('mStock').value)||0,
+    minimo: Number(document.getElementById('mMinimo').value)||0,
+  };
+  if(!data.nombre){ toast('Escribe un nombre de material.'); return; }
+  if(id){ Object.assign(materialById(id), data); }
+  else{ STATE.materiales.push(Object.assign({id:uid('m')}, data)); }
+  save(); closeModal(); renderAll(); toast('Material guardado.');
+}
+function borrarMaterial(id){
+  if(!confirm('¿Eliminar este material del catálogo?')) return;
+  STATE.materiales = STATE.materiales.filter(m=>m.id!==id);
+  save(); closeModal(); renderAll();
+}
+function abrirAjuste(){
+  openModal(`
+    <h3>Ajuste manual de inventario</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Material</label><select id="ajMat">${STATE.materiales.map(m=>`<option value="${m.id}">${m.nombre} (${m.clasificacion})</option>`).join('')}</select></div>
+      <div class="field"><label>Tipo</label><select id="ajTipo"><option value="entrada">Entrada</option><option value="salida">Salida</option></select></div>
+      <div class="field"><label>Cantidad</label><input id="ajCant" type="number" step="0.0001"></div>
+      <div class="field"><label>Motivo</label><input id="ajMotivo" placeholder="Merma, conteo físico, etc."></div>
+    </div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarAjuste()">Aplicar</button></div>
+  `);
+}
+function guardarAjuste(){
+  const m = materialById(document.getElementById('ajMat').value);
+  const tipo = document.getElementById('ajTipo').value;
+  const cant = Number(document.getElementById('ajCant').value)||0;
+  if(cant<=0){ toast('Captura una cantidad mayor a cero.'); return; }
+  m.stock = Number((m.stock + (tipo==='entrada'?cant:-cant)).toFixed(4));
+  save(); closeModal(); renderAll(); toast('Ajuste aplicado.');
+}
+
+/* =================================================================
+   COMPRAS
+   ================================================================= */
+function abrirCompra(id){
+  const c = id ? STATE.compras.find(x=>x.id===id) : {id:uid('cp'), folio:folio('CP','compra'), fecha:todayStr(), proveedor:'', materialId: STATE.materiales[0]?.id||'', cantidad:0, importe:0, condicion:'contado'};
+  openModal(`
+    <h3>${id?'Editar compra':'Registrar compra de materia prima'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Fecha</label><input id="cpFecha" type="date" value="${c.fecha}"></div>
+      <div class="field"><label>Proveedor</label><input id="cpProv" value="${c.proveedor}"></div>
+      <div class="field"><label>Material</label><select id="cpMat">${STATE.materiales.map(m=>`<option value="${m.id}" ${m.id===c.materialId?'selected':''}>${m.nombre} — almacén ${m.clasificacion}</option>`).join('')}</select></div>
+      <div class="field"><label>Cantidad</label><input id="cpCant" type="number" step="0.0001" value="${c.cantidad}"></div>
+      <div class="field"><label>Importe total ($)</label><input id="cpImp" type="number" step="0.01" value="${c.importe}"></div>
+      <div class="field"><label>Condición</label><select id="cpCond"><option value="contado" ${c.condicion==='contado'?'selected':''}>Contado</option><option value="credito" ${c.condicion==='credito'?'selected':''}>Crédito</option></select></div>
+    </div>
+    <p class="smallnote">Al guardar, la cantidad se suma al almacén del material elegido. Si es a crédito, se genera un cargo al proveedor en Cuentas por pagar.</p>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarCompra('${id||''}')">Guardar</button></div>
+  `);
+}
+function guardarCompra(id){
+  const data = {
+    fecha: document.getElementById('cpFecha').value,
+    proveedor: document.getElementById('cpProv').value.trim()||'Proveedor sin nombre',
+    materialId: document.getElementById('cpMat').value,
+    cantidad: Number(document.getElementById('cpCant').value)||0,
+    importe: Number(document.getElementById('cpImp').value)||0,
+    condicion: document.getElementById('cpCond').value,
+  };
+  if(data.cantidad<=0){ toast('Captura una cantidad mayor a cero.'); return; }
+  if(id){
+    const old = STATE.compras.find(x=>x.id===id);
+    // revertir efectos previos
+    materialById(old.materialId).stock -= old.cantidad;
+    if(old.condicion==='credito') movCartera('proveedores', old.proveedor, {tipo:'abono', concepto:'Corrección/edición de compra '+old.folio, monto:old.importe, fecha:todayStr()});
+    Object.assign(old, data);
+    materialById(data.materialId).stock += data.cantidad;
+    if(data.condicion==='credito') movCartera('proveedores', data.proveedor, {tipo:'cargo', concepto:'Compra '+old.folio, monto:data.importe, fecha:data.fecha});
+    save();
+  } else {
+    const nueva = Object.assign({id:uid('cp'), folio:folio('CP','compra')}, data);
+    STATE.compras.push(nueva);
+    materialById(data.materialId).stock = Number((materialById(data.materialId).stock + data.cantidad).toFixed(4));
+    if(data.condicion==='credito'){
+      movCartera('proveedores', data.proveedor, {tipo:'cargo', concepto:'Compra '+nueva.folio, monto:data.importe, fecha:data.fecha});
+    }
+    save();
+  }
+  closeModal(); renderAll(); toast('Compra registrada.');
+}
+function eliminarCompra(id){
+  const c = STATE.compras.find(x=>x.id===id);
+  if(!c) return;
+  if(!confirm('¿Eliminar esta compra? Se revertirá del inventario y de la cartera si aplica.')) return;
+  materialById(c.materialId).stock -= c.cantidad;
+  if(c.condicion==='credito') movCartera('proveedores', c.proveedor, {tipo:'abono', concepto:'Cancelación de compra '+c.folio, monto:c.importe, fecha:todayStr()});
+  STATE.compras = STATE.compras.filter(x=>x.id!==id);
+  save(); renderAll();
+}
+
+/* =================================================================
+   VENTAS / PUNTO DE VENTA (carrito multi-producto)
+   ================================================================= */
+let ventaDraft = null;
+
+function ventaItems(v){
+  if(v.items && v.items.length) return v.items;
+  // compatibilidad con ventas guardadas antes de esta actualización (una sola línea)
+  return [{loteId:v.loteId, modelo:v.modelo, ordenFolio:v.ordenFolio, cantidad:v.cantidad, precioUnitario:v.precioUnitario,
+    costoUnitario: v.cantidad?(v.costo/v.cantidad):0, importe:v.total, costoImporte:v.costo}];
+}
+function disponibleParaEdicion(loteId){
+  const lote = STATE.productoTerminado.find(pt=>pt.id===loteId);
+  if(!lote) return 0;
+  let reservadoOriginal = 0;
+  if(ventaDraft && ventaDraft._editingOriginalId){
+    const original = STATE.ventas.find(v=>v.id===ventaDraft._editingOriginalId);
+    if(original) reservadoOriginal = ventaItems(original).filter(it=>it.loteId===loteId).reduce((s,it)=>s+Number(it.cantidad||0),0);
+  }
+  return lote.paresDisponibles + reservadoOriginal;
+}
+
+function abrirVenta(id){
+  const existing = id ? STATE.ventas.find(x=>x.id===id) : null;
+  if(id && !existing){ toast('No se encontró la venta.'); return; }
+  if(!existing && !STATE.productoTerminado.some(pt=>pt.paresDisponibles>0)){
+    toast('No hay producto terminado disponible. Confirma una orden de producción primero.'); return;
+  }
+  ventaDraft = existing
+    ? {id:existing.id, folio:existing.folio, fecha:existing.fecha, cliente:existing.cliente, condicion:existing.condicion,
+       items: JSON.parse(JSON.stringify(ventaItems(existing))), _editingOriginalId: existing.id}
+    : {id:uid('vt'), folio:folio('FAC','venta'), fecha:todayStr(), cliente:'', condicion:'contado', items:[]};
+  renderVentaModal();
+}
+function renderVentaModal(){
+  const disponibles = STATE.productoTerminado.filter(pt=>disponibleParaEdicion(pt.id)>0);
+  const clientesNombres = Object.keys(STATE.clientesInfo||{});
+
+  const filasCarrito = ventaDraft.items.map((it,i)=>`
+    <tr>
+      <td>${it.modelo}<div class="muted" style="font-size:11px">Origen ${it.ordenFolio||'-'} · costo ${money(it.costoUnitario)}/par</div></td>
+      <td><input type="number" min="1" style="width:64px" value="${it.cantidad}" onchange="actualizarItemCarrito(${i},'cantidad',this.value)"></td>
+      <td><input type="number" step="0.01" min="0" style="width:90px" value="${it.precioUnitario}" onchange="actualizarItemCarrito(${i},'precioUnitario',this.value)"></td>
+      <td class="num mono">${money(it.cantidad*it.precioUnitario)}</td>
+      <td><button class="btn danger sm" onclick="quitarItemCarrito(${i})">✕</button></td>
+    </tr>`).join('');
+
+  const totalVenta = ventaDraft.items.reduce((s,it)=>s+it.cantidad*it.precioUnitario,0);
+  const costoVenta = ventaDraft.items.reduce((s,it)=>s+it.cantidad*it.costoUnitario,0);
+  const utilidad = totalVenta-costoVenta;
+
+  openModal(`
+    <h3>${ventaDraft._editingOriginalId?'Editar venta':'Nueva venta'} — ${ventaDraft.folio}</h3>
+    <div class="formgrid c3">
+      <div class="field"><label>Fecha</label><input type="date" value="${ventaDraft.fecha}" onchange="ventaDraft.fecha=this.value"></div>
+      <div class="field"><label>Cliente</label>
+        <div class="flex">
+          <input list="clientesDatalist" style="flex:1" value="${ventaDraft.cliente}" placeholder="Selecciona o escribe un nombre" oninput="ventaDraft.cliente=this.value">
+          <button class="btn ghost sm" onclick="abrirAltaCliente(null)">+ Nuevo</button>
+        </div>
+        <datalist id="clientesDatalist">${clientesNombres.map(n=>`<option value="${n}">`).join('')}</datalist>
+      </div>
+      <div class="field"><label>Condición</label>
+        <select onchange="ventaDraft.condicion=this.value">
+          <option value="contado" ${ventaDraft.condicion==='contado'?'selected':''}>Contado</option>
+          <option value="credito" ${ventaDraft.condicion==='credito'?'selected':''}>Crédito</option>
+        </select>
+      </div>
+    </div>
+    <hr class="dash">
+    <div class="formgrid c3">
+      <div class="field" style="grid-column:1/3"><label>Agregar producto al carrito</label>
+        <select id="posLote">${disponibles.length? disponibles.map(pt=>`<option value="${pt.id}">${pt.modelo} — origen ${pt.ordenFolio} — disp. ${disponibleParaEdicion(pt.id)} — costo ${money(pt.costoUnitario)}</option>`).join('') : '<option value="">Sin producto disponible</option>'}</select>
+      </div>
+      <div class="field"><label>Pares</label>
+        <div class="flex"><input id="posCant" type="number" min="1" value="1" style="width:70px"><button class="btn clay sm" onclick="agregarItemCarrito()">+ Agregar</button></div>
+      </div>
+    </div>
+    <div class="tblwrap" style="margin-top:8px"><table class="tbl">
+      <thead><tr><th>Producto</th><th>Pares</th><th>Precio por par</th><th class="num">Importe</th><th></th></tr></thead>
+      <tbody>${filasCarrito || '<tr><td colspan="5" class="muted">Agrega productos al carrito con el selector de arriba.</td></tr>'}</tbody>
+    </table></div>
+    <div class="grid cols-3" style="margin-top:10px">
+      <div><div class="muted">Total de venta</div><b>${money(totalVenta)}</b></div>
+      <div><div class="muted">Costo</div><b>${money(costoVenta)}</b></div>
+      <div><div class="muted">Utilidad</div><b style="color:${utilidad>=0?'var(--good)':'var(--bad)'}">${money(utilidad)}</b></div>
+    </div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="ventaDraft=null;closeModal()">Cancelar</button>
+      <button class="btn clay" onclick="guardarVentaPOS()">Cobrar / Guardar venta</button>
+    </div>
+  `);
+}
+function agregarItemCarrito(){
+  const loteId = document.getElementById('posLote').value;
+  const cantidad = Number(document.getElementById('posCant').value)||0;
+  if(!loteId){ toast('No hay producto disponible para agregar.'); return; }
+  const lote = STATE.productoTerminado.find(pt=>pt.id===loteId);
+  const disp = disponibleParaEdicion(loteId);
+  if(cantidad<=0 || cantidad>disp){ toast('Cantidad inválida (disponible: '+disp+').'); return; }
+  const existente = ventaDraft.items.find(it=>it.loteId===loteId);
+  if(existente){ existente.cantidad = Number(existente.cantidad)+cantidad; }
+  else{ ventaDraft.items.push({loteId, ordenFolio:lote.ordenFolio, modelo:lote.modelo, cantidad, precioUnitario:0, costoUnitario:lote.costoUnitario}); }
+  renderVentaModal();
+}
+function actualizarItemCarrito(i, campo, val){
+  const it = ventaDraft.items[i];
+  if(campo==='cantidad'){
+    const disp = disponibleParaEdicion(it.loteId);
+    let v = Number(val)||0;
+    if(v<1) v=1;
+    if(v>disp){ v=disp; toast('Solo hay '+disp+' pares disponibles de ese producto.'); }
+    it.cantidad = v;
+  } else {
+    it.precioUnitario = Number(val)||0;
+  }
+  renderVentaModal();
+}
+function quitarItemCarrito(i){ ventaDraft.items.splice(i,1); renderVentaModal(); }
+
+function guardarVentaPOS(){
+  if(!ventaDraft.items.length){ toast('Agrega al menos un producto al carrito.'); return; }
+  if(!ventaDraft.cliente || !ventaDraft.cliente.trim()) ventaDraft.cliente = 'Público en general';
+
+  const original = ventaDraft._editingOriginalId ? STATE.ventas.find(v=>v.id===ventaDraft._editingOriginalId) : null;
+
+  // 1. revertir efectos de la venta original si se está editando
+  if(original){
+    ventaItems(original).forEach(it=>{
+      const lote = STATE.productoTerminado.find(pt=>pt.id===it.loteId);
+      if(lote) lote.paresDisponibles += it.cantidad;
+    });
+    if(original.condicion==='credito'){
+      movCartera('clientes', original.cliente, {tipo:'abono', concepto:'Corrección de venta '+original.folio, monto:original.total, fecha:todayStr()});
+    }
+  }
+
+  // 2. validar existencias contra el estado ya restaurado
+  for(const it of ventaDraft.items){
+    const lote = STATE.productoTerminado.find(pt=>pt.id===it.loteId);
+    if(!lote || lote.paresDisponibles < it.cantidad){
+      // revertir el paso 1 para no dejar el sistema inconsistente
+      if(original){
+        ventaItems(original).forEach(it2=>{ const lote2=STATE.productoTerminado.find(pt=>pt.id===it2.loteId); if(lote2) lote2.paresDisponibles -= it2.cantidad; });
+        if(original.condicion==='credito') movCartera('clientes', original.cliente, {tipo:'cargo', concepto:'Venta '+original.folio, monto:original.total, fecha:original.fecha});
+      }
+      toast('No hay suficiente existencia de "'+(lote?lote.modelo:it.modelo)+'". Ajusta la cantidad.');
+      return;
+    }
+  }
+
+  // 3. calcular importes
+  ventaDraft.items.forEach(it=>{ it.importe = it.cantidad*it.precioUnitario; it.costoImporte = it.cantidad*it.costoUnitario; });
+  const total = ventaDraft.items.reduce((s,it)=>s+it.importe,0);
+  const costo = ventaDraft.items.reduce((s,it)=>s+it.costoImporte,0);
+  const utilidad = total-costo;
+
+  // 4. aplicar la nueva salida de inventario
+  ventaDraft.items.forEach(it=>{
+    const lote = STATE.productoTerminado.find(pt=>pt.id===it.loteId);
+    lote.paresDisponibles -= it.cantidad;
+  });
+
+  const registro = {
+    id: ventaDraft.id, folio: ventaDraft.folio, fecha: ventaDraft.fecha, cliente: ventaDraft.cliente, condicion: ventaDraft.condicion,
+    items: ventaDraft.items, total, costo, utilidad,
+    ordenFolio: [...new Set(ventaDraft.items.map(it=>it.ordenFolio))].join(', '),
+    modelo: ventaDraft.items.map(it=>`${it.modelo} x${it.cantidad}`).join(' · '),
+    cantidad: ventaDraft.items.reduce((s,it)=>s+it.cantidad,0),
+  };
+
+  const idx = STATE.ventas.findIndex(v=>v.id===registro.id);
+  if(idx>=0) STATE.ventas[idx]=registro; else STATE.ventas.push(registro);
+
+  if(registro.condicion==='credito'){
+    movCartera('clientes', registro.cliente, {tipo:'cargo', concepto:'Venta '+registro.folio, monto:total, fecha:registro.fecha});
+  }
+
+  save(); ventaDraft=null; closeModal(); renderAll(); toast('Venta guardada.');
+}
+function verDetalleVenta(id){
+  const v = STATE.ventas.find(x=>x.id===id);
+  if(!v) return;
+  const items = ventaItems(v);
+  openModal(`
+    <h3>Detalle de venta — ${v.folio}</h3>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Producto</th><th>Origen</th><th class="num">Pares</th><th class="num">Precio unit.</th><th class="num">Importe</th></tr></thead>
+    <tbody>${items.map(it=>`<tr><td>${it.modelo}</td><td>${it.ordenFolio||'-'}</td><td class="num mono">${it.cantidad}</td><td class="num mono">${money(it.precioUnitario)}</td><td class="num mono">${money(it.importe!=null?it.importe:it.cantidad*it.precioUnitario)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="grid cols-3" style="margin-top:10px">
+      <div><div class="muted">Cliente</div><b>${v.cliente}</b></div>
+      <div><div class="muted">Total</div><b>${money(v.total)}</b></div>
+      <div><div class="muted">Utilidad</div><b style="color:${v.utilidad>=0?'var(--good)':'var(--bad)'}">${money(v.utilidad)}</b></div>
+    </div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+function eliminarVenta(id){
+  const v = STATE.ventas.find(x=>x.id===id);
+  if(!v) return;
+  if(!confirm('¿Cancelar esta venta? El inventario de producto terminado se restituirá.')) return;
+  ventaItems(v).forEach(it=>{
+    const lote = STATE.productoTerminado.find(pt=>pt.id===it.loteId);
+    if(lote) lote.paresDisponibles += it.cantidad;
+  });
+  if(v.condicion==='credito') movCartera('clientes', v.cliente, {tipo:'abono', concepto:'Cancelación de venta '+v.folio, monto:v.total, fecha:todayStr()});
+  STATE.ventas = STATE.ventas.filter(x=>x.id!==id);
+  save(); renderAll();
+}
+
+/* ---------- Catálogo de clientes (alta desde el punto de venta) ---------- */
+function abrirAltaCliente(nombreExistente){
+  const c = nombreExistente ? ((STATE.clientesInfo||{})[nombreExistente]||{}) : {};
+  const volver = ventaDraft ? 'renderVentaModal()' : (document.getElementById('view-ventas').classList.contains('active') ? 'verCatalogoClientes()' : 'closeModal()');
+  openModal(`
+    <h3>${nombreExistente?'Editar cliente':'Nuevo cliente'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Nombre</label><input id="clNombre" value="${nombreExistente||''}" ${nombreExistente?'disabled':''}></div>
+      <div class="field"><label>Teléfono</label><input id="clTel" value="${c.telefono||''}"></div>
+      <div class="field"><label>Correo</label><input id="clCorreo" value="${c.correo||''}"></div>
+      <div class="field"><label>Dirección</label><input id="clDireccion" value="${c.direccion||''}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Notas</label><textarea id="clNotas">${c.notas||''}</textarea></div>
+    </div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="${volver}">Cancelar</button>
+      ${nombreExistente?`<button class="btn danger" onclick="borrarCliente('${nombreExistente.replace(/'/g,"\\'")}')">Eliminar</button>`:''}
+      <button class="btn clay" onclick="guardarCliente('${(nombreExistente||'').replace(/'/g,"\\'")}')">Guardar cliente</button>
+    </div>
+  `);
+}
+function guardarCliente(nombreExistente){
+  const nombre = nombreExistente || document.getElementById('clNombre').value.trim();
+  if(!nombre){ toast('Escribe el nombre del cliente.'); return; }
+  if(!STATE.clientesInfo) STATE.clientesInfo = {};
+  STATE.clientesInfo[nombre] = {
+    telefono: document.getElementById('clTel').value.trim(),
+    correo: document.getElementById('clCorreo').value.trim(),
+    direccion: document.getElementById('clDireccion').value.trim(),
+    notas: document.getElementById('clNotas').value.trim(),
+  };
+  save();
+  toast('Cliente guardado.');
+  if(ventaDraft){ ventaDraft.cliente = nombre; renderVentaModal(); }
+  else{ verCatalogoClientes(); }
+}
+function borrarCliente(nombre){
+  if(!confirm('¿Eliminar este cliente del catálogo? No borra su historial de cuentas por cobrar.')) return;
+  delete STATE.clientesInfo[nombre];
+  save();
+  if(ventaDraft) renderVentaModal(); else verCatalogoClientes();
+}
+function verCatalogoClientes(){
+  const nombres = Object.keys(STATE.clientesInfo||{}).sort();
+  openModal(`
+    <h3>Catálogo de clientes</h3>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Teléfono</th><th>Correo</th><th></th></tr></thead>
+    <tbody>${nombres.map(n=>{const c=STATE.clientesInfo[n]; return `<tr><td>${n}</td><td>${c.telefono||'-'}</td><td>${c.correo||'-'}</td><td><button class="btn ghost sm" onclick="abrirAltaCliente('${n.replace(/'/g,"\\'")}')">Editar</button></td></tr>`;}).join('') || '<tr><td colspan="4" class="muted">Sin clientes registrados todavía.</td></tr>'}</tbody></table></div>
+    <div class="close-row"><button class="btn clay" onclick="abrirAltaCliente(null)">+ Nuevo cliente</button><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+
+/* ---------- Diseño de factura ---------- */
+function abrirDisenoFactura(){
+  const cfg = STATE.config;
+  openModal(`
+    <h3>Diseño de factura</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Tamaño</label>
+        <select id="dfTamano">
+          <option value="carta" ${cfg.facturaTamano!=='ticket'?'selected':''}>Carta (hoja completa)</option>
+          <option value="ticket" ${cfg.facturaTamano==='ticket'?'selected':''}>Ticket angosto (impresora térmica 80 mm)</option>
+        </select>
+      </div>
+      <div class="field"><label>Color de acento</label><input id="dfColor" type="color" value="${cfg.facturaColor||'#2F4858'}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Logotipo (opcional)</label>
+        <input id="dfLogo" type="file" accept="image/*">
+        ${cfg.logoBase64?`<div class="smallnote">Ya tienes un logo cargado. <a href="#" onclick="quitarLogo();return false;">Quitar logo</a></div>`:''}
+      </div>
+      <div class="field" style="grid-column:1/-1"><label>Pie de página / nota (garantía, cuenta bancaria, agradecimiento…)</label>
+        <textarea id="dfPie" rows="3">${cfg.facturaPie||''}</textarea>
+      </div>
+    </div>
+    <p class="smallnote">Este diseño se aplica a todas las facturas en PDF que generes desde Ventas.</p>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button><button class="btn clay" onclick="guardarDisenoFactura()">Guardar diseño</button></div>
+  `);
+}
+function guardarDisenoFactura(){
+  STATE.config.facturaTamano = document.getElementById('dfTamano').value;
+  STATE.config.facturaColor = document.getElementById('dfColor').value;
+  STATE.config.facturaPie = document.getElementById('dfPie').value;
+  const file = document.getElementById('dfLogo').files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = e=>{ STATE.config.logoBase64 = e.target.result; save(); toast('Diseño de factura guardado.'); closeModal(); };
+    reader.readAsDataURL(file);
+  } else {
+    save(); toast('Diseño de factura guardado.'); closeModal();
+  }
+}
+function quitarLogo(){ STATE.config.logoBase64=null; save(); abrirDisenoFactura(); }
+
+/* =================================================================
+   GASTOS
+   ================================================================= */
+function abrirGasto(id){
+  const g = id ? STATE.gastos.find(x=>x.id===id) : {id:uid('gt'), folio:folio('GT','gasto'), fecha:todayStr(), categoria:'Fabricación indirecta', concepto:'', importe:0, condicion:'contado', proveedor:''};
+  openModal(`
+    <h3>${id?'Editar gasto':'Registrar gasto'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Fecha</label><input id="gtFecha" type="date" value="${g.fecha}"></div>
+      <div class="field"><label>Categoría</label><select id="gtCat">
+        <option ${g.categoria==='Fabricación indirecta'?'selected':''}>Fabricación indirecta</option>
+        <option ${g.categoria==='Administración'?'selected':''}>Administración</option>
+        <option ${g.categoria==='Venta'?'selected':''}>Venta</option>
+      </select></div>
+      <div class="field"><label>Concepto</label><input id="gtConcepto" value="${g.concepto}"></div>
+      <div class="field"><label>Importe ($)</label><input id="gtImporte" type="number" step="0.01" value="${g.importe}"></div>
+      <div class="field"><label>Condición</label><select id="gtCond"><option value="contado" ${g.condicion==='contado'?'selected':''}>Contado</option><option value="credito" ${g.condicion==='credito'?'selected':''}>Crédito</option></select></div>
+      <div class="field"><label>Proveedor / beneficiario (si es crédito)</label><input id="gtProv" value="${g.proveedor||''}"></div>
+    </div>
+    <p class="smallnote">Los gastos de "Fabricación indirecta" se prorratean automáticamente entre las órdenes del periodo en el módulo de Costeo, si así lo indicaste en Configuración.</p>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarGasto('${id||''}')">Guardar</button></div>
+  `);
+}
+function guardarGasto(id){
+  const data = {
+    fecha: document.getElementById('gtFecha').value,
+    categoria: document.getElementById('gtCat').value,
+    concepto: document.getElementById('gtConcepto').value.trim()||'Gasto sin descripción',
+    importe: Number(document.getElementById('gtImporte').value)||0,
+    condicion: document.getElementById('gtCond').value,
+    proveedor: document.getElementById('gtProv').value.trim(),
+  };
+  if(data.importe<=0){ toast('Captura un importe mayor a cero.'); return; }
+  if(id){
+    const old = STATE.gastos.find(x=>x.id===id);
+    if(old.condicion==='credito') movCartera('proveedores', old.proveedor||'Gastos varios', {tipo:'abono', concepto:'Corrección de gasto '+old.folio, monto:old.importe, fecha:todayStr()});
+    Object.assign(old, data);
+    if(data.condicion==='credito') movCartera('proveedores', data.proveedor||'Gastos varios', {tipo:'cargo', concepto:'Gasto '+old.folio, monto:data.importe, fecha:data.fecha});
+  } else {
+    const nuevo = Object.assign({id:uid('gt'), folio:folio('GT','gasto')}, data);
+    STATE.gastos.push(nuevo);
+    if(data.condicion==='credito') movCartera('proveedores', data.proveedor||'Gastos varios', {tipo:'cargo', concepto:'Gasto '+nuevo.folio, monto:data.importe, fecha:data.fecha});
+  }
+  save(); closeModal(); renderAll(); toast('Gasto registrado.');
+}
+function eliminarGasto(id){
+  const g = STATE.gastos.find(x=>x.id===id);
+  if(!g) return;
+  if(!confirm('¿Eliminar este gasto?')) return;
+  if(g.condicion==='credito') movCartera('proveedores', g.proveedor||'Gastos varios', {tipo:'abono', concepto:'Cancelación de gasto '+g.folio, monto:g.importe, fecha:todayStr()});
+  STATE.gastos = STATE.gastos.filter(x=>x.id!==id);
+  save(); renderAll();
+}
+
+/* =================================================================
+   CARTERAS (CxC / CxP)
+   ================================================================= */
+function movCartera(tipo, nombre, mov){
+  nombre = nombre||'Sin nombre';
+  const dict = STATE[tipo];
+  if(!dict[nombre]) dict[nombre]=[];
+  dict[nombre].push(mov);
+  save();
+}
+function saldoCartera(movs){
+  const cargos = movs.filter(m=>m.tipo==='cargo').reduce((s,m)=>s+Number(m.monto||0),0);
+  const abonos = movs.filter(m=>m.tipo==='abono').reduce((s,m)=>s+Number(m.monto||0),0);
+  return {cargos,abonos,saldo:cargos-abonos};
+}
+function abrirMovCxc(nombreExistente){ abrirMovCartera('clientes','Cliente', nombreExistente); }
+function abrirMovCxp(nombreExistente){ abrirMovCartera('proveedores','Proveedor', nombreExistente); }
+function abrirMovCartera(tipo, etiqueta, nombreExistente){
+  const nombres = Object.keys(STATE[tipo]);
+  openModal(`
+    <h3>Movimiento — ${etiqueta}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>${etiqueta}</label>
+        <input id="mcNombre" list="mcList" value="${nombreExistente||''}" placeholder="Nombre">
+        <datalist id="mcList">${nombres.map(n=>`<option value="${n}">`).join('')}</datalist>
+      </div>
+      <div class="field"><label>Tipo de movimiento</label><select id="mcTipo"><option value="cargo">Cargo (aumenta saldo)</option><option value="abono">Abono (pago / disminuye saldo)</option></select></div>
+      <div class="field"><label>Fecha</label><input id="mcFecha" type="date" value="${todayStr()}"></div>
+      <div class="field"><label>Importe ($)</label><input id="mcImporte" type="number" step="0.01"></div>
+      <div class="field" style="grid-column:1/-1"><label>Concepto</label><input id="mcConcepto" placeholder="Anticipo, pago parcial, ajuste…"></div>
+    </div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarMovCartera('${tipo}')">Guardar movimiento</button></div>
+  `);
+}
+function guardarMovCartera(tipo){
+  const nombre = document.getElementById('mcNombre').value.trim();
+  const importe = Number(document.getElementById('mcImporte').value)||0;
+  if(!nombre || importe<=0){ toast('Captura nombre e importe.'); return; }
+  movCartera(tipo, nombre, {
+    tipo: document.getElementById('mcTipo').value,
+    concepto: document.getElementById('mcConcepto').value.trim()||'Movimiento manual',
+    monto: importe,
+    fecha: document.getElementById('mcFecha').value,
+  });
+  closeModal(); renderAll(); toast('Movimiento registrado.');
+}
+function verDetalleCartera(tipo, nombre){
+  const movs = STATE[tipo][nombre]||[];
+  const s = saldoCartera(movs);
+  openModal(`
+    <h3>${tipo==='clientes'?'Cliente':'Proveedor'}: ${nombre}</h3>
+    <div class="grid cols-3" style="margin-bottom:12px">
+      <div class="card kpi alt"><div class="num">${money(s.cargos)}</div><div class="lbl">Cargos</div></div>
+      <div class="card kpi good"><div class="num">${money(s.abonos)}</div><div class="lbl">Abonos</div></div>
+      <div class="card kpi ${s.saldo>0?'warn':'good'}"><div class="num">${money(s.saldo)}</div><div class="lbl">Saldo</div></div>
+    </div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th class="num">Importe</th></tr></thead>
+    <tbody>${movs.slice().reverse().map(m=>`<tr><td>${m.fecha}</td><td>${m.concepto}</td><td><span class="badge ${m.tipo==='cargo'?'bad':'ok'}">${m.tipo}</span></td><td class="num mono">${money(m.monto)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sin movimientos</td></tr>'}</tbody></table></div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+
+/* =================================================================
+   RENDER — DASHBOARD
+   ================================================================= */
+function renderDashboard(){
+  document.getElementById('fechaHoy').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const ordenesConf = STATE.ordenes.filter(o=>o.estado==='confirmada');
+  const paresMes = ordenesConf.reduce((s,o)=>s+o.necesidades.total,0);
+  const ventasTotal = STATE.ventas.reduce((s,v)=>s+v.total,0);
+  const utilidadTotal = STATE.ventas.reduce((s,v)=>s+v.utilidad,0);
+  const valorInv = stockValor(STATE.materiales);
+  const cxcTotal = Object.values(STATE.clientes).reduce((s,m)=>s+saldoCartera(m).saldo,0);
+  const cxpTotal = Object.values(STATE.proveedores).reduce((s,m)=>s+saldoCartera(m).saldo,0);
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="card kpi"><div class="num">${num(paresMes)}</div><div class="lbl">Pares producidos (acumulado)</div></div>
+    <div class="card kpi alt"><div class="num">${money(ventasTotal)}</div><div class="lbl">Ventas totales</div></div>
+    <div class="card kpi good"><div class="num">${money(utilidadTotal)}</div><div class="lbl">Utilidad bruta acumulada</div></div>
+    <div class="card kpi warn"><div class="num">${money(valorInv)}</div><div class="lbl">Valor de inventario de materia prima</div></div>
+    <div class="card kpi"><div class="num">${money(cxcTotal)}</div><div class="lbl">Por cobrar</div></div>
+    <div class="card kpi alt"><div class="num">${money(cxpTotal)}</div><div class="lbl">Por pagar</div></div>
+    <div class="card kpi warn"><div class="num">${STATE.ordenes.filter(o=>o.estado==='borrador').length}</div><div class="lbl">Órdenes en borrador</div></div>
+    <div class="card kpi good"><div class="num">${STATE.productoTerminado.reduce((s,p)=>s+p.paresDisponibles,0)}</div><div class="lbl">Pares disponibles para venta</div></div>
+  `;
+
+  document.getElementById('dashOrdenes').innerHTML = STATE.ordenes.slice(-6).reverse().map(o=>`
+    <tr><td>${o.folio}</td><td>${o.fecha}</td><td class="num mono">${o.necesidades?o.necesidades.total:'-'}</td>
+    <td class="num mono">${o.costeo?money(o.costeo.costoUnitario):'-'}</td>
+    <td><span class="badge ${o.estado==='confirmada'?'ok':'warn'}">${o.estado}</span></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Aún no hay órdenes registradas.</td></tr>';
+
+  const clientesSaldos = Object.entries(STATE.clientes).map(([n,m])=>({n,s:saldoCartera(m).saldo})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,6);
+  document.getElementById('dashCxc').innerHTML = clientesSaldos.map(c=>`<tr><td>${c.n}</td><td class="num mono">${money(c.s)}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">Sin saldos pendientes.</td></tr>';
+
+  const provSaldos = Object.entries(STATE.proveedores).map(([n,m])=>({n,s:saldoCartera(m).saldo})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,6);
+  document.getElementById('dashCxp').innerHTML = provSaldos.map(c=>`<tr><td>${c.n}</td><td class="num mono">${money(c.s)}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">Sin saldos pendientes.</td></tr>';
+
+  const bajos = STATE.materiales.filter(m=>m.stock<=m.minimo);
+  document.getElementById('dashStockBajo').innerHTML = bajos.map(m=>`<tr><td>${m.nombre}</td><td><span class="badge info">${m.clasificacion}</span></td><td class="num mono">${num(m.stock,2)}</td><td class="num mono">${num(m.minimo,2)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Todos los materiales están en niveles adecuados.</td></tr>';
+}
+
+/* ---------- RENDER — PRODUCCIÓN ---------- */
+function renderProduccion(){
+  document.getElementById('tblOrdenes').innerHTML = STATE.ordenes.slice().reverse().map(o=>{
+    const clientes = [...new Set(o.lineas.map(l=>l.cliente||'EXTRA'))].join(', ');
+    return `<tr>
+      <td>${o.folio}</td><td>${o.fecha}</td>
+      <td class="num mono">${o.necesidades?o.necesidades.total:'-'}</td>
+      <td>${clientes}</td>
+      <td class="num mono">${o.costeo?money(o.costeo.costoUnitario):'-'}</td>
+      <td><span class="badge ${o.estado==='confirmada'?'ok':'warn'}">${o.estado}</span></td>
+      <td class="flex">
+        <button class="btn ghost sm" onclick="abrirOrden('${o.id}')">Ver</button>
+        <button class="btn ghost sm" onclick="abrirReportesOrden('${o.id}')">Reportes</button>
+        <button class="btn danger sm" onclick="eliminarOrden('${o.id}')">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="muted">Sin órdenes de producción todavía. Crea la primera con "+ Nueva orden".</td></tr>';
+}
+
+/* ---------- RENDER — COSTEO ---------- */
+function renderCosteo(){
+  const conf = STATE.ordenes.filter(o=>o.estado==='confirmada');
+  const totalPares = conf.reduce((s,o)=>s+o.costeo.pares,0);
+  const totalInv = conf.reduce((s,o)=>s+o.costeo.inversionTotal,0);
+  const costoProm = totalPares? totalInv/totalPares : 0;
+  document.getElementById('costeoKpis').innerHTML = `
+    <div class="card kpi"><div class="num">${num(totalPares)}</div><div class="lbl">Pares acumulados costeados</div></div>
+    <div class="card kpi alt"><div class="num">${money(totalInv)}</div><div class="lbl">Inversión total acumulada</div></div>
+    <div class="card kpi good"><div class="num">${money(costoProm)}</div><div class="lbl">Costo unitario promedio</div></div>
+    <div class="card kpi warn"><div class="num">${STATE.config.prorratear==='si'?'Sí':'No'}</div><div class="lbl">Prorrateo de gastos indirectos activo</div></div>
+  `;
+  document.getElementById('tblCosteo').innerHTML = conf.slice().reverse().map(o=>`
+    <tr>
+      <td>${o.folio}</td><td>${o.fecha}</td>
+      <td class="num mono">${o.costeo.pares}</td>
+      <td class="num mono">${money(o.costeo.invMateriales)}</td>
+      <td class="num mono">${money(o.costeo.manoObra)}</td>
+      <td class="num mono">${money(o.costeo.gastosInd)}</td>
+      <td class="num mono">${money(o.costeo.inversionTotal)}</td>
+      <td class="num mono"><b>${money(o.costeo.costoUnitario)}</b></td>
+      <td><button class="btn ghost sm" onclick="abrirOrden('${o.id}')">Ver ficha</button></td>
+    </tr>`).join('') || '<tr><td colspan="9" class="muted">Aún no hay órdenes confirmadas.</td></tr>';
+}
+
+/* ---------- RENDER — INVENTARIO ---------- */
+function renderInventario(){
+  const dir = STATE.materiales.filter(m=>m.clasificacion==='directa');
+  const ind = STATE.materiales.filter(m=>m.clasificacion==='indirecta');
+  const rowMat = m=>`<tr>
+      <td>${m.nombre}</td><td>${m.unidad}</td>
+      <td class="num mono ${m.stock<=m.minimo?'style="color:var(--bad)"':''}">${num(m.stock,2)}</td>
+      <td class="num mono">${num(m.minimo,2)}</td>
+      <td class="num mono">${money(m.costo)}</td>
+      <td class="num mono">${money(m.stock*m.costo)}</td>
+      <td class="flex"><button class="btn ghost sm" onclick="abrirMaterial('${m.id}')">Editar</button></td>
+    </tr>`;
+  document.getElementById('tblInvDirecta').innerHTML = dir.map(rowMat).join('') || '<tr><td colspan="7" class="muted">Sin materiales directos.</td></tr>';
+  document.getElementById('tblInvIndirecta').innerHTML = ind.map(rowMat).join('') || '<tr><td colspan="7" class="muted">Sin materiales indirectos.</td></tr>';
+  document.getElementById('tblInvPT').innerHTML = STATE.productoTerminado.map(pt=>`
+    <tr><td>${pt.id.slice(-6)}</td><td>${pt.ordenFolio}</td><td>${pt.modelo}</td>
+    <td class="num mono">${pt.paresDisponibles}</td><td class="num mono">${money(pt.costoUnitario)}</td>
+    <td class="num mono">${money(pt.paresDisponibles*pt.costoUnitario)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Sin lotes de producto terminado. Confirma una orden de producción.</td></tr>';
+}
+
+/* ---------- RENDER — COMPRAS ---------- */
+function renderCompras(){
+  document.getElementById('tblCompras').innerHTML = STATE.compras.slice().reverse().map(c=>{
+    const m = materialById(c.materialId);
+    return `<tr>
+      <td>${c.folio}</td><td>${c.fecha}</td><td>${c.proveedor}</td><td>${m?m.nombre:'—'}</td>
+      <td><span class="badge info">${m?m.clasificacion:'-'}</span></td>
+      <td class="num mono">${num(c.cantidad,2)}</td><td class="num mono">${money(c.importe)}</td>
+      <td><span class="badge ${c.condicion==='credito'?'warn':'ok'}">${c.condicion}</span></td>
+      <td class="flex"><button class="btn ghost sm" onclick="abrirCompra('${c.id}')">Editar</button><button class="btn danger sm" onclick="eliminarCompra('${c.id}')">Eliminar</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" class="muted">Sin compras registradas.</td></tr>';
+}
+
+/* ---------- RENDER — VENTAS ---------- */
+function renderVentas(){
+  document.getElementById('tblVentas').innerHTML = STATE.ventas.slice().reverse().map(v=>`
+    <tr>
+      <td>${v.folio}</td><td>${v.fecha}</td><td>${v.cliente}</td><td>${v.ordenFolio}</td>
+      <td class="num mono">${v.cantidad}</td><td class="num mono">${money(v.total)}</td>
+      <td class="num mono" style="color:${v.utilidad>=0?'var(--good)':'var(--bad)'}">${money(v.utilidad)}</td>
+      <td><span class="badge ${v.condicion==='credito'?'warn':'ok'}">${v.condicion}</span></td>
+      <td class="flex"><button class="btn ghost sm" onclick="verDetalleVenta('${v.id}')">Detalle</button><button class="btn ghost sm" onclick="verFacturaPDF('${v.id}')">PDF</button><button class="btn ghost sm" onclick="abrirVenta('${v.id}')">Editar</button><button class="btn danger sm" onclick="eliminarVenta('${v.id}')">Cancelar</button></td>
+    </tr>`).join('') || '<tr><td colspan="9" class="muted">Sin ventas registradas.</td></tr>';
+}
+
+/* ---------- RENDER — GASTOS ---------- */
+function renderGastos(){
+  document.getElementById('tblGastos').innerHTML = STATE.gastos.slice().reverse().map(g=>`
+    <tr>
+      <td>${g.folio}</td><td>${g.fecha}</td><td>${g.categoria}</td><td>${g.concepto}</td>
+      <td class="num mono">${money(g.importe)}</td>
+      <td><span class="badge ${g.condicion==='credito'?'warn':'ok'}">${g.condicion}</span></td>
+      <td class="flex"><button class="btn ghost sm" onclick="abrirGasto('${g.id}')">Editar</button><button class="btn danger sm" onclick="eliminarGasto('${g.id}')">Eliminar</button></td>
+    </tr>`).join('') || '<tr><td colspan="7" class="muted">Sin gastos registrados.</td></tr>';
+}
+
+/* ---------- RENDER — CxC / CxP ---------- */
+function renderCartera(tipo, kpiId, tblId){
+  const entries = Object.entries(STATE[tipo]);
+  const saldos = entries.map(([n,m])=>({n,...saldoCartera(m)}));
+  const cargos = saldos.reduce((s,x)=>s+x.cargos,0);
+  const abonos = saldos.reduce((s,x)=>s+x.abonos,0);
+  const saldo = cargos-abonos;
+  document.getElementById(kpiId).innerHTML = `
+    <div class="card kpi"><div class="num">${money(cargos)}</div><div class="lbl">Cargos totales</div></div>
+    <div class="card kpi good"><div class="num">${money(abonos)}</div><div class="lbl">Abonos totales</div></div>
+    <div class="card kpi warn"><div class="num">${money(saldo)}</div><div class="lbl">Saldo total pendiente</div></div>
+  `;
+  document.getElementById(tblId).innerHTML = saldos.sort((a,b)=>b.saldo-a.saldo).map(s=>`
+    <tr><td>${s.n}</td><td class="num mono">${money(s.cargos)}</td><td class="num mono">${money(s.abonos)}</td>
+    <td class="num mono"><b>${money(s.saldo)}</b></td>
+    <td><button class="btn ghost sm" onclick="verDetalleCartera('${tipo}','${s.n.replace(/'/g,"\\'")}')">Ver movimientos</button></td></tr>
+  `).join('') || `<tr><td colspan="5" class="muted">Sin movimientos todavía.</td></tr>`;
+}
+
+/* ---------- RENDER — REPORTES ---------- */
+function renderReportes(){
+  const items = [
+    {t:'Órdenes de producción', fn:()=>exportExcelModulo('Ordenes')},
+    {t:'Costeo de producción', fn:()=>exportExcelModulo('Costeo')},
+    {t:'Inventario de materiales', fn:()=>exportExcelModulo('Inventario')},
+    {t:'Compras', fn:()=>exportExcelModulo('Compras')},
+    {t:'Ventas', fn:()=>exportExcelModulo('Ventas')},
+    {t:'Gastos', fn:()=>exportExcelModulo('Gastos')},
+    {t:'Cuentas por cobrar', fn:()=>exportExcelModulo('CxC')},
+    {t:'Cuentas por pagar', fn:()=>exportExcelModulo('CxP')},
+    {t:'Libro completo (todas las hojas)', fn:()=>exportExcelCompleto()},
+  ];
+  document.getElementById('reportCards').innerHTML = items.map(it=>`
+    <div class="card">
+      <h4 style="font-size:14px">${it.t}</h4>
+      <div class="flex" style="margin-top:8px">
+        <button class="btn ghost sm" onclick='(${it.fn.toString()})()'>Excel</button>
+        ${it.t.includes('completo')?'':`<button class="btn ghost sm" onclick="exportPDFModulo('${it.t}')">PDF</button>`}
+      </div>
+    </div>`).join('');
+}
+
+function renderAll(){
+  renderDashboard();
+  renderProduccion();
+  renderCosteo();
+  renderInventario();
+  renderCompras();
+  renderVentas();
+  renderGastos();
+  renderCartera('clientes','cxcKpis','tblCxcResumen');
+  renderCartera('proveedores','cxpKpis','tblCxpResumen');
+  renderReportes();
+  document.getElementById('cfgNombre').value = STATE.config.nombre||'';
+  document.getElementById('cfgRfc').value = STATE.config.rfc||'';
+  document.getElementById('cfgDireccion').value = STATE.config.direccion||'';
+  document.getElementById('cfgCorreo').value = STATE.config.correo||'';
+  document.getElementById('cfgManoObra').value = STATE.config.manoObraDefault||0;
+  document.getElementById('cfgProrratear').value = STATE.config.prorratear||'si';
+}
+
+function guardarConfig(){
+  STATE.config.nombre = document.getElementById('cfgNombre').value.trim()||'Artesanías D Mitzy';
+  STATE.config.rfc = document.getElementById('cfgRfc').value.trim();
+  STATE.config.direccion = document.getElementById('cfgDireccion').value.trim();
+  STATE.config.correo = document.getElementById('cfgCorreo').value.trim();
+  STATE.config.manoObraDefault = Number(document.getElementById('cfgManoObra').value)||0;
+  STATE.config.prorratear = document.getElementById('cfgProrratear').value;
+  save(); renderAll(); toast('Configuración guardada.');
+}
+
+/* =================================================================
+   EXPORTACIÓN — EXCEL (SheetJS)
+   ================================================================= */
+function sheetFrom(rows){ return XLSX.utils.json_to_sheet(rows); }
+function setLandscape(wb, fit){
+  wb.SheetNames.forEach(name=>{
+    const ws = wb.Sheets[name];
+    ws['!pageSetup'] = Object.assign({orientation:'landscape'}, fit?{fitToWidth:1,fitToHeight:0}:{});
+    ws['!margins'] = {left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.2, footer:0.2};
+  });
+}
+
+function dataOrdenes(){ return STATE.ordenes.map(o=>({Folio:o.folio,Fecha:o.fecha,Estado:o.estado,Pares:o.necesidades?o.necesidades.total:0,'Mano de obra':o.manoObra,'Costo unitario':o.costeo?o.costeo.costoUnitario:'' })); }
+function dataCosteo(){ return STATE.ordenes.filter(o=>o.estado==='confirmada').map(o=>({Folio:o.folio,Fecha:o.fecha,Pares:o.costeo.pares,'Materia prima':o.costeo.invMateriales,'Mano de obra':o.costeo.manoObra,'Gastos indirectos':o.costeo.gastosInd,'Inversión total':o.costeo.inversionTotal,'Costo unitario':o.costeo.costoUnitario})); }
+function dataInventario(){ return STATE.materiales.map(m=>({Material:m.nombre,Clasificación:m.clasificacion,Unidad:m.unidad,Existencia:m.stock,Mínimo:m.minimo,'Costo unitario':m.costo,Valor:m.stock*m.costo})); }
+function dataCompras(){ return STATE.compras.map(c=>({Folio:c.folio,Fecha:c.fecha,Proveedor:c.proveedor,Material:(materialById(c.materialId)||{}).nombre,Cantidad:c.cantidad,Importe:c.importe,Condición:c.condicion})); }
+function dataVentas(){ return STATE.ventas.map(v=>({Factura:v.folio,Fecha:v.fecha,Cliente:v.cliente,'Orden origen':v.ordenFolio,Modelo:v.modelo,Cantidad:v.cantidad,'Precio unitario':v.precioUnitario,Total:v.total,Costo:v.costo,Utilidad:v.utilidad,Condición:v.condicion})); }
+function dataGastos(){ return STATE.gastos.map(g=>({Folio:g.folio,Fecha:g.fecha,Categoría:g.categoria,Concepto:g.concepto,Importe:g.importe,Condición:g.condicion})); }
+function dataCartera(tipo){ const out=[]; Object.entries(STATE[tipo]).forEach(([n,movs])=>movs.forEach(m=>out.push({Nombre:n,Fecha:m.fecha,Concepto:m.concepto,Tipo:m.tipo,Importe:m.monto}))); return out; }
+
+function exportExcelModulo(nombre){
+  const map = {Ordenes:dataOrdenes, Costeo:dataCosteo, Inventario:dataInventario, Compras:dataCompras, Ventas:dataVentas, Gastos:dataGastos, CxC:()=>dataCartera('clientes'), CxP:()=>dataCartera('proveedores')};
+  const rows = map[nombre]();
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(rows.length?rows:[{Aviso:'Sin datos'}]), nombre.slice(0,31));
+  XLSX.writeFile(wb, `ArtesaniasDMitzy_${nombre}_${todayStr()}.xlsx`);
+  toast('Excel generado.');
+}
+function exportExcelCompleto(){
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataOrdenes()), 'Ordenes');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataCosteo()), 'Costeo');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataInventario()), 'Inventario');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataCompras()), 'Compras');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataVentas()), 'Ventas');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataGastos()), 'Gastos');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataCartera('clientes')), 'CxC');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataCartera('proveedores')), 'CxP');
+  XLSX.writeFile(wb, `ArtesaniasDMitzy_Completo_${todayStr()}.xlsx`);
+  toast('Libro de Excel completo generado.');
+}
+
+/* =================================================================
+   EXPORTACIÓN — PDF (jsPDF + autotable)
+   ================================================================= */
+function pdfHeader(doc,title){
+  doc.setFontSize(14); doc.text(STATE.config.nombre||'Artesanías D Mitzy', 14, 16);
+  doc.setFontSize(10); doc.text(title, 14, 23);
+  doc.setFontSize(8); doc.text('Generado: '+new Date().toLocaleString('es-MX'), 14, 28);
+}
+function exportPDFModulo(titulo){
+  const map = {
+    'Órdenes de producción': [['Folio','Fecha','Estado','Pares','Costo unit.'], STATE.ordenes.map(o=>[o.folio,o.fecha,o.estado,o.necesidades?o.necesidades.total:0,o.costeo?money(o.costeo.costoUnitario):'-'])],
+    'Costeo de producción': [['Folio','Fecha','Pares','M.Prima','M.Obra','G.Ind.','Inversión','Costo unit.'], STATE.ordenes.filter(o=>o.estado==='confirmada').map(o=>[o.folio,o.fecha,o.costeo.pares,money(o.costeo.invMateriales),money(o.costeo.manoObra),money(o.costeo.gastosInd),money(o.costeo.inversionTotal),money(o.costeo.costoUnitario)])],
+    'Inventario de materiales': [['Material','Clasif.','Existencia','Mínimo','Costo','Valor'], STATE.materiales.map(m=>[m.nombre,m.clasificacion,num(m.stock,2),num(m.minimo,2),money(m.costo),money(m.stock*m.costo)])],
+    'Compras': [['Folio','Fecha','Proveedor','Material','Cantidad','Importe','Cond.'], STATE.compras.map(c=>[c.folio,c.fecha,c.proveedor,(materialById(c.materialId)||{}).nombre,num(c.cantidad,2),money(c.importe),c.condicion])],
+    'Ventas': [['Factura','Fecha','Cliente','Origen','Cant.','Total','Utilidad','Cond.'], STATE.ventas.map(v=>[v.folio,v.fecha,v.cliente,v.ordenFolio,v.cantidad,money(v.total),money(v.utilidad),v.condicion])],
+    'Gastos': [['Folio','Fecha','Categoría','Concepto','Importe','Cond.'], STATE.gastos.map(g=>[g.folio,g.fecha,g.categoria,g.concepto,money(g.importe),g.condicion])],
+    'Cuentas por cobrar': [['Cliente','Cargos','Abonos','Saldo'], Object.entries(STATE.clientes).map(([n,m])=>{const s=saldoCartera(m);return [n,money(s.cargos),money(s.abonos),money(s.saldo)];})],
+    'Cuentas por pagar': [['Proveedor','Cargos','Abonos','Saldo'], Object.entries(STATE.proveedores).map(([n,m])=>{const s=saldoCartera(m);return [n,money(s.cargos),money(s.abonos),money(s.saldo)];})],
+  };
+  const [head, body] = map[titulo] || [[],[]];
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation: body.length && head.length>6 ? 'landscape':'portrait'});
+  pdfHeader(doc, titulo);
+  doc.autoTable({head:[head], body, startY:33, styles:{fontSize:8}, headStyles:{fillColor:[47,72,88]}});
+  doc.save(`ArtesaniasDMitzy_${titulo.replace(/\s+/g,'_')}_${todayStr()}.pdf`);
+  toast('PDF generado.');
+}
+function verFichaOrdenPDF(id){ generarFichaOrdenPDF(id); }
+function generarFichaOrdenPDF(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Ficha de orden de producción '+o.folio);
+  doc.setFontSize(9);
+  doc.text('Fecha: '+o.fecha+'    Estado: '+o.estado+'    Pares totales: '+(o.necesidades?o.necesidades.total:0), 14, 34);
+  const headLineas = ['Cliente','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
+  const bodyLineas = o.lineas.map(l=>[l.cliente||'EXTRA', l.marca||'-', l.planta, l.cuña, l.suela, l.cerco, ...SIZES.map(sz=>l.tallas[sz]||0), SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0), l.comentarios||'']);
+  doc.autoTable({head:[headLineas], body:bodyLineas, startY:40, styles:{fontSize:6.5}, headStyles:{fillColor:[47,72,88]}});
+  let y = doc.lastAutoTable.finalY+8;
+  if(o.necesidades){
+    doc.setFontSize(10); doc.text('Material requerido', 14, y); y+=4;
+    doc.autoTable({head:[['Material','Clasif.','Requerido','Unidad','Inversión']], body:o.necesidades.detalle.map(d=>[d.nombre,d.clasificacion,num(d.requerido,2),d.unidad,money(d.inversion)]), startY:y, styles:{fontSize:8}, headStyles:{fillColor:[181,86,47]}});
+    y = doc.lastAutoTable.finalY+8;
+  }
+  if(o.costeo){
+    doc.setFontSize(10);
+    doc.text(`Mano de obra: ${money(o.costeo.manoObra)}   Gastos indirectos: ${money(o.costeo.gastosInd)}   Inversión total: ${money(o.costeo.inversionTotal)}`, 14, y); y+=6;
+    doc.setFontSize(12); doc.text(`Costo unitario: ${money(o.costeo.costoUnitario)}`, 14, y);
+  }
+  doc.save(`OrdenProduccion_${o.folio}.pdf`);
+  toast('Ficha PDF generada.');
+}
+
+/* ---------- Reportes adicionales por orden ---------- */
+function abrirReportesOrden(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  if(!o){ toast('No se encontró la orden.'); return; }
+  const tieneCosteo = !!o.costeo;
+  openModal(`
+    <h3>Reportes — Orden ${o.folio}</h3>
+    <p class="muted">Cada reporte se puede exportar en Excel o PDF.</p>
+    <div class="grid cols-2">
+      <div class="card">
+        <h4 style="font-size:14px">Hoja de corte (acumulado por talla)</h4>
+        <p class="smallnote">Cuña, suela y planta/cerco acumulados por talla 17–27, para entregar a los cortadores. Incluye los comentarios de cada línea.</p>
+        <div class="flex" style="margin-top:8px">
+          <button class="btn ghost sm" onclick="generarHojaCorteExcel('${id}')">Excel</button>
+          <button class="btn ghost sm" onclick="generarHojaCortePDF('${id}')">PDF (horizontal)</button>
+        </div>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px">Orden de producción (sin costos)</h4>
+        <p class="smallnote">Solo las líneas capturadas por talla, con columna de comentarios, en formato horizontal.</p>
+        <div class="flex" style="margin-top:8px">
+          <button class="btn ghost sm" onclick="exportOrdenSoloExcel('${id}')">Excel</button>
+          <button class="btn ghost sm" onclick="exportOrdenSoloPDF('${id}')">PDF (horizontal)</button>
+        </div>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px">Hoja de costo</h4>
+        <p class="smallnote">${tieneCosteo?'Detalle de materia prima, mano de obra, gastos indirectos y costo unitario.':'Disponible cuando la orden esté confirmada.'}</p>
+        <div class="flex" style="margin-top:8px">
+          <button class="btn ghost sm" ${tieneCosteo?'':'disabled'} onclick="exportHojaCostoExcel('${id}')">Excel</button>
+          <button class="btn ghost sm" ${tieneCosteo?'':'disabled'} onclick="exportHojaCostoPDF('${id}')">PDF</button>
+        </div>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px">Ficha completa</h4>
+        <p class="smallnote">Orden + material requerido + costo, todo en un solo PDF.</p>
+        <div class="flex" style="margin-top:8px">
+          <button class="btn ghost sm" ${tieneCosteo?'':'disabled'} onclick="generarFichaOrdenPDF('${id}')">PDF</button>
+        </div>
+      </div>
+    </div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+
+function generarHojaCortePDF(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  const ac = calcAcumulados(o);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape'});
+  pdfHeader(doc, 'Hoja de corte — Acumulado por talla — Orden '+o.folio);
+  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
+  let y = 40;
+  function tabla(titulo, rows, color){
+    if(!rows.length) return;
+    doc.setFontSize(11); doc.text(titulo, 14, y); y+=4;
+    const head = ['Categoría', ...SIZES.map(String), 'Total'];
+    const body = rows.map(r=>[r.nombre, ...SIZES.map(sz=>r.tallas[sz]||0), r.total]);
+    doc.autoTable({head:[head], body, startY:y, styles:{fontSize:8}, headStyles:{fillColor:color||[47,72,88]}});
+    y = doc.lastAutoTable.finalY+8;
+    if(y>170){ doc.addPage('landscape'); y=20; }
+  }
+  tabla('Cuña', ac.cuña, [47,72,88]);
+  tabla('Suela', ac.suela, [181,86,47]);
+  tabla('Planta / Cerco', ac.planta, [47,72,88]);
+  tabla('Cerco (tipo)', ac.cerco, [181,86,47]);
+  const comentarios = o.lineas.filter(l=>l.comentarios && l.comentarios.trim());
+  if(comentarios.length){
+    doc.setFontSize(11); doc.text('Comentarios adicionales', 14, y); y+=5;
+    doc.setFontSize(8);
+    comentarios.forEach(l=>{
+      const linea = `• ${l.cliente||'EXTRA'} / ${l.marca||'-'} (${l.cuña}/${l.suela}): ${l.comentarios}`;
+      doc.text(linea, 14, y); y+=4.5;
+      if(y>190){ doc.addPage('landscape'); y=20; }
+    });
+  }
+  doc.save(`HojaCorte_${o.folio}.pdf`);
+  toast('Hoja de corte (PDF) generada.');
+}
+function generarHojaCorteExcel(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  const ac = calcAcumulados(o);
+  const wb = XLSX.utils.book_new();
+  function toSheetRows(rows){
+    return rows.map(r=>{
+      const row = {'Categoría':r.nombre};
+      SIZES.forEach(sz=>row[sz]=r.tallas[sz]||0);
+      row['Total']=r.total;
+      return row;
+    });
+  }
+  if(ac.cuña.length) XLSX.utils.book_append_sheet(wb, sheetFrom(toSheetRows(ac.cuña)), 'Cuña');
+  if(ac.suela.length) XLSX.utils.book_append_sheet(wb, sheetFrom(toSheetRows(ac.suela)), 'Suela');
+  if(ac.planta.length) XLSX.utils.book_append_sheet(wb, sheetFrom(toSheetRows(ac.planta)), 'Planta');
+  if(ac.cerco.length) XLSX.utils.book_append_sheet(wb, sheetFrom(toSheetRows(ac.cerco)), 'Cerco');
+  const coment = o.lineas.filter(l=>l.comentarios && l.comentarios.trim()).map(l=>({Cliente:l.cliente||'EXTRA', Marca:l.marca||'', Cuña:l.cuña, Suela:l.suela, Comentarios:l.comentarios}));
+  if(coment.length) XLSX.utils.book_append_sheet(wb, sheetFrom(coment), 'Comentarios');
+  if(!wb.SheetNames.length) XLSX.utils.book_append_sheet(wb, sheetFrom([{Aviso:'Sin datos para esta orden'}]), 'Hoja de corte');
+  setLandscape(wb, true);
+  XLSX.writeFile(wb, `HojaCorte_${o.folio}.xlsx`);
+  toast('Hoja de corte (Excel) generada.');
+}
+
+function dataOrdenLineasSolo(o){
+  return o.lineas.map(l=>{
+    const row = {Cliente:l.cliente||'EXTRA', Marca:l.marca||'', Planta:l.planta, Cuña:l.cuña, Suela:l.suela, Cerco:l.cerco};
+    SIZES.forEach(sz=>row[sz]=l.tallas[sz]||0);
+    row['Total'] = SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0);
+    row['Comentarios'] = l.comentarios||'';
+    return row;
+  });
+}
+function exportOrdenSoloExcel(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  const wb = XLSX.utils.book_new();
+  const rows = dataOrdenLineasSolo(o);
+  const ws = sheetFrom(rows.length?rows:[{Aviso:'Sin líneas capturadas'}]);
+  ws['!cols'] = [{wch:16},{wch:12},{wch:11},{wch:10},{wch:10},{wch:10}, ...SIZES.map(()=>({wch:5})), {wch:7},{wch:34}];
+  XLSX.utils.book_append_sheet(wb, ws, ('Orden '+o.folio).slice(0,31));
+  setLandscape(wb, true);
+  XLSX.writeFile(wb, `OrdenProduccion_${o.folio}_SinCosto.xlsx`);
+  toast('Orden de producción exportada a Excel (horizontal, sin costos).');
+}
+function exportOrdenSoloPDF(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape'});
+  pdfHeader(doc, 'Orden de producción '+o.folio+' (sin costos)');
+  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
+  const head = ['Cliente','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
+  const body = o.lineas.map(l=>[l.cliente||'EXTRA', l.marca||'-', l.planta, l.cuña, l.suela, l.cerco, ...SIZES.map(sz=>l.tallas[sz]||0), SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0), l.comentarios||'']);
+  doc.autoTable({head:[head], body, startY:40, styles:{fontSize:7}, headStyles:{fillColor:[47,72,88]}});
+  doc.save(`OrdenProduccion_${o.folio}_SinCosto.pdf`);
+  toast('PDF de orden (sin costos, horizontal) generado.');
+}
+
+function dataCosteoDetalleOrden(o){
+  if(!o.necesidades) return [];
+  return o.necesidades.detalle.map(d=>({Material:d.nombre, Clasificación:d.clasificacion, 'Base de cálculo':BASE_LABELS[d.base], 'Cantidad base':d.baseCant, Requerido:d.requerido, Unidad:d.unidad, 'Costo unitario':d.costo, Inversión:d.inversion}));
+}
+function exportHojaCostoExcel(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  if(!o.costeo){ toast('Esta orden aún no está confirmada.'); return; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataCosteoDetalleOrden(o)), 'Materiales');
+  const resumen = [
+    {Concepto:'Pares totales', Valor:o.costeo.pares},
+    {Concepto:'Inversión en materia prima', Valor:o.costeo.invMateriales},
+    {Concepto:'Mano de obra', Valor:o.costeo.manoObra},
+    {Concepto:'Gastos indirectos aplicados', Valor:o.costeo.gastosInd},
+    {Concepto:'Inversión total', Valor:o.costeo.inversionTotal},
+    {Concepto:'Costo unitario', Valor:o.costeo.costoUnitario},
+  ];
+  XLSX.utils.book_append_sheet(wb, sheetFrom(resumen), 'Resumen de costo');
+  XLSX.writeFile(wb, `HojaCosto_${o.folio}.xlsx`);
+  toast('Hoja de costo exportada a Excel.');
+}
+function exportHojaCostoPDF(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  if(!o.costeo){ toast('Esta orden aún no está confirmada.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Hoja de costo — Orden '+o.folio);
+  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Pares: '+o.costeo.pares, 14, 34);
+  doc.autoTable({
+    head:[['Material','Clasif.','Base de cálculo','Cant. base','Requerido','Unidad','Costo unit.','Inversión']],
+    body: o.necesidades.detalle.map(d=>[d.nombre,d.clasificacion,BASE_LABELS[d.base],num(d.baseCant,2),num(d.requerido,2),d.unidad,money(d.costo),money(d.inversion)]),
+    startY:40, styles:{fontSize:7.5}, headStyles:{fillColor:[181,86,47]}
+  });
+  let y = doc.lastAutoTable.finalY+8;
+  doc.setFontSize(10);
+  doc.text(`Materia prima: ${money(o.costeo.invMateriales)}    Mano de obra: ${money(o.costeo.manoObra)}    Gastos indirectos: ${money(o.costeo.gastosInd)}`, 14, y); y+=6;
+  doc.text(`Inversión total: ${money(o.costeo.inversionTotal)}`, 14, y); y+=8;
+  doc.setFontSize(13); doc.text(`Costo unitario: ${money(o.costeo.costoUnitario)}`, 14, y);
+  doc.save(`HojaCosto_${o.folio}.pdf`);
+  toast('PDF de hoja de costo generado.');
+}
+
+function hexToRgb(hex){
+  hex = (hex||'#2F4858').replace('#','');
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const n = parseInt(hex,16)||0x2F4858;
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+function verFacturaPDF(id){
+  const v = STATE.ventas.find(x=>x.id===id);
+  if(!v) return;
+  const cfg = STATE.config;
+  const accent = hexToRgb(cfg.facturaColor);
+  const esTicket = cfg.facturaTamano==='ticket';
+  const { jsPDF } = window.jspdf;
+  const doc = esTicket ? new jsPDF({unit:'mm', format:[80,250]}) : new jsPDF({unit:'mm', format:'letter'});
+  const pageWidth = esTicket?80:216;
+  const marginX = esTicket?4:14;
+  let y = 14;
+
+  if(cfg.logoBase64){
+    try{
+      const w = esTicket?22:26, h = w*0.55;
+      doc.addImage(cfg.logoBase64, marginX, y, w, h);
+      y += h+4;
+    }catch(e){ /* logo no válido, se omite */ }
+  }
+  doc.setTextColor(...accent);
+  doc.setFontSize(esTicket?11:16);
+  doc.text(cfg.nombre||'Artesanías D Mitzy', marginX, y);
+  doc.setTextColor(20,20,20);
+  y += esTicket?5:7;
+  doc.setFontSize(esTicket?7:9);
+  if(cfg.direccion){ doc.text(cfg.direccion, marginX, y); y += esTicket?3.5:5; }
+  if(cfg.rfc){ doc.text('RFC: '+cfg.rfc, marginX, y); y += esTicket?3.5:5; }
+  y += 2;
+  doc.setDrawColor(...accent); doc.setLineWidth(0.4);
+  doc.line(marginX, y, pageWidth-marginX, y); y += 6;
+
+  doc.setTextColor(...accent);
+  doc.setFontSize(esTicket?9:12);
+  doc.text(esTicket?'TICKET DE VENTA':'FACTURA / TICKET DE VENTA', marginX, y);
+  doc.setTextColor(20,20,20);
+  y += 6;
+  doc.setFontSize(esTicket?7:10);
+  doc.text('Folio: '+v.folio, marginX, y);
+  if(!esTicket) doc.text('Fecha: '+v.fecha, pageWidth-70, y);
+  y += esTicket?4:5;
+  if(esTicket){ doc.text('Fecha: '+v.fecha, marginX, y); y+=4; }
+  doc.text('Cliente: '+v.cliente, marginX, y);
+  if(!esTicket) doc.text('Condición: '+v.condicion, pageWidth-70, y);
+  y += esTicket?4:6;
+  if(esTicket){ doc.text('Condición: '+v.condicion, marginX, y); y += 5; }
+
+  const items = ventaItems(v);
+  const head = esTicket ? [['Producto','Cant','P.Unit','Importe']] : [['Producto','Origen','Cantidad','Precio unit.','Importe']];
+  const body = items.map(it=>{
+    const importe = it.importe!=null ? it.importe : it.cantidad*it.precioUnitario;
+    return esTicket ? [it.modelo, it.cantidad, money(it.precioUnitario), money(importe)] : [it.modelo, it.ordenFolio||'-', it.cantidad, money(it.precioUnitario), money(importe)];
+  });
+  doc.autoTable({head, body, startY:y, styles:{fontSize:esTicket?6.5:9}, headStyles:{fillColor:accent}, margin:{left:marginX, right:marginX}});
+  y = doc.lastAutoTable.finalY + (esTicket?5:10);
+  doc.setTextColor(...accent);
+  doc.setFontSize(esTicket?10:13);
+  doc.text('TOTAL: '+money(v.total), esTicket?marginX:pageWidth-80, y);
+  doc.setTextColor(20,20,20);
+  y += esTicket?7:10;
+  if(cfg.facturaPie){
+    doc.setFontSize(esTicket?6.5:8);
+    const lineas = doc.splitTextToSize(cfg.facturaPie, pageWidth-marginX*2);
+    doc.text(lineas, marginX, y);
+  }
+  doc.save(`Factura_${v.folio}.pdf`);
+  toast('Factura PDF generada.');
+}
+
+
+/* =================================================================
+   RESPALDO
+   ================================================================= */
+function descargarBackup(){
+  const blob = new Blob([JSON.stringify(STATE,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `Respaldo_ArtesaniasDMitzy_${todayStr()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function respaldarYCorreo(){
+  descargarBackup();
+  const correo = STATE.config.correo || '';
+  const asunto = encodeURIComponent('Respaldo Artesanías D Mitzy — '+todayStr());
+  const cuerpo = encodeURIComponent('Adjunta aquí el archivo de respaldo que se acaba de descargar (Respaldo_ArtesaniasDMitzy_'+todayStr()+'.json) para resguardarlo en la nube.\n\nGenerado desde el Sistema Administrativo de Artesanías D Mitzy.');
+  const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(correo)}&su=${asunto}&body=${cuerpo}`;
+  window.open(url,'_blank');
+  toast('Respaldo descargado. Adjúntalo en la pestaña de Gmail que se abrió.');
+}
+function restaurarBackup(){
+  const file = document.getElementById('fileRestore').files[0];
+  if(!file){ toast('Selecciona un archivo .json primero.'); return; }
+  if(!confirm('Esto reemplazará TODOS los datos actuales del sistema. ¿Continuar?')) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      STATE = data; save(); renderAll();
+      toast('Respaldo restaurado correctamente.');
+    }catch(err){ toast('El archivo no es un respaldo válido.'); }
+  };
+  reader.readAsText(file);
+}
+
+/* =================================================================
+   INIT
+   ================================================================= */
+(async function init(){
+  await load();
+  renderAll();
+  if(IS_DESKTOP){
+    document.querySelectorAll('.respaldo-nota-navegador').forEach(el=>{
+      el.innerHTML = 'Esta versión de escritorio guarda tu información en un archivo dentro de la carpeta de datos de la aplicación en este equipo (no en la caché del navegador), así que no se pierde al limpiar el navegador. Aun así, descarga respaldos periódicos: si formateas el equipo o lo cambias, ese archivo se pierde si no lo respaldaste.';
+    });
+    try{
+      const info = await window.dataAPI.info();
+      const note = document.getElementById('rutaArchivoDatos');
+      if(note) note.textContent = info.dataFile;
+    }catch(e){}
+  }
+})();
+</script>
+</body>
+</html>
