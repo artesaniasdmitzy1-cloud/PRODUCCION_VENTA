@@ -4,9 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Artesanías D Mitzy — Sistema Administrativo</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+  // Si no hay internet (o falla la CDN), estos <script> avisan aquí y la app
+  // los vuelve a cargar desde la copia guardada localmente (solo en la app de escritorio).
+  window.__LIBS_FALLBACK_QUEUE = [];
+  function onFalloCDN(nombre){
+    window.__LIBS_FALLBACK_QUEUE.push(nombre);
+    clearTimeout(window.__libsFallbackTimer);
+    window.__libsFallbackTimer = setTimeout(cargarLibreriasLocalesFallback, 60);
+  }
+  async function cargarLibreriasLocalesFallback(){
+    if(typeof window.libsAPI === 'undefined') return; // versión de navegador normal: no hay copia local que usar
+    let folder;
+    try{ folder = await window.libsAPI.folder(); }catch(e){ return; }
+    const pendientes = window.__LIBS_FALLBACK_QUEUE.splice(0);
+    for(const nombre of pendientes){
+      await new Promise(res=>{
+        const s = document.createElement('script');
+        s.src = 'file:///' + folder.replace(/\\/g,'/') + '/' + nombre;
+        s.onload = res; s.onerror = res;
+        document.head.appendChild(s);
+      });
+    }
+    window.dispatchEvent(new Event('libreriasListas'));
+  }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" onerror="onFalloCDN('xlsx.full.min.js')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="onFalloCDN('jspdf.umd.min.js')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" onerror="onFalloCDN('jspdf.plugin.autotable.min.js')"></script>
 <style>
 :root{
   --paper:#F7F2E9;
@@ -44,34 +69,50 @@ a{color:var(--clay);}
 button{cursor:pointer;font-family:inherit;}
 
 /* ---- layout ---- */
-#app{display:flex;min-height:100vh;}
+#app{display:flex;flex-direction:column;min-height:100vh;}
 #sidebar{
-  width:230px;flex:0 0 230px;
+  width:100%;flex:none;
   background:var(--indigo);
   color:#EDEEE6;
-  padding:18px 0;
-  position:sticky;top:0;height:100vh;overflow-y:auto;
-  display:flex;flex-direction:column;
+  padding:0;
+  position:sticky;top:0;z-index:40;
+  display:flex;flex-direction:row;align-items:stretch;
+  overflow-x:auto;overflow-y:hidden;
+  box-shadow:0 2px 10px rgba(0,0,0,.15);
 }
 #sidebar .brand{
-  padding:0 18px 16px 18px;
-  border-bottom:1px dashed rgba(255,255,255,.25);
-  margin-bottom:10px;
+  padding:8px 18px;
+  border-bottom:none;border-right:1px dashed rgba(255,255,255,.25);
+  margin-bottom:0;flex:0 0 auto;
+  display:flex;flex-direction:column;justify-content:center;
 }
 #sidebar .brand .logo{
-  font-family:Georgia,serif;font-size:20px;font-weight:700;color:#fff;line-height:1.15;
+  font-family:Georgia,serif;font-size:15px;font-weight:700;color:#fff;line-height:1.15;white-space:nowrap;
 }
-#sidebar .brand .sub{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-top:4px;}
-.navgroup{margin:10px 0;}
-.navlabel{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);padding:6px 18px;}
+#sidebar .brand .sub{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-top:2px;white-space:nowrap;}
+.navgroup{margin:0;display:flex;flex-direction:row;align-items:stretch;flex:0 0 auto;}
+.navgroup+.navgroup{border-left:1px dashed rgba(255,255,255,.2);margin-left:2px;padding-left:2px;}
+.navlabel{display:none;}
 .navbtn{
-  display:flex;align-items:center;gap:10px;
-  width:100%;text-align:left;background:none;border:none;color:#EDEEE6;
-  padding:9px 18px;font-size:13.5px;border-left:3px solid transparent;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  width:auto;text-align:center;background:none;border:none;color:#EDEEE6;
+  padding:8px 13px;font-size:10.8px;border-bottom:3px solid transparent;white-space:nowrap;
 }
 .navbtn:hover{background:rgba(255,255,255,.06);}
-.navbtn.active{background:rgba(255,255,255,.1);border-left-color:var(--clay);color:#fff;font-weight:600;}
-.navbtn .ic{width:18px;text-align:center;opacity:.85;}
+.navbtn.active{background:rgba(255,255,255,.1);border-bottom-color:var(--clay);color:#fff;font-weight:600;}
+.navbtn .ic{font-size:17px;line-height:1;}
+.sidebar-right{margin-left:auto;flex:0 0 auto;display:flex;flex-direction:row;align-items:stretch;}
+#sidebar .userbox{
+  margin-top:0;flex:0 0 auto;
+  padding:6px 18px;border-top:none;border-left:1px dashed rgba(255,255,255,.25);
+  display:flex;flex-direction:row;align-items:center;gap:10px;font-size:11.5px;white-space:nowrap;
+}
+#sidebar .userbox b{color:#fff;display:inline;font-size:12.5px;}
+#sidebar .userbox button{margin-top:0;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 9px;border-radius:5px;font-size:11px;}
+#btnSalir{border-left:1px dashed rgba(255,255,255,.25);}
+#btnSalir:hover{background:rgba(178,58,52,.35);}
+.conexion-indicador{align-self:center;font-size:11px;padding:4px 10px;color:rgba(255,255,255,.75);white-space:nowrap;}
+.conexion-indicador.offline{color:#F0C67A;}
 
 #main{flex:1;min-width:0;padding:22px 28px 60px 28px;}
 .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
@@ -157,7 +198,10 @@ td.num,th.num{text-align:right;font-family:'Consolas','Courier New',monospace;}
 .modal h3{border-bottom:2px dashed var(--gold);padding-bottom:8px;margin-bottom:14px;}
 .modal .close-row{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
 
-.lines-table input, .lines-table select{width:100%;padding:4px 5px;font-size:12px;}
+.lines-table input, .lines-table select{width:100%;padding:8px 7px;font-size:14px;border-radius:5px;}
+.lines-table th{font-size:12.5px;padding:9px 8px;}
+.lines-table td{padding:6px 5px;}
+.modal.modal-wide{max-width:1180px;}
 .stitch{border-top:1px dashed var(--gold);margin:16px 0;}
 .muted{color:var(--ink-soft);font-size:12.5px;}
 .empty{padding:26px;text-align:center;color:var(--ink-soft);border:1px dashed var(--line);border-radius:var(--radius);background:var(--card);}
@@ -167,6 +211,7 @@ td.num,th.num{text-align:right;font-family:'Consolas','Courier New',monospace;}
 .flex{display:flex;gap:8px;align-items:center;}
 .grow{flex:1;}
 hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
+.respaldo-auto-desktop{display:none;}
 
 /* ---- login screen ---- */
 #loginScreen{position:fixed;inset:0;background:linear-gradient(160deg,var(--indigo) 0%,var(--indigo-2) 100%);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
@@ -187,19 +232,14 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
 /* ---- mini charts ---- */
 .chartcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;}
 .chartcard h4{font-size:13px;margin-bottom:6px;}
-
-/* ---- sidebar footer / session ---- */
-#sidebar .userbox{margin-top:auto;padding:14px 18px;border-top:1px dashed rgba(255,255,255,.25);font-size:12px;color:rgba(255,255,255,.75);}
-#sidebar .userbox b{color:#fff;display:block;font-size:13px;}
-#sidebar .userbox button{margin-top:6px;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 9px;border-radius:5px;font-size:11.5px;}
 </style>
 </head>
 <body>
 <div id="loginScreen">
   <div class="login-card">
     <div id="loginLogoWrap"></div>
-    <h2>Artesanías D Mitzy</h2>
-    <div class="sub">Sistema Administrativo — inicia sesión para continuar</div>
+    <h2>Sistema de Producción Artesanías D Mitzy</h2>
+    <div class="sub">Bienvenido — inicia sesión para continuar</div>
     <div class="field"><label>Usuario</label><input id="loginUsuario" autocomplete="username"></div>
     <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')intentarLogin()"></div>
     <div class="login-err" id="loginError"></div>
@@ -222,6 +262,7 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
       <button class="navbtn" data-view="inventario"><span class="ic">📦</span> Inventario</button>
       <button class="navbtn" data-view="compras"><span class="ic">🛒</span> Compras</button>
       <button class="navbtn" data-view="ventas"><span class="ic">🛍️</span> Ventas / POS</button>
+      <button class="navbtn" data-view="empaque"><span class="ic">🚚</span> Lista de empaque</button>
       <button class="navbtn" data-view="gastos"><span class="ic">💸</span> Gastos</button>
     </div>
     <div class="navgroup">
@@ -235,14 +276,21 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     </div>
     <div class="navgroup">
       <div class="navlabel">Sistema</div>
+      <button class="navbtn" data-view="procesos"><span class="ic">🗺️</span> Procesos</button>
       <button class="navbtn" data-view="reportes"><span class="ic">📊</span> Reportes</button>
       <button class="navbtn" data-view="respaldo"><span class="ic">☁️</span> Respaldo / Nube</button>
       <button class="navbtn" data-view="config"><span class="ic">⚙️</span> Configuración</button>
     </div>
-    <div class="userbox" id="userbox" style="display:none">
-      <b id="userboxNombre"></b>
-      <span id="userboxRol"></span>
-      <div><button onclick="cerrarSesion()">Cerrar sesión</button></div>
+    <div class="sidebar-right">
+      <span class="conexion-indicador" id="conexionIndicador" title="Estado de conexión a internet">● En línea</span>
+      <div class="userbox" id="userbox" style="display:none">
+        <b id="userboxNombre"></b>
+        <span id="userboxRol"></span>
+        <div><button onclick="cerrarSesion()">Cerrar sesión</button></div>
+      </div>
+      <button class="navbtn" id="btnSalir" onclick="salirDelSistema()" title="Genera un respaldo y cierra el sistema">
+        <span class="ic">🚪</span> Salir
+      </button>
     </div>
   </nav>
 
@@ -363,6 +411,19 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
       </table></div>
     </section>
 
+    <!-- ============ LISTA DE EMPAQUE ============ -->
+    <section class="view" id="view-empaque">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Envíos</div><h1>Lista de empaque</h1></div>
+        <button class="btn clay" onclick="abrirEmpaque(null)">+ Nuevo envío</button>
+      </div>
+      <p class="muted">Llena remitente (desde Configuración) y destinatario (elige un cliente y se autocompleta, o captúralo manual). Agrega paquetería y número de rastreo, y marca el check cuando el envío quede finalizado.</p>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Folio</th><th>Fecha</th><th>Destinatario</th><th>Ciudad</th><th>Paquetería</th><th>Rastreo</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="tblEmpaque"></tbody>
+      </table></div>
+    </section>
+
     <!-- ============ GASTOS ============ -->
     <section class="view" id="view-gastos">
       <div class="topbar">
@@ -416,9 +477,154 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
       <div class="tblwrap"><table class="tbl"><thead><tr><th>Proveedor</th><th class="num">Cargos</th><th class="num">Abonos</th><th class="num">Saldo</th><th>Detalle</th></tr></thead><tbody id="tblCxpResumen"></tbody></table></div>
     </section>
 
+    <!-- ============ PROCESOS ============ -->
+    <section class="view" id="view-procesos">
+      <div class="topbar"><div class="titles"><div class="eyebrow">Organización</div><h1>Procesos</h1></div></div>
+
+      <div class="card" style="margin-bottom:20px">
+        <h3>Croquis — línea de producción</h3>
+        <p class="muted">Acomodo del taller: el proceso avanza en serpentina de izquierda a derecha y de vuelta.</p>
+        <div style="overflow-x:auto">
+        <svg viewBox="0 0 500 240" style="width:100%;max-width:640px;height:auto">
+          <defs>
+            <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" style="fill:var(--clay)"></path>
+            </marker>
+          </defs>
+          <line x1="120" y1="60" x2="136" y2="60" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
+          <line x1="240" y1="60" x2="256" y2="60" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
+          <line x1="360" y1="60" x2="376" y2="60" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
+          <line x1="430" y1="92" x2="430" y2="156" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
+          <line x1="380" y1="190" x2="364" y2="190" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
+          <line x1="260" y1="190" x2="244" y2="190" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
+          <line x1="140" y1="190" x2="124" y2="190" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
+
+          <g>
+            <rect x="20" y="30" width="100" height="60" rx="8" style="fill:var(--indigo)"></rect>
+            <text x="70" y="55" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">RECEPCIÓN DE</text>
+            <text x="70" y="68" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">MATERIA PRIMA</text>
+          </g>
+          <g>
+            <rect x="140" y="30" width="100" height="60" rx="8" style="fill:var(--indigo)"></rect>
+            <text x="190" y="64" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">CORTE</text>
+          </g>
+          <g>
+            <rect x="260" y="30" width="100" height="60" rx="8" style="fill:var(--indigo)"></rect>
+            <text x="310" y="64" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">COSTURA</text>
+          </g>
+          <g>
+            <rect x="380" y="30" width="100" height="60" rx="8" style="fill:var(--indigo)"></rect>
+            <text x="430" y="64" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">PEGADO</text>
+          </g>
+          <g>
+            <rect x="380" y="160" width="100" height="60" rx="8" style="fill:var(--clay)"></rect>
+            <text x="430" y="185" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">PINTURA /</text>
+            <text x="430" y="198" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">ACABADO</text>
+          </g>
+          <g>
+            <rect x="260" y="160" width="100" height="60" rx="8" style="fill:var(--clay)"></rect>
+            <text x="310" y="185" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">CONTROL DE</text>
+            <text x="310" y="198" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">CALIDAD</text>
+          </g>
+          <g>
+            <rect x="140" y="160" width="100" height="60" rx="8" style="fill:var(--clay)"></rect>
+            <text x="190" y="194" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">EMPAQUE</text>
+          </g>
+          <g>
+            <rect x="20" y="160" width="100" height="60" rx="8" style="fill:var(--good)"></rect>
+            <text x="70" y="185" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">ALMACÉN /</text>
+            <text x="70" y="198" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">VENTA</text>
+          </g>
+        </svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Organigrama</h3>
+        <p class="muted">Estructura general de Artesanías D Mitzy.</p>
+        <div style="overflow-x:auto">
+        <svg viewBox="0 0 1000 250" style="width:100%;max-width:920px;height:auto">
+          <polyline points="450,70 450,90 220,90 220,110" style="fill:none;stroke:var(--ink-soft);stroke-width:2"></polyline>
+          <polyline points="450,90 680,90 680,110" style="fill:none;stroke:var(--ink-soft);stroke-width:2"></polyline>
+          <polyline points="220,160 220,175 100,175 100,190" style="fill:none;stroke:var(--ink-soft);stroke-width:2"></polyline>
+          <line x1="235" y1="175" x2="235" y2="190" style="stroke:var(--ink-soft);stroke-width:2"></line>
+          <line x1="100" y1="175" x2="370" y2="175" style="stroke:var(--ink-soft);stroke-width:2"></line>
+          <line x1="370" y1="175" x2="370" y2="190" style="stroke:var(--ink-soft);stroke-width:2"></line>
+          <polyline points="680,160 680,175 605,175 605,190" style="fill:none;stroke:var(--ink-soft);stroke-width:2"></polyline>
+          <line x1="750" y1="175" x2="750" y2="190" style="stroke:var(--ink-soft);stroke-width:2"></line>
+          <line x1="605" y1="175" x2="905" y2="175" style="stroke:var(--ink-soft);stroke-width:2"></line>
+          <line x1="905" y1="175" x2="905" y2="190" style="stroke:var(--ink-soft);stroke-width:2"></line>
+
+          <g>
+            <rect x="370" y="20" width="160" height="50" rx="8" style="fill:var(--indigo)"></rect>
+            <text x="450" y="50" text-anchor="middle" style="fill:#fff;font-size:13px;font-weight:700">DIRECCIÓN</text>
+          </g>
+          <g>
+            <rect x="135" y="110" width="170" height="50" rx="8" style="fill:var(--clay)"></rect>
+            <text x="220" y="140" text-anchor="middle" style="fill:#fff;font-size:12px;font-weight:700">ADMINISTRACIÓN</text>
+          </g>
+          <g>
+            <rect x="595" y="110" width="170" height="50" rx="8" style="fill:var(--clay)"></rect>
+            <text x="680" y="140" text-anchor="middle" style="fill:#fff;font-size:12px;font-weight:700">PRODUCCIÓN</text>
+          </g>
+          <g>
+            <rect x="40" y="190" width="120" height="44" rx="7" style="fill:var(--paper-2);stroke:var(--line)"></rect>
+            <text x="100" y="217" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:600">Ventas</text>
+          </g>
+          <g>
+            <rect x="175" y="190" width="120" height="44" rx="7" style="fill:var(--paper-2);stroke:var(--line)"></rect>
+            <text x="235" y="217" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:600">Compras</text>
+          </g>
+          <g>
+            <rect x="310" y="190" width="120" height="44" rx="7" style="fill:var(--paper-2);stroke:var(--line)"></rect>
+            <text x="370" y="217" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:600">Finanzas</text>
+          </g>
+          <g>
+            <rect x="545" y="190" width="120" height="44" rx="7" style="fill:var(--paper-2);stroke:var(--line)"></rect>
+            <text x="605" y="217" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:600">Corte</text>
+          </g>
+          <g>
+            <rect x="680" y="190" width="140" height="44" rx="7" style="fill:var(--paper-2);stroke:var(--line)"></rect>
+            <text x="750" y="217" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:600">Costura / Armado</text>
+          </g>
+          <g>
+            <rect x="835" y="190" width="140" height="44" rx="7" style="fill:var(--paper-2);stroke:var(--line)"></rect>
+            <text x="905" y="217" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:600">Acabado / Empaque</text>
+          </g>
+        </svg>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ REPORTES ============ -->
     <section class="view" id="view-reportes">
       <div class="topbar"><div class="titles"><div class="eyebrow">Consulta</div><h1>Reportes en Excel y PDF</h1></div></div>
+
+      <div class="grid cols-2" style="margin-bottom:20px">
+        <div class="card">
+          <h3>Estado de resultados</h3>
+          <p class="muted">Ventas, costo de ventas, utilidad bruta, gastos y utilidad neta — de todo el historial o de un rango de fechas.</p>
+          <div class="formgrid c2" style="margin-bottom:8px">
+            <div class="field"><label>Desde</label><input type="date" id="erDesde"></div>
+            <div class="field"><label>Hasta</label><input type="date" id="erHasta"></div>
+          </div>
+          <div class="flex">
+            <button class="btn clay sm" onclick="renderEstadoResultados()">Generar</button>
+            <button class="btn ghost sm" onclick="exportEstadoResultadosPDF()">PDF</button>
+            <button class="btn ghost sm" onclick="exportEstadoResultadosExcel()">Excel</button>
+          </div>
+          <div id="estadoResultados" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3>Resumen de cartera por cliente</h3>
+          <p class="muted">Cargos, abonos y saldo de cada cliente, en formato de estado de cuenta para consultar o enviar.</p>
+          <div class="flex" style="margin-bottom:8px">
+            <button class="btn clay sm" onclick="exportResumenClientesPDF()">PDF</button>
+            <button class="btn ghost sm" onclick="exportResumenClientesExcel()">Excel</button>
+          </div>
+          <div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="num">Cargos</th><th class="num">Abonos</th><th class="num">Saldo</th></tr></thead><tbody id="resumenClientesMini"></tbody></table></div>
+        </div>
+      </div>
 
       <div class="card" style="margin-bottom:20px">
         <h3>Reporte mensual</h3>
@@ -439,11 +645,39 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     <!-- ============ RESPALDO ============ -->
     <section class="view" id="view-respaldo">
       <div class="topbar"><div class="titles"><div class="eyebrow">Sistema</div><h1>Respaldo y resguardo en la nube</h1></div></div>
+
+      <div class="card respaldo-auto-desktop" style="max-width:720px;margin-bottom:16px">
+        <h3>Trabajo sin internet</h3>
+        <p class="muted">El sistema funciona por completo sin conexión: capturar órdenes, ventas, inventario, nómina, etc. no requiere internet en ningún momento. Solo las herramientas de Excel y PDF necesitan internet <b>una sola vez</b> para guardarse en este equipo; después de esa primera vez, siguen funcionando sin conexión. En cuanto detecte que volviste a tener internet, el sistema genera un respaldo automáticamente.</p>
+        <p class="smallnote">Estado de las herramientas de Excel/PDF en este equipo: <span id="estadoLibreriasOffline" class="mono">Consultando…</span></p>
+        <div class="flex"><button class="btn ghost sm" onclick="reintentarLibrerias()">Reintentar ahora</button></div>
+      </div>
+
+      <div class="card respaldo-auto-desktop" style="max-width:720px;margin-bottom:16px">
+        <h3>Respaldo automático</h3>
+        <p class="muted">Mientras trabajas, el sistema guarda una copia de seguridad por su cuenta cada 15 minutos, y siempre al abrir y al cerrar el programa — sin que tengas que acordarte de nada. También respalda solo en cuanto detecta que recuperaste internet. Se guarda un historial amplio para poder regresar a un punto anterior si algo se borra por accidente.</p>
+        <div class="flex" style="margin-bottom:10px">
+          <button class="btn clay sm" onclick="respaldarAhora()">Respaldar ahora</button>
+          <button class="btn ghost sm" onclick="cargarHistorialRespaldos()">Actualizar lista</button>
+        </div>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Fecha y hora</th><th class="num">Tamaño</th><th></th></tr></thead><tbody id="tblHistorialRespaldos"><tr><td colspan="3" class="muted">Cargando…</td></tr></tbody></table></div>
+      </div>
+
+      <div class="card respaldo-auto-desktop" style="max-width:720px;margin-bottom:16px">
+        <h3>Copia adicional en una carpeta tuya (opcional)</h3>
+        <p class="muted">Si ya tienes OneDrive o Google Drive instalado en esta computadora, puedes apuntar aquí a una carpeta dentro de esa sincronización — cada respaldo automático se copiará también ahí, para tener resguardo fuera de este equipo. El sistema no se conecta a ninguna cuenta ni pide contraseñas: solo usa la carpeta que ya sincroniza el programa de OneDrive/Drive que tú instalaste.</p>
+        <p class="smallnote">Carpeta configurada: <span id="carpetaExternaActual" class="mono">Ninguna</span></p>
+        <div class="flex">
+          <button class="btn ghost sm" onclick="elegirCarpetaExterna()">Elegir carpeta de OneDrive / Google Drive…</button>
+          <button class="btn danger sm" onclick="quitarCarpetaExterna()">Quitar carpeta</button>
+        </div>
+      </div>
+
       <div class="card" style="max-width:720px">
-        <h3>Cómo funciona el resguardo</h3>
+        <h3>Cómo funciona el resguardo manual</h3>
         <p class="respaldo-nota-navegador">Esta aplicación guarda toda la información <b>dentro de este navegador</b> (no en un servidor). Eso la hace privada y funciona sin internet, pero significa que <b>tú</b> debes respaldarla periódicamente. No es técnicamente posible que este sistema se conecte solo, de forma segura, a tu cuenta de Gmail o Drive — eso requeriría darle tus contraseñas, algo que este sistema nunca te pedirá.</p>
         <p class="smallnote">Archivo de datos en este equipo: <span id="rutaArchivoDatos" class="mono">—</span></p>
-        <p>En su lugar, este botón hace dos cosas por ti:</p>
+        <p>Este botón hace dos cosas por ti:</p>
         <ol>
           <li>Descarga un archivo de respaldo (<span class="mono">.json</span>) con todos tus datos.</li>
           <li>Abre Gmail con un correo ya redactado, listo para que adjuntes ese archivo descargado y lo envíes a tu propia cuenta (o la guardes en Drive).</li>
@@ -453,7 +687,7 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
           <button class="btn ghost" onclick="descargarBackup()">Solo descargar .json</button>
         </div>
         <hr class="dash">
-        <h3>Restaurar un respaldo</h3>
+        <h3>Restaurar un respaldo descargado</h3>
         <p class="muted">Sube un archivo .json exportado previamente. Esto reemplaza todos los datos actuales del sistema.</p>
         <input type="file" id="fileRestore" accept="application/json">
         <div style="margin-top:8px"><button class="btn danger" onclick="restaurarBackup()">Restaurar desde archivo</button></div>
@@ -483,7 +717,30 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
             <select id="cfgProrratear"><option value="si">Sí</option><option value="no">No</option></select>
           </div>
         </div>
+        <hr class="dash">
+        <h3>Sonidos de la interfaz</h3>
+        <div class="formgrid c2">
+          <div class="field"><label>Sonido al iniciar, seleccionar módulos y finalizar acciones</label>
+            <select id="cfgSonidos"><option value="si">Activado</option><option value="no">Desactivado</option></select>
+          </div>
+        </div>
         <button class="btn clay" onclick="guardarConfig()">Guardar configuración</button>
+      </div>
+      <div class="card" style="max-width:640px;margin-top:14px">
+        <h3>Datos de remitente (para envíos)</h3>
+        <p class="muted">Esta información aparece como remitente en cada Lista de Empaque que generes.</p>
+        <div class="formgrid c2">
+          <div class="field"><label>Nombre / Empresa</label><input id="remNombre"></div>
+          <div class="field"><label>Celular</label><input id="remCelular"></div>
+        </div>
+        <div class="formgrid c2">
+          <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="remDireccion" placeholder="Calle, número, colonia"></div>
+          <div class="field"><label>Código postal</label><input id="remCP"></div>
+          <div class="field"><label>Ciudad</label><input id="remCiudad"></div>
+          <div class="field"><label>Estado</label><input id="remEstado"></div>
+          <div class="field"><label>País</label><input id="remPais"></div>
+        </div>
+        <button class="btn clay" onclick="guardarRemitente()">Guardar remitente</button>
       </div>
       <div class="card" style="max-width:640px;margin-top:14px">
         <h3>Catálogo de materiales y tasas por par</h3>
@@ -501,7 +758,7 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
         <h3>Usuarios y contraseñas</h3>
         <p class="muted">Crea un candado de acceso local: mientras no exista ningún usuario, el sistema abre sin pedir nada. En cuanto crees el primero, la próxima vez pedirá iniciar sesión. Esto protege el acceso casual, no sustituye una seguridad de nivel bancario (los datos siguen guardados en este equipo).</p>
         <div id="usuariosResumen"></div>
-        <button class="btn clay" onclick="abrirUsuarios()">Administrar usuarios</button>
+        <button class="btn clay" id="btnAdministrarUsuarios" onclick="abrirUsuarios()">Administrar usuarios</button>
       </div>
     </section>
 
@@ -570,8 +827,9 @@ const BASE_LABELS = {
 
 function emptyState(){
   return {
-    config:{ nombre:'Artesanías D Mitzy', rfc:'', direccion:'', correo:'', manoObraDefault:6650, prorratear:'si',
-      facturaTamano:'carta', facturaColor:'#2F4858', facturaPie:'Gracias por su compra — Artesanías D Mitzy.', logoBase64:null },
+    config:{ nombre:'Artesanías D Mitzy', rfc:'', direccion:'', correo:'firmaluel@gmail.com', manoObraDefault:6650, prorratear:'si',
+      facturaTamano:'carta', facturaColor:'#2F4858', facturaPie:'Gracias por su compra — Artesanías D Mitzy.', logoBase64:null,
+      remitente:{ nombre:'Artesanías D Mitzy', celular:'', direccion:'', codigoPostal:'', ciudad:'', estado:'', pais:'México' } },
     materiales: JSON.parse(JSON.stringify(DEFAULT_MATERIALES)),
     ordenes: [],
     productoTerminado: [],
@@ -579,14 +837,15 @@ function emptyState(){
     ventas: [],
     gastos: [],
     clientes: {},      // nombre -> [{fecha,tipo,concepto,monto,ref}]  (cartera / cuentas por cobrar)
-    clientesInfo: {},  // nombre -> {telefono, correo, direccion, notas}  (catálogo / alta de clientes)
+    clientesInfo: {},  // nombre -> {celular, correo, direccion, codigoPostal, ciudad, estado, pais, referencia, notas}
     proveedores: {},
     catalogo: [],       // [{id, nombre, descripcion, precio, imagenBase64, activo}]  (catálogo de productos para PDF)
     conceptos: { cuñas:[...DEFAULT_CUÑAS], suelas:[...DEFAULT_SUELAS], plantas:[...DEFAULT_PLANTAS], cercos:[...DEFAULT_CERCOS] },
     empleados: [],      // [{id, nombre, puesto, salarioDiario, activo}]
     nomina: [],         // [{id, folio, periodoInicio, periodoFin, items:[{empleadoId,nombre,dias,salarioDiario,extras,descuentos,total}], total}]
     usuarios: [],        // [{id, usuario, hash, rol, activo}]
-    folios:{ orden:1, compra:1, venta:1, gasto:1, nomina:1 }
+    empaques: [],        // [{id, folio, fecha, ventaFolio, destinatarioNombre, destinatario:{...}, paqueteria, numeroRastreo, contenido, finalizada}]
+    folios:{ orden:1, compra:1, venta:1, gasto:1, nomina:1, empaque:1 }
   };
 }
 
@@ -603,11 +862,15 @@ async function load(){
     if(!STATE.materiales || !STATE.materiales.length) STATE.materiales = JSON.parse(JSON.stringify(DEFAULT_MATERIALES));
     if(!STATE.folios) STATE.folios = { orden:1, compra:1, venta:1, gasto:1 };
     if(!STATE.folios.nomina) STATE.folios.nomina = 1;
+    if(!STATE.folios.empaque) STATE.folios.empaque = 1;
     if(!STATE.clientesInfo) STATE.clientesInfo = {};
     if(!STATE.catalogo) STATE.catalogo = [];
     if(!STATE.empleados) STATE.empleados = [];
     if(!STATE.nomina) STATE.nomina = [];
     if(!STATE.usuarios) STATE.usuarios = [];
+    if(!STATE.empaques) STATE.empaques = [];
+    if(!STATE.config.remitente) STATE.config.remitente = { nombre:STATE.config.nombre||'Artesanías D Mitzy', celular:'', direccion:STATE.config.direccion||'', codigoPostal:'', ciudad:'', estado:'', pais:'México' };
+    if(!STATE.config.correo) STATE.config.correo = 'firmaluel@gmail.com';
     if(!STATE.config.facturaTamano) STATE.config.facturaTamano = 'carta';
     if(!STATE.config.facturaColor) STATE.config.facturaColor = '#2F4858';
     if(STATE.config.facturaPie===undefined) STATE.config.facturaPie = 'Gracias por su compra — Artesanías D Mitzy.';
@@ -617,7 +880,7 @@ async function load(){
 function save(){
   const json = JSON.stringify(STATE);
   if(IS_DESKTOP){ window.dataAPI.save(json); }
-  else{ localStorage.setItem('admy_data_v1', json); }
+  else{ localStorage.setItem('admy_data_v1', json); respaldoLocalSiToca(json); }
 }
 function uid(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function money(n){ n = Number(n)||0; return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -626,14 +889,60 @@ function todayStr(){ return new Date().toISOString().slice(0,10); }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(window._toastT); window._toastT=setTimeout(()=>t.style.display='none',2600); }
 function folio(prefix,key){ const n = STATE.folios[key]++; save(); return prefix+'-'+String(n).padStart(4,'0'); }
 
+/* =================================================================
+   SONIDOS DE INTERFAZ — generados en el momento (sin archivos de audio)
+   ================================================================= */
+let AUDIO_CTX = null;
+function getAudioCtx(){
+  if(AUDIO_CTX) return AUDIO_CTX;
+  try{ AUDIO_CTX = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AUDIO_CTX = null; }
+  return AUDIO_CTX;
+}
+function sonidosHabilitados(){
+  return !(STATE && STATE.config && STATE.config.sonidosActivos===false);
+}
+function _tono(ctx, freq, inicio, duracion, pico, tipo){
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = tipo||'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, inicio);
+  gain.gain.linearRampToValueAtTime(pico!=null?pico:0.13, inicio+0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, inicio+duracion);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(inicio); osc.stop(inicio+duracion+0.03);
+}
+function reproducirSonido(tipo){
+  if(!sonidosHabilitados()) return;
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  if(ctx.state==='suspended'){ ctx.resume().catch(()=>{}); }
+  const t0 = ctx.currentTime;
+  try{
+    if(tipo==='login'){
+      _tono(ctx, 523.25, t0, 0.16, 0.13); // Do
+      _tono(ctx, 659.25, t0+0.13, 0.16, 0.13); // Mi
+      _tono(ctx, 783.99, t0+0.26, 0.26, 0.15); // Sol
+    } else if(tipo==='click'){
+      _tono(ctx, 880, t0, 0.05, 0.05, 'triangle');
+    } else if(tipo==='finish'){
+      _tono(ctx, 659.25, t0, 0.11, 0.13);
+      _tono(ctx, 987.77, t0+0.11, 0.24, 0.15);
+    } else if(tipo==='error'){
+      _tono(ctx, 220, t0, 0.2, 0.1, 'sawtooth');
+    }
+  }catch(e){ /* audio no disponible en este contexto, se ignora */ }
+}
+
 /* ---------- navigation ---------- */
 function go(view){
+  if(!puedeAcceder(view)){ toast('Tu usuario no tiene acceso a ese módulo.'); return; }
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
   renderAll();
 }
-document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));
+document.querySelectorAll('.navbtn[data-view]').forEach(b=>b.addEventListener('click',()=>{ reproducirSonido('click'); go(b.dataset.view); }));
 function switchTab(btn,paneId){
   const tabs = btn.parentElement.querySelectorAll('.tab');
   tabs.forEach(t=>t.classList.remove('active'));
@@ -641,8 +950,8 @@ function switchTab(btn,paneId){
   btn.parentElement.parentElement.querySelectorAll('.tabpane').forEach(p=>p.style.display='none');
   document.getElementById(paneId).style.display='block';
 }
-function closeModal(){ document.getElementById('modalBg').classList.remove('active'); document.getElementById('modalBody').innerHTML=''; }
-function openModal(html){ document.getElementById('modalBody').innerHTML = html; document.getElementById('modalBg').classList.add('active'); }
+function closeModal(){ document.getElementById('modalBg').classList.remove('active'); document.getElementById('modalBody').innerHTML=''; document.getElementById('modalBody').classList.remove('modal-wide'); }
+function openModal(html, wide){ const mb=document.getElementById('modalBody'); mb.innerHTML = html; mb.classList.toggle('modal-wide', !!wide); document.getElementById('modalBg').classList.add('active'); }
 document.getElementById('modalBg').addEventListener('click',e=>{ if(e.target.id==='modalBg') closeModal(); });
 
 /* =================================================================
@@ -770,7 +1079,7 @@ function nuevaLinea(){
 function abrirOrden(id){
   const existente = id ? STATE.ordenes.find(o=>o.id===id) : null;
   ordenDraft = existente ? JSON.parse(JSON.stringify(existente)) : {
-    id: uid('op'), folio: folio('OP','orden'), fecha: todayStr(), estado:'borrador',
+    id: uid('op'), folio: null, fecha: todayStr(), estado:'borrador',
     lineas:[nuevaLinea()], manoObra: STATE.config.manoObraDefault
   };
   renderOrdenModal();
@@ -783,23 +1092,23 @@ function renderOrdenModal(){
         <option value="" ${!l.cliente?'selected':''}>EXTRA (sin cliente)</option>
         <option value="__custom__">Otro / capturar…</option>
       </select>
-      <input ${bloqueado?'disabled':''} style="margin-top:3px" placeholder="Cliente" value="${l.cliente||''}" oninput="ordenDraft.lineas[${i}].cliente=this.value"></td>
-      <td><input ${bloqueado?'disabled':''} style="width:90px" placeholder="Modelo" value="${l.modelo||''}" oninput="ordenDraft.lineas[${i}].modelo=this.value"></td>
+      <input ${bloqueado?'disabled':''} style="margin-top:3px;width:140px" placeholder="Cliente" value="${l.cliente||''}" oninput="ordenDraft.lineas[${i}].cliente=this.value"></td>
+      <td><input ${bloqueado?'disabled':''} style="width:130px" placeholder="Modelo" value="${l.modelo||''}" oninput="ordenDraft.lineas[${i}].modelo=this.value"></td>
       <td><input ${bloqueado?'disabled':''} placeholder="Marca" value="${l.marca||''}" oninput="ordenDraft.lineas[${i}].marca=this.value"></td>
       <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].planta=this.value">${PLANTAS.map(p=>`<option ${l.planta===p?'selected':''}>${p}</option>`).join('')}</select></td>
       <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].cuña=this.value">${CUÑAS.map(p=>`<option ${l.cuña===p?'selected':''}>${p}</option>`).join('')}</select></td>
       <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].suela=this.value">${SUELAS.map(p=>`<option ${l.suela===p?'selected':''}>${p}</option>`).join('')}</select></td>
       <td><select ${bloqueado?'disabled':''} onchange="ordenDraft.lineas[${i}].cerco=this.value">${CERCOS.map(p=>`<option ${l.cerco===p?'selected':''}>${p}</option>`).join('')}</select></td>
-      ${SIZES.map(sz=>`<td><input ${bloqueado?'disabled':''} type="number" min="0" style="width:44px" value="${l.tallas[sz]||0}" oninput="ordenDraft.lineas[${i}].tallas[${sz}]=this.value;actualizarTotalesModal()"></td>`).join('')}
+      ${SIZES.map(sz=>`<td><input ${bloqueado?'disabled':''} type="number" min="0" style="width:60px;text-align:center;font-weight:600" value="${l.tallas[sz]||0}" oninput="ordenDraft.lineas[${i}].tallas[${sz}]=this.value;actualizarTotalesModal()"></td>`).join('')}
       <td class="num mono" id="lineTotal_${i}">${SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0)}</td>
-      <td><input ${bloqueado?'disabled':''} style="width:120px" placeholder="Notas para corte/producción" value="${l.comentarios||''}" oninput="ordenDraft.lineas[${i}].comentarios=this.value"></td>
+      <td><input ${bloqueado?'disabled':''} style="width:170px" placeholder="Notas para corte/producción" value="${l.comentarios||''}" oninput="ordenDraft.lineas[${i}].comentarios=this.value"></td>
       <td>${bloqueado?'':`<button class="btn danger sm" onclick="ordenDraft.lineas.splice(${i},1);renderOrdenModal()">✕</button>`}</td>
     </tr>`).join('');
 
   const totalGeneral = ordenDraft.lineas.reduce((s,l)=>s+SIZES.reduce((s2,sz)=>s2+(Number(l.tallas[sz])||0),0),0);
 
   openModal(`
-    <h3>Orden de producción — ${ordenDraft.folio} ${bloqueado?'<span class="badge ok">Confirmada</span>':'<span class="badge warn">Borrador</span>'}</h3>
+    <h3>Orden de producción — ${ordenDraft.folio || 'Nueva (folio al guardar)'} ${bloqueado?'<span class="badge ok">Confirmada</span>':'<span class="badge warn">Borrador</span>'}</h3>
     <div class="formgrid c3">
       <div class="field"><label>Fecha</label><input type="date" value="${ordenDraft.fecha}" ${bloqueado?'disabled':''} onchange="ordenDraft.fecha=this.value"></div>
       <div class="field"><label>Mano de obra del día ($)</label><input type="number" step="0.01" value="${ordenDraft.manoObra}" ${bloqueado?'disabled':''} oninput="ordenDraft.manoObra=this.value"></div>
@@ -823,7 +1132,7 @@ function renderOrdenModal(){
         <button class="btn clay" onclick="guardarOrden(true)">Confirmar orden (afecta inventario)</button>
       `}
     </div>
-  `);
+  `, true);
   actualizarTotalesModal();
 }
 function actualizarTotalesModal(){
@@ -846,6 +1155,7 @@ function actualizarTotalesModal(){
 function guardarOrden(confirmar){
   const nec = calcNecesidades(ordenDraft);
   if(nec.total<=0){ toast('Captura al menos una talla con cantidad.'); return; }
+  if(!ordenDraft.folio){ ordenDraft.folio = folio('OP','orden'); }
   ordenDraft.necesidades = nec;
   if(confirmar){
     // validar existencias
@@ -865,9 +1175,11 @@ function guardarOrden(confirmar){
   const idx = STATE.ordenes.findIndex(o=>o.id===ordenDraft.id);
   if(idx>=0) STATE.ordenes[idx]=ordenDraft; else STATE.ordenes.push(ordenDraft);
   save(); closeModal(); renderAll();
+  if(confirmar) reproducirSonido('finish');
   toast(confirmar? 'Orden confirmada. Inventario e insumos actualizados.' : 'Borrador guardado.');
 }
 function eliminarOrden(id){
+  if(!puedeEliminar()) return;
   const o = STATE.ordenes.find(x=>x.id===id);
   if(!o) return;
   if(o.estado==='confirmada' && !confirm('Esta orden ya afectó inventario. Al eliminarla se revertirá el consumo de materiales y se retirará el producto terminado no vendido aún. ¿Continuar?')) return;
@@ -924,6 +1236,7 @@ function guardarMaterial(id){
   save(); closeModal(); renderAll(); toast('Material guardado.');
 }
 function borrarMaterial(id){
+  if(!puedeEliminar()) return;
   if(!confirm('¿Eliminar este material del catálogo?')) return;
   STATE.materiales = STATE.materiales.filter(m=>m.id!==id);
   save(); closeModal(); renderAll();
@@ -953,7 +1266,7 @@ function guardarAjuste(){
    COMPRAS
    ================================================================= */
 function abrirCompra(id){
-  const c = id ? STATE.compras.find(x=>x.id===id) : {id:uid('cp'), folio:folio('CP','compra'), fecha:todayStr(), proveedor:'', materialId: STATE.materiales[0]?.id||'', cantidad:0, importe:0, condicion:'contado'};
+  const c = id ? STATE.compras.find(x=>x.id===id) : {id:uid('cp'), folio:null, fecha:todayStr(), proveedor:'', materialId: STATE.materiales[0]?.id||'', cantidad:0, importe:0, condicion:'contado'};
   openModal(`
     <h3>${id?'Editar compra':'Registrar compra de materia prima'}</h3>
     <div class="formgrid c2">
@@ -999,6 +1312,7 @@ function guardarCompra(id){
   closeModal(); renderAll(); toast('Compra registrada.');
 }
 function eliminarCompra(id){
+  if(!puedeEliminar()) return;
   const c = STATE.compras.find(x=>x.id===id);
   if(!c) return;
   if(!confirm('¿Eliminar esta compra? Se revertirá del inventario y de la cartera si aplica.')) return;
@@ -1039,7 +1353,7 @@ function abrirVenta(id){
   ventaDraft = existing
     ? {id:existing.id, folio:existing.folio, fecha:existing.fecha, cliente:existing.cliente, condicion:existing.condicion,
        items: JSON.parse(JSON.stringify(ventaItems(existing))), _editingOriginalId: existing.id}
-    : {id:uid('vt'), folio:folio('FAC','venta'), fecha:todayStr(), cliente:'', condicion:'contado', items:[]};
+    : {id:uid('vt'), folio:null, fecha:todayStr(), cliente:'', condicion:'contado', items:[]};
   renderVentaModal();
 }
 function renderVentaModal(){
@@ -1050,7 +1364,7 @@ function renderVentaModal(){
     <tr>
       <td>
         <input style="width:180px" value="${(it.descripcion!=null?it.descripcion:it.modelo)||''}" onchange="actualizarItemCarrito(${i},'descripcion',this.value)">
-        <div class="muted" style="font-size:11px">Origen ${it.ordenFolio||'-'} · costo ${money(it.costoUnitario)}/par · <a href="#" onclick="actualizarItemCarrito(${i},'descripcion','${(it.modelo||'').replace(/'/g,"\\'")}');return false;">usar nombre del modelo</a></div>
+        <div class="muted" style="font-size:11px">Origen ${it.ordenFolio||'-'}${puedeVerCostos()?(' · costo '+money(it.costoUnitario)+'/par'):''} · <a href="#" onclick="actualizarItemCarrito(${i},'descripcion','${(it.modelo||'').replace(/'/g,"\\'")}');return false;">usar nombre del modelo</a></div>
       </td>
       <td><input type="number" min="1" style="width:64px" value="${it.cantidad}" onchange="actualizarItemCarrito(${i},'cantidad',this.value)"></td>
       <td><input type="number" step="0.01" min="0" style="width:90px" value="${it.precioUnitario}" onchange="actualizarItemCarrito(${i},'precioUnitario',this.value)"></td>
@@ -1063,7 +1377,7 @@ function renderVentaModal(){
   const utilidad = totalVenta-costoVenta;
 
   openModal(`
-    <h3>${ventaDraft._editingOriginalId?'Editar venta':'Nueva venta'} — ${ventaDraft.folio}</h3>
+    <h3>${ventaDraft._editingOriginalId?'Editar venta':'Nueva venta'} — ${ventaDraft.folio || 'Nueva (folio al guardar)'}</h3>
     <div class="formgrid c3">
       <div class="field"><label>Fecha</label><input type="date" value="${ventaDraft.fecha}" onchange="ventaDraft.fecha=this.value"></div>
       <div class="field"><label>Cliente</label>
@@ -1095,8 +1409,8 @@ function renderVentaModal(){
     </table></div>
     <div class="grid cols-3" style="margin-top:10px">
       <div><div class="muted">Total de venta</div><b>${money(totalVenta)}</b></div>
-      <div><div class="muted">Costo</div><b>${money(costoVenta)}</b></div>
-      <div><div class="muted">Utilidad</div><b style="color:${utilidad>=0?'var(--good)':'var(--bad)'}">${money(utilidad)}</b></div>
+      <div><div class="muted">Costo</div><b>${puedeVerCostos()?money(costoVenta):'—'}</b></div>
+      <div><div class="muted">Utilidad</div><b style="color:${utilidad>=0?'var(--good)':'var(--bad)'}">${puedeVerCostos()?money(utilidad):'—'}</b></div>
     </div>
     <div class="close-row">
       <button class="btn ghost" onclick="ventaDraft=null;closeModal()">Cancelar</button>
@@ -1136,6 +1450,7 @@ function quitarItemCarrito(i){ ventaDraft.items.splice(i,1); renderVentaModal();
 function guardarVentaPOS(){
   if(!ventaDraft.items.length){ toast('Agrega al menos un producto al carrito.'); return; }
   if(!ventaDraft.cliente || !ventaDraft.cliente.trim()) ventaDraft.cliente = 'Público en general';
+  if(!ventaDraft.folio){ ventaDraft.folio = folio('FAC','venta'); }
 
   const original = ventaDraft._editingOriginalId ? STATE.ventas.find(v=>v.id===ventaDraft._editingOriginalId) : null;
 
@@ -1191,7 +1506,7 @@ function guardarVentaPOS(){
     movCartera('clientes', registro.cliente, {tipo:'cargo', concepto:'Venta '+registro.folio, monto:total, fecha:registro.fecha});
   }
 
-  save(); ventaDraft=null; closeModal(); renderAll(); toast('Venta guardada.');
+  save(); ventaDraft=null; closeModal(); renderAll(); reproducirSonido('finish'); toast('Venta guardada.');
 }
 function verDetalleVenta(id){
   const v = STATE.ventas.find(x=>x.id===id);
@@ -1204,12 +1519,13 @@ function verDetalleVenta(id){
     <div class="grid cols-3" style="margin-top:10px">
       <div><div class="muted">Cliente</div><b>${v.cliente}</b></div>
       <div><div class="muted">Total</div><b>${money(v.total)}</b></div>
-      <div><div class="muted">Utilidad</div><b style="color:${v.utilidad>=0?'var(--good)':'var(--bad)'}">${money(v.utilidad)}</b></div>
+      <div><div class="muted">Utilidad</div><b style="color:${v.utilidad>=0?'var(--good)':'var(--bad)'}">${puedeVerCostos()?money(v.utilidad):'—'}</b></div>
     </div>
     <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
   `);
 }
 function eliminarVenta(id){
+  if(!puedeEliminar()) return;
   const v = STATE.ventas.find(x=>x.id===id);
   if(!v) return;
   if(!confirm('¿Cancelar esta venta? El inventario de producto terminado se restituirá.')) return;
@@ -1230,9 +1546,14 @@ function abrirAltaCliente(nombreExistente){
     <h3>${nombreExistente?'Editar cliente':'Nuevo cliente'}</h3>
     <div class="formgrid c2">
       <div class="field"><label>Nombre</label><input id="clNombre" value="${nombreExistente||''}" ${nombreExistente?'disabled':''}></div>
-      <div class="field"><label>Teléfono</label><input id="clTel" value="${c.telefono||''}"></div>
+      <div class="field"><label>Celular</label><input id="clCelular" value="${c.celular||c.telefono||''}"></div>
       <div class="field"><label>Correo</label><input id="clCorreo" value="${c.correo||''}"></div>
-      <div class="field"><label>Dirección</label><input id="clDireccion" value="${c.direccion||''}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="clDireccion" value="${c.direccion||''}" placeholder="Calle, número, colonia"></div>
+      <div class="field"><label>Código postal</label><input id="clCP" value="${c.codigoPostal||''}"></div>
+      <div class="field"><label>Ciudad</label><input id="clCiudad" value="${c.ciudad||''}"></div>
+      <div class="field"><label>Estado</label><input id="clEstado" value="${c.estado||''}"></div>
+      <div class="field"><label>País</label><input id="clPais" value="${c.pais||'México'}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Referencia (entre calles, color de fachada, etc.)</label><input id="clReferencia" value="${c.referencia||''}"></div>
       <div class="field" style="grid-column:1/-1"><label>Notas</label><textarea id="clNotas">${c.notas||''}</textarea></div>
     </div>
     <div class="close-row">
@@ -1247,17 +1568,25 @@ function guardarCliente(nombreExistente){
   if(!nombre){ toast('Escribe el nombre del cliente.'); return; }
   if(!STATE.clientesInfo) STATE.clientesInfo = {};
   STATE.clientesInfo[nombre] = {
-    telefono: document.getElementById('clTel').value.trim(),
+    celular: document.getElementById('clCelular').value.trim(),
+    telefono: document.getElementById('clCelular').value.trim(),
     correo: document.getElementById('clCorreo').value.trim(),
     direccion: document.getElementById('clDireccion').value.trim(),
+    codigoPostal: document.getElementById('clCP').value.trim(),
+    ciudad: document.getElementById('clCiudad').value.trim(),
+    estado: document.getElementById('clEstado').value.trim(),
+    pais: document.getElementById('clPais').value.trim()||'México',
+    referencia: document.getElementById('clReferencia').value.trim(),
     notas: document.getElementById('clNotas').value.trim(),
   };
   save();
   toast('Cliente guardado.');
   if(ventaDraft){ ventaDraft.cliente = nombre; renderVentaModal(); }
+  else if(empaqueDraft){ empaqueDraft.destinatarioNombre = nombre; autocompletarDestinatario(); renderEmpaqueModal(); }
   else{ verCatalogoClientes(); }
 }
 function borrarCliente(nombre){
+  if(!puedeEliminar()) return;
   if(!confirm('¿Eliminar este cliente del catálogo? No borra su historial de cuentas por cobrar.')) return;
   delete STATE.clientesInfo[nombre];
   save();
@@ -1267,8 +1596,8 @@ function verCatalogoClientes(){
   const nombres = Object.keys(STATE.clientesInfo||{}).sort();
   openModal(`
     <h3>Catálogo de clientes</h3>
-    <div class="tblwrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Teléfono</th><th>Correo</th><th></th></tr></thead>
-    <tbody>${nombres.map(n=>{const c=STATE.clientesInfo[n]; return `<tr><td>${n}</td><td>${c.telefono||'-'}</td><td>${c.correo||'-'}</td><td><button class="btn ghost sm" onclick="abrirAltaCliente('${n.replace(/'/g,"\\'")}')">Editar</button></td></tr>`;}).join('') || '<tr><td colspan="4" class="muted">Sin clientes registrados todavía.</td></tr>'}</tbody></table></div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Celular</th><th>Ciudad</th><th>Correo</th><th></th></tr></thead>
+    <tbody>${nombres.map(n=>{const c=STATE.clientesInfo[n]; return `<tr><td>${n}</td><td>${c.celular||c.telefono||'-'}</td><td>${c.ciudad||'-'}</td><td>${c.correo||'-'}</td><td><button class="btn ghost sm" onclick="abrirAltaCliente('${n.replace(/'/g,"\\'")}')">Editar</button></td></tr>`;}).join('') || '<tr><td colspan="5" class="muted">Sin clientes registrados todavía.</td></tr>'}</tbody></table></div>
     <div class="close-row"><button class="btn clay" onclick="abrirAltaCliente(null)">+ Nuevo cliente</button><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
   `);
 }
@@ -1438,6 +1767,7 @@ function quitarImagenCatalogo(id){
   abrirItemCatalogo(id);
 }
 function borrarItemCatalogo(id){
+  if(!puedeEliminar()) return;
   if(!confirm('¿Eliminar este producto del catálogo?')) return;
   STATE.catalogo = STATE.catalogo.filter(x=>x.id!==id);
   save(); abrirCatalogoProductos();
@@ -1469,7 +1799,7 @@ async function generarCatalogoProductosPDF(){
 
   const cfg = STATE.config;
   const accent = hexToRgb(cfg.facturaColor);
-  const { jsPDF } = window.jspdf;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({unit:'mm', format:'letter'});
   const pageW = 216, pageH = 279, margin = 16;
   let y = margin;
@@ -1547,7 +1877,7 @@ async function generarCatalogoProductosPDF(){
    GASTOS
    ================================================================= */
 function abrirGasto(id){
-  const g = id ? STATE.gastos.find(x=>x.id===id) : {id:uid('gt'), folio:folio('GT','gasto'), fecha:todayStr(), categoria:'Fabricación indirecta', concepto:'', importe:0, condicion:'contado', proveedor:''};
+  const g = id ? STATE.gastos.find(x=>x.id===id) : {id:uid('gt'), folio:null, fecha:todayStr(), categoria:'Fabricación indirecta', concepto:'', importe:0, condicion:'contado', proveedor:''};
   openModal(`
     <h3>${id?'Editar gasto':'Registrar gasto'}</h3>
     <div class="formgrid c2">
@@ -1590,6 +1920,7 @@ function guardarGasto(id){
   save(); closeModal(); renderAll(); toast('Gasto registrado.');
 }
 function eliminarGasto(id){
+  if(!puedeEliminar()) return;
   const g = STATE.gastos.find(x=>x.id===id);
   if(!g) return;
   if(!confirm('¿Eliminar este gasto?')) return;
@@ -1647,6 +1978,7 @@ function guardarEmpleado(id){
   save(); abrirEmpleados(); toast('Empleado guardado.');
 }
 function borrarEmpleado(id){
+  if(!puedeEliminar()) return;
   if(!confirm('¿Eliminar este empleado del catálogo?')) return;
   STATE.empleados = STATE.empleados.filter(x=>x.id!==id);
   save(); abrirEmpleados();
@@ -1656,7 +1988,7 @@ let nominaDraft = null;
 function abrirNomina(id){
   const existing = id ? STATE.nomina.find(x=>x.id===id) : null;
   nominaDraft = existing ? JSON.parse(JSON.stringify(existing)) : {
-    id: uid('nm'), folio: folio('NOM','nomina'), periodoInicio: todayStr(), periodoFin: todayStr(),
+    id: uid('nm'), folio: null, periodoInicio: todayStr(), periodoFin: todayStr(),
     items: (STATE.empleados||[]).filter(e=>e.activo!==false).map(e=>({empleadoId:e.id, nombre:e.nombre, dias:6, salarioDiario:e.salarioDiario||0, extras:0, descuentos:0}))
   };
   renderNominaModal();
@@ -1677,7 +2009,7 @@ function renderNominaModal(){
   const totalNomina = nominaDraft.items.reduce((s,it)=>s+(Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0),0);
   const disponibles = (STATE.empleados||[]).filter(e=>!nominaDraft.items.some(it=>it.empleadoId===e.id));
   openModal(`
-    <h3>Nómina — ${nominaDraft.folio}</h3>
+    <h3>Nómina — ${nominaDraft.folio || 'Nueva (folio al guardar)'}</h3>
     <div class="formgrid c2">
       <div class="field"><label>Periodo inicio</label><input type="date" value="${nominaDraft.periodoInicio}" onchange="nominaDraft.periodoInicio=this.value"></div>
       <div class="field"><label>Periodo fin</label><input type="date" value="${nominaDraft.periodoFin}" onchange="nominaDraft.periodoFin=this.value"></div>
@@ -1703,6 +2035,7 @@ function agregarEmpleadoNomina(){
 }
 function guardarNomina(){
   if(!nominaDraft.items.length){ toast('Agrega al menos un empleado a la nómina.'); return; }
+  if(!nominaDraft.folio){ nominaDraft.folio = folio('NOM','nomina'); }
   const total = nominaDraft.items.reduce((s,it)=>s+(Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0),0);
   nominaDraft.total = total;
 
@@ -1723,6 +2056,7 @@ function guardarNomina(){
   toast('Nómina guardada y registrada como gasto.');
 }
 function eliminarNomina(id){
+  if(!puedeEliminar()) return;
   if(!confirm('¿Eliminar esta nómina? También se eliminará el gasto que generó.')) return;
   STATE.gastos = (STATE.gastos||[]).filter(g=>g.nominaId!==id);
   STATE.nomina = STATE.nomina.filter(n=>n.id!==id);
@@ -1731,7 +2065,7 @@ function eliminarNomina(id){
 function verNominaPDF(id){
   const n = STATE.nomina.find(x=>x.id===id);
   if(!n) return;
-  const { jsPDF } = window.jspdf;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF();
   pdfHeader(doc, `Nómina ${n.folio} — ${n.periodoInicio} a ${n.periodoFin}`);
   doc.autoTable({
@@ -1756,6 +2090,146 @@ function renderNomina(){
       <td class="num mono">${n.items.length}</td><td class="num mono">${money(n.total)}</td>
       <td class="flex"><button class="btn ghost sm" onclick="verNominaPDF('${n.id}')">PDF</button><button class="btn ghost sm" onclick="abrirNomina('${n.id}')">Editar</button><button class="btn danger sm" onclick="eliminarNomina('${n.id}')">Eliminar</button></td>
     </tr>`).join('') || '<tr><td colspan="5" class="muted">Sin nóminas registradas. Primero da de alta a tus empleados.</td></tr>';
+}
+
+/* =================================================================
+   LISTA DE EMPAQUE (remitente / destinatario / envío)
+   ================================================================= */
+let empaqueDraft = null;
+const PAQUETERIAS = ['Estafeta','DHL','FedEx','Correos de México','UPS','Paquetexpress','Recolección propia','Otra'];
+
+function abrirEmpaque(id){
+  const existente = id ? STATE.empaques.find(x=>x.id===id) : null;
+  empaqueDraft = existente ? JSON.parse(JSON.stringify(existente)) : {
+    id: uid('emp'), folio:null, fecha: todayStr(), ventaFolio:'',
+    destinatarioNombre:'', destinatario:{ direccion:'', codigoPostal:'', ciudad:'', estado:'', pais:'México', celular:'', referencia:'' },
+    paqueteria: PAQUETERIAS[0], numeroRastreo:'', contenido:'', finalizada:false
+  };
+  renderEmpaqueModal();
+}
+function autocompletarDestinatario(){
+  const c = (STATE.clientesInfo||{})[empaqueDraft.destinatarioNombre];
+  if(!c) return;
+  empaqueDraft.destinatario = {
+    direccion: c.direccion||'', codigoPostal: c.codigoPostal||'', ciudad: c.ciudad||'',
+    estado: c.estado||'', pais: c.pais||'México', celular: c.celular||c.telefono||'', referencia: c.referencia||''
+  };
+}
+function renderEmpaqueModal(){
+  const d = empaqueDraft.destinatario;
+  const rem = STATE.config.remitente||{};
+  const nombresClientes = Object.keys(STATE.clientesInfo||{}).sort();
+  openModal(`
+    <h3>Lista de empaque — ${empaqueDraft.folio || 'Nueva (folio al guardar)'}</h3>
+    <div class="grid cols-2">
+      <div class="card">
+        <h4 style="font-size:13px">Remitente</h4>
+        <p class="smallnote">${rem.nombre||'—'}<br>${rem.direccion||'Sin dirección configurada'}<br>${[rem.codigoPostal,rem.ciudad,rem.estado].filter(Boolean).join(', ')}<br>${rem.pais||''}${rem.celular?'<br>Cel: '+rem.celular:''}</p>
+        <button class="btn ghost sm" onclick="closeModal();go('config')">Editar remitente en Configuración</button>
+      </div>
+      <div class="card">
+        <h4 style="font-size:13px">Destinatario</h4>
+        <div class="field"><label>Cliente</label>
+          <input list="empClientesList" value="${empaqueDraft.destinatarioNombre}" placeholder="Selecciona o escribe un nombre"
+            oninput="empaqueDraft.destinatarioNombre=this.value"
+            onchange="autocompletarDestinatario();renderEmpaqueModal()">
+          <datalist id="empClientesList">${nombresClientes.map(n=>`<option value="${n}">`).join('')}</datalist>
+        </div>
+        <button class="btn ghost sm" onclick="abrirAltaCliente(null)">+ Nuevo cliente</button>
+      </div>
+    </div>
+    <div class="formgrid c2" style="margin-top:10px">
+      <div class="field" style="grid-column:1/-1"><label>Dirección del destinatario</label><input id="empDireccion" value="${d.direccion||''}" onchange="empaqueDraft.destinatario.direccion=this.value" placeholder="Calle, número, colonia"></div>
+      <div class="field"><label>Código postal</label><input id="empCP" value="${d.codigoPostal||''}" onchange="empaqueDraft.destinatario.codigoPostal=this.value"></div>
+      <div class="field"><label>Ciudad</label><input id="empCiudad" value="${d.ciudad||''}" onchange="empaqueDraft.destinatario.ciudad=this.value"></div>
+      <div class="field"><label>Estado</label><input id="empEstado" value="${d.estado||''}" onchange="empaqueDraft.destinatario.estado=this.value"></div>
+      <div class="field"><label>País</label><input id="empPais" value="${d.pais||'México'}" onchange="empaqueDraft.destinatario.pais=this.value"></div>
+      <div class="field"><label>Celular</label><input id="empCelular" value="${d.celular||''}" onchange="empaqueDraft.destinatario.celular=this.value"></div>
+      <div class="field" style="grid-column:1/-1"><label>Referencia</label><input id="empReferencia" value="${d.referencia||''}" onchange="empaqueDraft.destinatario.referencia=this.value"></div>
+    </div>
+    <hr class="dash">
+    <div class="formgrid c3">
+      <div class="field"><label>Fecha</label><input type="date" value="${empaqueDraft.fecha}" onchange="empaqueDraft.fecha=this.value"></div>
+      <div class="field"><label>Folio de venta (opcional)</label><input value="${empaqueDraft.ventaFolio||''}" placeholder="FAC-0001" onchange="empaqueDraft.ventaFolio=this.value"></div>
+      <div class="field"><label>Paquetería</label><select onchange="empaqueDraft.paqueteria=this.value">${PAQUETERIAS.map(p=>`<option ${empaqueDraft.paqueteria===p?'selected':''}>${p}</option>`).join('')}</select></div>
+      <div class="field"><label>Número de rastreo</label><input value="${empaqueDraft.numeroRastreo||''}" onchange="empaqueDraft.numeroRastreo=this.value"></div>
+      <div class="field" style="grid-column:1/-1"><label>Contenido del paquete</label><textarea rows="2" onchange="empaqueDraft.contenido=this.value" placeholder="Descripción de lo que va dentro de la caja">${empaqueDraft.contenido||''}</textarea></div>
+    </div>
+    <label class="flex" style="margin-top:6px;cursor:pointer">
+      <input type="checkbox" ${empaqueDraft.finalizada?'checked':''} onchange="empaqueDraft.finalizada=this.checked" style="width:auto">
+      <span>Envío finalizado / entregado a paquetería</span>
+    </label>
+    <div class="close-row">
+      <button class="btn ghost" onclick="empaqueDraft=null;closeModal()">Cancelar</button>
+      <button class="btn clay" onclick="guardarEmpaque()">Guardar</button>
+    </div>
+  `, true);
+}
+function guardarEmpaque(){
+  if(!empaqueDraft.destinatarioNombre || !empaqueDraft.destinatarioNombre.trim()){ toast('Captura el nombre del destinatario.'); return; }
+  if(!empaqueDraft.folio){ empaqueDraft.folio = folio('EMP','empaque'); }
+  const idx = STATE.empaques.findIndex(e=>e.id===empaqueDraft.id);
+  if(idx>=0) STATE.empaques[idx]=empaqueDraft; else STATE.empaques.push(empaqueDraft);
+  save(); empaqueDraft=null; closeModal(); renderAll();
+  toast('Lista de empaque guardada.');
+}
+function eliminarEmpaque(id){
+  if(!puedeEliminar()) return;
+  if(!confirm('¿Eliminar esta lista de empaque?')) return;
+  STATE.empaques = STATE.empaques.filter(x=>x.id!==id);
+  save(); renderAll();
+}
+function toggleFinalizadaEmpaque(id, checked){
+  const e = STATE.empaques.find(x=>x.id===id);
+  if(e){ e.finalizada = checked; save(); renderAll(); }
+}
+function renderEmpaques(){
+  const tbl = document.getElementById('tblEmpaque');
+  if(!tbl) return;
+  tbl.innerHTML = (STATE.empaques||[]).slice().reverse().map(e=>`
+    <tr>
+      <td>${e.folio}</td><td>${e.fecha}</td><td>${e.destinatarioNombre}</td><td>${(e.destinatario&&e.destinatario.ciudad)||'-'}</td>
+      <td>${e.paqueteria||'-'}</td><td class="mono">${e.numeroRastreo||'-'}</td>
+      <td><label class="flex" style="cursor:pointer"><input type="checkbox" ${e.finalizada?'checked':''} onchange="toggleFinalizadaEmpaque('${e.id}',this.checked)" style="width:auto"><span class="badge ${e.finalizada?'ok':'warn'}">${e.finalizada?'Finalizado':'Pendiente'}</span></label></td>
+      <td class="flex"><button class="btn ghost sm" onclick="verListaEmpaquePDF('${e.id}')">PDF</button><button class="btn ghost sm" onclick="abrirEmpaque('${e.id}')">Editar</button><button class="btn danger sm" onclick="eliminarEmpaque('${e.id}')">Eliminar</button></td>
+    </tr>`).join('') || '<tr><td colspan="8" class="muted">Sin envíos registrados.</td></tr>';
+}
+function verListaEmpaquePDF(id){
+  const e = STATE.empaques.find(x=>x.id===id);
+  if(!e) return;
+  const rem = STATE.config.remitente||{};
+  const d = e.destinatario||{};
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  pdfHeader(doc, 'Lista de empaque — '+e.folio);
+  doc.setFontSize(9); doc.text('Fecha: '+e.fecha+(e.ventaFolio?'    Venta relacionada: '+e.ventaFolio:''), 14, 34);
+
+  doc.setDrawColor(200,200,200);
+  doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('REMITENTE', 14, 46);
+  doc.text('DESTINATARIO', 112, 46);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  const remLines = [rem.nombre||'', rem.direccion||'', [rem.codigoPostal,rem.ciudad,rem.estado].filter(Boolean).join(', '), rem.pais||'', rem.celular?('Cel: '+rem.celular):''].filter(Boolean);
+  const desLines = [e.destinatarioNombre||'', d.direccion||'', [d.codigoPostal,d.ciudad,d.estado].filter(Boolean).join(', '), d.pais||'', d.celular?('Cel: '+d.celular):'', d.referencia?('Ref: '+d.referencia):''].filter(Boolean);
+  doc.text(remLines, 14, 53);
+  doc.text(desLines, 112, 53);
+  doc.rect(10,42,92,48);
+  doc.rect(108,42,92,48);
+
+  let y = 100;
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.text('Datos del envío', 14, y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text('Paquetería: '+(e.paqueteria||'-'), 14, y); y+=6;
+  doc.text('Número de rastreo: '+(e.numeroRastreo||'-'), 14, y); y+=6;
+  doc.text('Estado: '+(e.finalizada?'Finalizado / entregado a paquetería':'Pendiente de envío'), 14, y); y+=10;
+  if(e.contenido){
+    doc.setFont('helvetica','bold'); doc.text('Contenido', 14, y); y+=6;
+    doc.setFont('helvetica','normal');
+    const lineas = doc.splitTextToSize(e.contenido, 180);
+    doc.text(lineas, 14, y);
+  }
+  doc.save(`ListaEmpaque_${e.folio}.pdf`);
+  toast('Lista de empaque (PDF) generada.');
 }
 
 /* =================================================================
@@ -1828,8 +2302,8 @@ function renderDashboard(){
 
   const bienvenida = document.getElementById('bienvenidaTitulo');
   const logo = STATE.config.logoBase64 ? `<img src="${STATE.config.logoBase64}" style="height:36px;object-fit:contain;margin-bottom:6px">` : '';
-  const saludo = SESION_ACTUAL ? `Hola, ${SESION_ACTUAL.usuario} 👋` : 'Hoy en el taller';
-  bienvenida.innerHTML = `${logo}<div class="eyebrow">Panel general</div><h1>${saludo}</h1>`;
+  const saludo = SESION_ACTUAL ? `Bienvenido, ${SESION_ACTUAL.usuario} 👋` : 'Bienvenido';
+  bienvenida.innerHTML = `${logo}<div class="eyebrow">Sistema de Producción Artesanías D Mitzy</div><h1>${saludo}</h1>`;
 
   const ordenesConf = STATE.ordenes.filter(o=>o.estado==='confirmada');
   const paresMes = ordenesConf.reduce((s,o)=>s+o.necesidades.total,0);
@@ -1842,7 +2316,7 @@ function renderDashboard(){
   document.getElementById('kpiRow').innerHTML = `
     <div class="card kpi"><div class="num">${num(paresMes)}</div><div class="lbl">Pares producidos (acumulado)</div></div>
     <div class="card kpi alt"><div class="num">${money(ventasTotal)}</div><div class="lbl">Ventas totales</div></div>
-    <div class="card kpi good"><div class="num">${money(utilidadTotal)}</div><div class="lbl">Utilidad bruta acumulada</div></div>
+    <div class="card kpi good"><div class="num">${puedeVerCostos()?money(utilidadTotal):'—'}</div><div class="lbl">Utilidad bruta acumulada</div></div>
     <div class="card kpi warn"><div class="num">${money(valorInv)}</div><div class="lbl">Valor de inventario de materia prima</div></div>
     <div class="card kpi"><div class="num">${money(cxcTotal)}</div><div class="lbl">Por cobrar</div></div>
     <div class="card kpi alt"><div class="num">${money(cxpTotal)}</div><div class="lbl">Por pagar</div></div>
@@ -2078,6 +2552,7 @@ function renderResumenMensual(){
 function exportMesExcel(){
   const mes = mesActualDefault();
   const r = calcResumenMes(mes);
+  if(!librosDisponibles()) return;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom([
     {Concepto:'Pares producidos', Valor:r.pares},
@@ -2098,7 +2573,7 @@ function exportMesExcel(){
 function exportMesPDF(){
   const mes = mesActualDefault();
   const r = calcResumenMes(mes);
-  const { jsPDF } = window.jspdf;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF();
   pdfHeader(doc, 'Reporte mensual — '+mes);
   doc.autoTable({
@@ -2118,6 +2593,102 @@ function exportMesPDF(){
   toast('Reporte mensual (PDF) generado.');
 }
 
+/* ---------- Estado de resultados ---------- */
+function rangoFechasER(){
+  const desde = document.getElementById('erDesde').value || '0000-01-01';
+  const hasta = document.getElementById('erHasta').value || '9999-12-31';
+  return {desde,hasta};
+}
+function calcEstadoResultados(){
+  const {desde,hasta} = rangoFechasER();
+  const ventas = STATE.ventas.filter(v=>v.fecha>=desde && v.fecha<=hasta);
+  const gastos = STATE.gastos.filter(g=>g.fecha>=desde && g.fecha<=hasta);
+  const ventasNetas = ventas.reduce((s,v)=>s+v.total,0);
+  const costoVentas = ventas.reduce((s,v)=>s+(v.costo||0),0);
+  const utilidadBruta = ventasNetas - costoVentas;
+  const categorias = ['Fabricación indirecta','Administración','Venta','Nómina'];
+  const gastosPorCat = categorias.map(cat=>({cat, total: gastos.filter(g=>g.categoria===cat).reduce((s,g)=>s+Number(g.importe||0),0)}));
+  const gastosTotal = gastosPorCat.reduce((s,g)=>s+g.total,0);
+  const utilidadNeta = utilidadBruta - gastosTotal;
+  return {desde,hasta,ventasNetas,costoVentas,utilidadBruta,gastosPorCat,gastosTotal,utilidadNeta};
+}
+function renderEstadoResultados(){
+  const r = calcEstadoResultados();
+  document.getElementById('estadoResultados').innerHTML = `
+    <table class="tbl" style="width:100%">
+      <tbody>
+        <tr><td>Ventas netas</td><td class="num mono">${money(r.ventasNetas)}</td></tr>
+        <tr><td>(–) Costo de ventas</td><td class="num mono">${money(r.costoVentas)}</td></tr>
+        <tr style="border-top:2px solid var(--line)"><td><b>= Utilidad bruta</b></td><td class="num mono"><b>${money(r.utilidadBruta)}</b></td></tr>
+        ${r.gastosPorCat.map(g=>`<tr><td>(–) Gastos — ${g.cat}</td><td class="num mono">${money(g.total)}</td></tr>`).join('')}
+        <tr style="border-top:1px solid var(--line)"><td>Total de gastos</td><td class="num mono">${money(r.gastosTotal)}</td></tr>
+        <tr style="border-top:2px solid var(--indigo)"><td><b>= Utilidad neta</b></td><td class="num mono" style="color:${r.utilidadNeta>=0?'var(--good)':'var(--bad)'}"><b>${money(r.utilidadNeta)}</b></td></tr>
+      </tbody>
+    </table>`;
+}
+function exportEstadoResultadosPDF(){
+  const r = calcEstadoResultados();
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const doc = new jsPDF();
+  pdfHeader(doc, `Estado de resultados — ${r.desde==='0000-01-01'?'histórico':r.desde} a ${r.hasta==='9999-12-31'?'hoy':r.hasta}`);
+  const body = [
+    ['Ventas netas', money(r.ventasNetas)],
+    ['(–) Costo de ventas', money(r.costoVentas)],
+    ['= Utilidad bruta', money(r.utilidadBruta)],
+    ...r.gastosPorCat.map(g=>['(–) Gastos — '+g.cat, money(g.total)]),
+    ['Total de gastos', money(r.gastosTotal)],
+    ['= Utilidad neta', money(r.utilidadNeta)],
+  ];
+  doc.autoTable({head:[['Concepto','Importe']], body, startY:33, styles:{fontSize:10}, headStyles:{fillColor:[47,72,88]}});
+  doc.save(`ArtesaniasDMitzy_EstadoResultados.pdf`);
+  toast('Estado de resultados (PDF) generado.');
+}
+function exportEstadoResultadosExcel(){
+  const r = calcEstadoResultados();
+  const rows = [
+    {Concepto:'Ventas netas', Importe:r.ventasNetas},
+    {Concepto:'Costo de ventas', Importe:-r.costoVentas},
+    {Concepto:'Utilidad bruta', Importe:r.utilidadBruta},
+    ...r.gastosPorCat.map(g=>({Concepto:'Gastos — '+g.cat, Importe:-g.total})),
+    {Concepto:'Total de gastos', Importe:-r.gastosTotal},
+    {Concepto:'Utilidad neta', Importe:r.utilidadNeta},
+  ];
+  if(!librosDisponibles()) return;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(rows), 'Estado de resultados');
+  XLSX.writeFile(wb, `ArtesaniasDMitzy_EstadoResultados.xlsx`);
+  toast('Estado de resultados (Excel) generado.');
+}
+
+/* ---------- Resumen de cartera por cliente ---------- */
+function resumenSaldosClientes(){
+  return Object.entries(STATE.clientes).map(([n,m])=>{ const s=saldoCartera(m); return {nombre:n, ...s}; }).sort((a,b)=>b.saldo-a.saldo);
+}
+function renderResumenClientesMini(){
+  const el = document.getElementById('resumenClientesMini');
+  if(!el) return;
+  const rows = resumenSaldosClientes();
+  el.innerHTML = rows.map(r=>`<tr><td>${r.nombre}</td><td class="num mono">${money(r.cargos)}</td><td class="num mono">${money(r.abonos)}</td><td class="num mono">${money(r.saldo)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Sin movimientos.</td></tr>';
+}
+function exportResumenClientesPDF(){
+  const rows = resumenSaldosClientes();
+  if(!rows.length){ toast('No hay movimientos de clientes todavía.'); return; }
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Resumen de cartera por cliente');
+  doc.autoTable({head:[['Cliente','Cargos','Abonos','Saldo']], body:rows.map(r=>[r.nombre,money(r.cargos),money(r.abonos),money(r.saldo)]), startY:33, styles:{fontSize:9.5}, headStyles:{fillColor:[47,72,88]}});
+  doc.save('ArtesaniasDMitzy_ResumenClientes.pdf');
+  toast('Resumen de clientes (PDF) generado.');
+}
+function exportResumenClientesExcel(){
+  const rows = resumenSaldosClientes();
+  if(!librosDisponibles()) return;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(rows.map(r=>({Cliente:r.nombre,Cargos:r.cargos,Abonos:r.abonos,Saldo:r.saldo}))), 'Resumen clientes');
+  XLSX.writeFile(wb, 'ArtesaniasDMitzy_ResumenClientes.xlsx');
+  toast('Resumen de clientes (Excel) generado.');
+}
+
 function renderAll(){
   renderDashboard();
   renderProduccion();
@@ -2131,6 +2702,7 @@ function renderAll(){
   renderCartera('proveedores','cxpKpis','tblCxpResumen');
   renderReportes();
   renderConceptosUI();
+  renderResumenClientesMini();
   renderUsuariosResumen();
   document.getElementById('cfgNombre').value = STATE.config.nombre||'';
   document.getElementById('cfgRfc').value = STATE.config.rfc||'';
@@ -2138,7 +2710,18 @@ function renderAll(){
   document.getElementById('cfgCorreo').value = STATE.config.correo||'';
   document.getElementById('cfgManoObra').value = STATE.config.manoObraDefault||0;
   document.getElementById('cfgProrratear').value = STATE.config.prorratear||'si';
+  document.getElementById('cfgSonidos').value = STATE.config.sonidosActivos===false?'no':'si';
+  const rem = STATE.config.remitente||{};
+  document.getElementById('remNombre').value = rem.nombre||'';
+  document.getElementById('remCelular').value = rem.celular||'';
+  document.getElementById('remDireccion').value = rem.direccion||'';
+  document.getElementById('remCP').value = rem.codigoPostal||'';
+  document.getElementById('remCiudad').value = rem.ciudad||'';
+  document.getElementById('remEstado').value = rem.estado||'';
+  document.getElementById('remPais').value = rem.pais||'México';
+  renderEmpaques();
   actualizarUserbox();
+  aplicarPermisosNav();
 }
 
 /* =================================================================
@@ -2194,8 +2777,62 @@ function renderUsuariosResumen(){
   cont.innerHTML = n
     ? `<p class="smallnote">${n} usuario(s) configurado(s). El sistema pedirá inicio de sesión al abrir.</p>`
     : `<p class="smallnote">Sin usuarios configurados todavía — el sistema está abierto sin pedir sesión.</p>`;
+  const btn = document.getElementById('btnAdministrarUsuarios');
+  if(btn) btn.style.display = (SESION_ACTUAL && SESION_ACTUAL.limitaciones && SESION_ACTUAL.limitaciones.administrarUsuarios===false) ? 'none' : '';
 }
+
+const MODULOS_PERMISO = [
+  {key:'dashboard', label:'Panel general'},
+  {key:'produccion', label:'Producción'},
+  {key:'costeo', label:'Costeo'},
+  {key:'inventario', label:'Inventario'},
+  {key:'compras', label:'Compras'},
+  {key:'ventas', label:'Ventas / POS'},
+  {key:'gastos', label:'Gastos'},
+  {key:'nomina', label:'Nómina'},
+  {key:'empaque', label:'Lista de empaque'},
+  {key:'cxc', label:'Cuentas por cobrar'},
+  {key:'cxp', label:'Cuentas por pagar'},
+  {key:'procesos', label:'Procesos'},
+  {key:'reportes', label:'Reportes'},
+  {key:'respaldo', label:'Respaldo / Nube'},
+  {key:'config', label:'Configuración'},
+];
+function permisosCompletos(){
+  const p={}; MODULOS_PERMISO.forEach(m=>p[m.key]=true); return p;
+}
+function puedeAcceder(modulo){
+  if(!SESION_ACTUAL || !SESION_ACTUAL.permisos) return true; // sin sesión activa: acceso abierto
+  return SESION_ACTUAL.permisos[modulo]!==false;
+}
+function puedeVerCostos(){
+  if(!SESION_ACTUAL || !SESION_ACTUAL.limitaciones) return true;
+  return SESION_ACTUAL.limitaciones.verCostos!==false;
+}
+function puedeEliminar(){
+  if(!SESION_ACTUAL || !SESION_ACTUAL.limitaciones) return true;
+  if(SESION_ACTUAL.limitaciones.eliminar===false){ toast('Tu usuario no tiene permiso para eliminar registros.'); return false; }
+  return true;
+}
+function puedeAdministrarUsuarios(){
+  if(!SESION_ACTUAL || !SESION_ACTUAL.limitaciones) return true;
+  if(SESION_ACTUAL.limitaciones.administrarUsuarios===false){ toast('Tu usuario no tiene permiso para administrar usuarios.'); return false; }
+  return true;
+}
+function primerModuloPermitido(){
+  const orden = ['dashboard','produccion','ventas','inventario','compras','costeo','gastos','nomina','empaque','cxc','cxp','procesos','reportes','respaldo','config'];
+  for(const m of orden){ if(puedeAcceder(m)) return m; }
+  return 'dashboard';
+}
+function aplicarPermisosNav(){
+  document.querySelectorAll('.navbtn[data-view]').forEach(b=>{
+    const v = b.dataset.view;
+    b.style.display = puedeAcceder(v) ? '' : 'none';
+  });
+}
+
 function abrirUsuarios(){
+  if(!puedeAdministrarUsuarios()) return;
   const users = STATE.usuarios||[];
   openModal(`
     <h3>Usuarios</h3>
@@ -2210,19 +2847,50 @@ function abrirUsuarios(){
   `);
 }
 function abrirUsuario(id){
-  const u = id ? STATE.usuarios.find(x=>x.id===id) : {id:'', usuario:'', rol:'Administrador', activo:true};
+  const u = id ? STATE.usuarios.find(x=>x.id===id) : {id:'', usuario:'', rol:'Administrador', activo:true, permisos:permisosCompletos(), limitaciones:{verCostos:true, eliminar:true, administrarUsuarios:true}};
+  const permisos = u.permisos || permisosCompletos();
+  const lim = u.limitaciones || {verCostos:true, eliminar:true, administrarUsuarios:true};
   openModal(`
     <h3>${id?'Editar usuario':'Nuevo usuario'}</h3>
     <div class="formgrid c2">
       <div class="field"><label>Usuario</label><input id="usrUsuario" value="${u.usuario}" ${id?'disabled':''}></div>
-      <div class="field"><label>Rol</label><select id="usrRol">
+      <div class="field"><label>Rol (solo etiqueta, no cambia permisos)</label><select id="usrRol">
         <option ${u.rol==='Administrador'?'selected':''}>Administrador</option>
         <option ${u.rol==='Vendedor'?'selected':''}>Vendedor</option>
         <option ${u.rol==='Producción'?'selected':''}>Producción</option>
+        <option ${u.rol==='Contabilidad'?'selected':''}>Contabilidad</option>
       </select></div>
       <div class="field"><label>${id?'Nueva contraseña (dejar vacío para no cambiarla)':'Contraseña'}</label><input id="usrPassword" type="password"></div>
       <div class="field"><label>Activo</label><select id="usrActivo"><option value="si" ${u.activo!==false?'selected':''}>Sí</option><option value="no" ${u.activo===false?'selected':''}>No</option></select></div>
     </div>
+
+    <hr class="dash">
+    <div class="flex" style="margin-bottom:8px">
+      <span class="muted" style="font-size:12px">Plantillas rápidas:</span>
+      <button type="button" class="btn ghost sm" onclick="aplicarPlantillaPermisos('admin')">Administrador (todo)</button>
+      <button type="button" class="btn ghost sm" onclick="aplicarPlantillaPermisos('ventas')">Vendedor</button>
+      <button type="button" class="btn ghost sm" onclick="aplicarPlantillaPermisos('produccion')">Producción</button>
+    </div>
+    <h4 style="font-size:13px;margin-bottom:6px">Módulos permitidos</h4>
+    <div class="chiprow" id="permisosModulos">${MODULOS_PERMISO.map(m=>`
+      <label style="display:inline-flex;align-items:center;gap:5px;background:var(--paper-2);border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer">
+        <input type="checkbox" class="chkPermisoModulo" value="${m.key}" ${permisos[m.key]!==false?'checked':''}> ${m.label}
+      </label>`).join('')}
+    </div>
+
+    <h4 style="font-size:13px;margin:14px 0 6px">Permisos adicionales</h4>
+    <div class="chiprow">
+      <label style="display:inline-flex;align-items:center;gap:5px;background:var(--paper-2);border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer">
+        <input type="checkbox" id="limVerCostos" ${lim.verCostos!==false?'checked':''}> Puede ver costos y utilidades
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:5px;background:var(--paper-2);border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer">
+        <input type="checkbox" id="limEliminar" ${lim.eliminar!==false?'checked':''}> Puede eliminar / cancelar registros
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:5px;background:var(--paper-2);border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer">
+        <input type="checkbox" id="limAdminUsuarios" ${lim.administrarUsuarios!==false?'checked':''}> Puede administrar usuarios
+      </label>
+    </div>
+
     <div class="close-row">
       <button class="btn ghost" onclick="abrirUsuarios()">Cancelar</button>
       ${id?`<button class="btn danger" onclick="borrarUsuario('${id}')">Eliminar</button>`:''}
@@ -2230,12 +2898,31 @@ function abrirUsuario(id){
     </div>
   `);
 }
+function aplicarPlantillaPermisos(tipo){
+  const todos = {}; MODULOS_PERMISO.forEach(m=>todos[m.key]=false);
+  let activos = [];
+  if(tipo==='admin') activos = MODULOS_PERMISO.map(m=>m.key);
+  if(tipo==='ventas') activos = ['dashboard','ventas','empaque','cxc','inventario'];
+  if(tipo==='produccion') activos = ['dashboard','produccion','inventario','compras','procesos'];
+  activos.forEach(k=>todos[k]=true);
+  document.querySelectorAll('.chkPermisoModulo').forEach(chk=>{ chk.checked = !!todos[chk.value]; });
+  document.getElementById('limVerCostos').checked = (tipo==='admin');
+  document.getElementById('limEliminar').checked = (tipo==='admin');
+  document.getElementById('limAdminUsuarios').checked = (tipo==='admin');
+}
 async function guardarUsuario(id){
   const usuario = document.getElementById('usrUsuario').value.trim();
   if(!usuario){ toast('Escribe un nombre de usuario.'); return; }
   const rol = document.getElementById('usrRol').value;
   const activo = document.getElementById('usrActivo').value==='si';
   const password = document.getElementById('usrPassword').value;
+  const permisos = {};
+  document.querySelectorAll('.chkPermisoModulo').forEach(chk=>{ permisos[chk.value] = chk.checked; });
+  const limitaciones = {
+    verCostos: document.getElementById('limVerCostos').checked,
+    eliminar: document.getElementById('limEliminar').checked,
+    administrarUsuarios: document.getElementById('limAdminUsuarios').checked,
+  };
   if(!STATE.usuarios) STATE.usuarios=[];
   let u = id ? STATE.usuarios.find(x=>x.id===id) : null;
   if(!u && STATE.usuarios.some(x=>x.usuario.toLowerCase()===usuario.toLowerCase())){
@@ -2243,15 +2930,22 @@ async function guardarUsuario(id){
   }
   if(!u){
     if(!password){ toast('Captura una contraseña.'); return; }
-    u = {id:uid('usr'), usuario, hash:'', rol, activo};
+    u = {id:uid('usr'), usuario, hash:'', rol, activo, permisos, limitaciones};
     STATE.usuarios.push(u);
   } else {
-    u.rol = rol; u.activo = activo;
+    u.rol = rol; u.activo = activo; u.permisos = permisos; u.limitaciones = limitaciones;
   }
   if(password){ u.hash = await hashTexto(password); }
   save(); abrirUsuarios(); toast('Usuario guardado.');
+  // si el usuario en sesión es el que se acaba de editar, refresca sus permisos ya mismo
+  if(SESION_ACTUAL && SESION_ACTUAL.id===u.id){
+    SESION_ACTUAL.permisos = u.permisos; SESION_ACTUAL.limitaciones = u.limitaciones; SESION_ACTUAL.rol = u.rol;
+    try{ sessionStorage.setItem('admy_session', JSON.stringify(SESION_ACTUAL)); }catch(e){}
+    aplicarPermisosNav();
+  }
 }
 function borrarUsuario(id){
+  if(!puedeAdministrarUsuarios()) return;
   if(!confirm('¿Eliminar este usuario?')) return;
   STATE.usuarios = STATE.usuarios.filter(x=>x.id!==id);
   save(); abrirUsuarios();
@@ -2271,14 +2965,16 @@ async function intentarLogin(){
   const password = document.getElementById('loginPassword').value;
   const errBox = document.getElementById('loginError');
   const u = (STATE.usuarios||[]).find(x=>x.usuario.toLowerCase()===usuario.toLowerCase() && x.activo!==false);
-  if(!u){ errBox.textContent='Usuario no encontrado o inactivo.'; return; }
+  if(!u){ errBox.textContent='Usuario no encontrado o inactivo.'; reproducirSonido('error'); return; }
   const hash = await hashTexto(password);
-  if(hash!==u.hash){ errBox.textContent='Contraseña incorrecta.'; return; }
-  SESION_ACTUAL = {id:u.id, usuario:u.usuario, rol:u.rol};
+  if(hash!==u.hash){ errBox.textContent='Contraseña incorrecta.'; reproducirSonido('error'); return; }
+  SESION_ACTUAL = {id:u.id, usuario:u.usuario, rol:u.rol, permisos:u.permisos||permisosCompletos(), limitaciones:u.limitaciones||{verCostos:true,eliminar:true,administrarUsuarios:true}};
   try{ sessionStorage.setItem('admy_session', JSON.stringify(SESION_ACTUAL)); }catch(e){}
   document.getElementById('loginScreen').classList.remove('active');
   actualizarUserbox();
-  renderAll();
+  aplicarPermisosNav();
+  reproducirSonido('login');
+  go(primerModuloPermitido());
 }
 function cerrarSesion(){
   SESION_ACTUAL = null;
@@ -2289,7 +2985,7 @@ function actualizarUserbox(){
   const box = document.getElementById('userbox');
   if(!box) return;
   if(SESION_ACTUAL){
-    box.style.display='block';
+    box.style.display='flex';
     document.getElementById('userboxNombre').textContent = SESION_ACTUAL.usuario;
     document.getElementById('userboxRol').textContent = SESION_ACTUAL.rol;
   } else {
@@ -2297,13 +2993,20 @@ function actualizarUserbox(){
   }
 }
 async function verificarSesionInicial(){
-  if(!STATE.usuarios || !STATE.usuarios.length) return; // sin usuarios configurados: acceso abierto
+  if(!STATE.usuarios || !STATE.usuarios.length){ reproducirSonido('login'); return; } // sin usuarios configurados: acceso abierto
   try{
     const raw = sessionStorage.getItem('admy_session');
     if(raw){
       const s = JSON.parse(raw);
       const u = STATE.usuarios.find(x=>x.id===s.id && x.activo!==false);
-      if(u){ SESION_ACTUAL = {id:u.id, usuario:u.usuario, rol:u.rol}; actualizarUserbox(); return; }
+      if(u){
+        SESION_ACTUAL = {id:u.id, usuario:u.usuario, rol:u.rol, permisos:u.permisos||permisosCompletos(), limitaciones:u.limitaciones||{verCostos:true,eliminar:true,administrarUsuarios:true}};
+        actualizarUserbox();
+        aplicarPermisosNav();
+        reproducirSonido('login');
+        if(!puedeAcceder(document.querySelector('.view.active')?.id.replace('view-',''))){ go(primerModuloPermitido()); }
+        return;
+      }
     }
   }catch(e){}
   await mostrarLogin();
@@ -2316,12 +3019,42 @@ function guardarConfig(){
   STATE.config.correo = document.getElementById('cfgCorreo').value.trim();
   STATE.config.manoObraDefault = Number(document.getElementById('cfgManoObra').value)||0;
   STATE.config.prorratear = document.getElementById('cfgProrratear').value;
+  STATE.config.sonidosActivos = document.getElementById('cfgSonidos').value==='si';
   save(); renderAll(); toast('Configuración guardada.');
+  if(STATE.config.sonidosActivos) reproducirSonido('click');
+}
+function guardarRemitente(){
+  STATE.config.remitente = {
+    nombre: document.getElementById('remNombre').value.trim()||STATE.config.nombre,
+    celular: document.getElementById('remCelular').value.trim(),
+    direccion: document.getElementById('remDireccion').value.trim(),
+    codigoPostal: document.getElementById('remCP').value.trim(),
+    ciudad: document.getElementById('remCiudad').value.trim(),
+    estado: document.getElementById('remEstado').value.trim(),
+    pais: document.getElementById('remPais').value.trim()||'México',
+  };
+  save(); renderAll(); toast('Datos de remitente guardados.');
 }
 
 /* =================================================================
    EXPORTACIÓN — EXCEL (SheetJS)
    ================================================================= */
+function librosDisponibles(){
+  if(typeof XLSX==='undefined'){
+    toast('Excel todavía no está disponible en este equipo (se necesitó internet la primera vez). Conéctate un momento e inténtalo de nuevo.');
+    if(IS_DESKTOP && window.libsAPI) window.libsAPI.cacheNow().then(()=>{});
+    return false;
+  }
+  return true;
+}
+function pdfDisponible(){
+  if(typeof window.jspdf==='undefined'){
+    toast('PDF todavía no está disponible en este equipo (se necesitó internet la primera vez). Conéctate un momento e inténtalo de nuevo.');
+    if(IS_DESKTOP && window.libsAPI) window.libsAPI.cacheNow().then(()=>{});
+    return null;
+  }
+  return window.jspdf.jsPDF;
+}
 function sheetFrom(rows){ return XLSX.utils.json_to_sheet(rows); }
 function setLandscape(wb, fit){
   wb.SheetNames.forEach(name=>{
@@ -2350,12 +3083,14 @@ function dataNomina(){
 function exportExcelModulo(nombre){
   const map = {Ordenes:dataOrdenes, Costeo:dataCosteo, Inventario:dataInventario, Compras:dataCompras, Ventas:dataVentas, Gastos:dataGastos, Nomina:dataNomina, CxC:()=>dataCartera('clientes'), CxP:()=>dataCartera('proveedores')};
   const rows = map[nombre]();
+  if(!librosDisponibles()) return;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom(rows.length?rows:[{Aviso:'Sin datos'}]), nombre.slice(0,31));
   XLSX.writeFile(wb, `ArtesaniasDMitzy_${nombre}_${todayStr()}.xlsx`);
   toast('Excel generado.');
 }
 function exportExcelCompleto(){
+  if(!librosDisponibles()) return;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom(dataOrdenes()), 'Ordenes');
   XLSX.utils.book_append_sheet(wb, sheetFrom(dataCosteo()), 'Costeo');
@@ -2391,7 +3126,7 @@ function exportPDFModulo(titulo){
     'Cuentas por pagar': [['Proveedor','Cargos','Abonos','Saldo'], Object.entries(STATE.proveedores).map(([n,m])=>{const s=saldoCartera(m);return [n,money(s.cargos),money(s.abonos),money(s.saldo)];})],
   };
   const [head, body] = map[titulo] || [[],[]];
-  const { jsPDF } = window.jspdf;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({orientation: body.length && head.length>6 ? 'landscape':'portrait'});
   pdfHeader(doc, titulo);
   doc.autoTable({head:[head], body, startY:33, styles:{fontSize:8}, headStyles:{fillColor:[47,72,88]}});
@@ -2401,7 +3136,7 @@ function exportPDFModulo(titulo){
 function verFichaOrdenPDF(id){ generarFichaOrdenPDF(id); }
 function generarFichaOrdenPDF(id){
   const o = STATE.ordenes.find(x=>x.id===id);
-  const { jsPDF } = window.jspdf;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF();
   pdfHeader(doc, 'Ficha de orden de producción '+o.folio);
   doc.setFontSize(9);
@@ -2464,15 +3199,64 @@ function abrirReportesOrden(id){
           <button class="btn ghost sm" ${tieneCosteo?'':'disabled'} onclick="generarFichaOrdenPDF('${id}')">PDF</button>
         </div>
       </div>
+      <div class="card">
+        <h4 style="font-size:14px">Comprobación de cuadre</h4>
+        <p class="smallnote">Verifica que el detalle de numeración (tallas 17–27) sume correctamente contra el total de la orden, el costeo y el inventario generado.</p>
+        <div class="flex" style="margin-top:8px">
+          <button class="btn gold sm" onclick="verificarCuadreOrden('${id}')">Verificar</button>
+        </div>
+      </div>
     </div>
     <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+function verificarCuadreOrden(id){
+  const o = STATE.ordenes.find(x=>x.id===id);
+  if(!o){ toast('No se encontró la orden.'); return; }
+
+  // 1. recalcular el total por talla directamente de las líneas capturadas
+  const porTalla = Object.fromEntries(SIZES.map(s=>[s,0]));
+  o.lineas.forEach(l=> SIZES.forEach(sz=> porTalla[sz]+= Number(l.tallas[sz])||0));
+  const totalRecalculado = SIZES.reduce((s,sz)=>s+porTalla[sz],0);
+
+  // 2. contra lo guardado en la orden (necesidades.total y costeo.pares)
+  const totalGuardado = o.necesidades ? o.necesidades.total : null;
+  const totalCosteo = o.costeo ? o.costeo.pares : null;
+
+  // 3. contra el producto terminado que esa orden dio de alta (disponible + ya vendido)
+  const lotesOrden = STATE.productoTerminado.filter(pt=>pt.ordenId===id);
+  const totalLotesOriginal = lotesOrden.reduce((s,pt)=>s+pt.paresOriginales,0);
+  const totalLotesDisponible = lotesOrden.reduce((s,pt)=>s+pt.paresDisponibles,0);
+  const totalVendidoDeEstaOrden = totalLotesOriginal - totalLotesDisponible;
+
+  const chequeos = [
+    {concepto:'Suma de tallas capturadas', valor:totalRecalculado, ok:true},
+    {concepto:'Total registrado en la orden (necesidades)', valor:totalGuardado, ok: totalGuardado===null || totalGuardado===totalRecalculado},
+    {concepto:'Pares usados en el costeo', valor:totalCosteo, ok: totalCosteo===null || totalCosteo===totalRecalculado},
+    {concepto:'Pares dados de alta en producto terminado', valor:o.estado==='confirmada'?totalLotesOriginal:'—', ok: o.estado!=='confirmada' || totalLotesOriginal===totalRecalculado},
+  ];
+  const todoCuadra = chequeos.every(c=>c.ok);
+
+  const filasTalla = SIZES.map(sz=>`<td class="num mono">${porTalla[sz]}</td>`).join('');
+
+  openModal(`
+    <h3>Comprobación de cuadre — Orden ${o.folio}</h3>
+    <div class="badge ${todoCuadra?'ok':'bad'}" style="font-size:13px;padding:6px 14px;margin-bottom:14px;display:inline-block">${todoCuadra?'✔ Todo cuadra correctamente':'⚠ Se encontraron diferencias'}</div>
+    <h4 style="font-size:13px;margin-bottom:6px">Detalle de numeración por talla (recalculado ahora mismo)</h4>
+    <div class="tblwrap"><table class="tbl"><thead><tr>${SIZES.map(s=>`<th class="num">${s}</th>`).join('')}<th class="num">Total</th></tr></thead>
+    <tbody><tr>${filasTalla}<td class="num mono"><b>${totalRecalculado}</b></td></tr></tbody></table></div>
+    <h4 style="font-size:13px;margin:14px 0 6px">Cuadre contra los demás módulos</h4>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Verificación</th><th class="num">Valor</th><th>Estado</th></tr></thead>
+    <tbody>${chequeos.map(c=>`<tr><td>${c.concepto}</td><td class="num mono">${c.valor===null?'—':c.valor}</td><td><span class="badge ${c.ok?'ok':'bad'}">${c.ok?'Cuadra':'Diferencia'}</span></td></tr>`).join('')}</tbody></table></div>
+    ${totalVendidoDeEstaOrden>0?`<p class="smallnote" style="margin-top:8px">De esta orden ya se vendieron ${totalVendidoDeEstaOrden} pares (por eso el inventario disponible es menor al total producido — esto es normal, no es una diferencia).</p>`:''}
+    <div class="close-row"><button class="btn ghost" onclick="abrirReportesOrden('${id}')">← Volver a reportes</button><button class="btn clay" onclick="closeModal()">Cerrar</button></div>
   `);
 }
 
 function generarHojaCortePDF(id){
   const o = STATE.ordenes.find(x=>x.id===id);
   const ac = calcAcumulados(o);
-  const { jsPDF } = window.jspdf;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({orientation:'landscape'});
   pdfHeader(doc, 'Hoja de corte — Acumulado por talla — Orden '+o.folio);
   doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
@@ -2506,6 +3290,7 @@ function generarHojaCortePDF(id){
 function generarHojaCorteExcel(id){
   const o = STATE.ordenes.find(x=>x.id===id);
   const ac = calcAcumulados(o);
+  if(!librosDisponibles()) return;
   const wb = XLSX.utils.book_new();
   function toSheetRows(rows){
     return rows.map(r=>{
@@ -2538,6 +3323,7 @@ function dataOrdenLineasSolo(o){
 }
 function exportOrdenSoloExcel(id){
   const o = STATE.ordenes.find(x=>x.id===id);
+  if(!librosDisponibles()) return;
   const wb = XLSX.utils.book_new();
   const rows = dataOrdenLineasSolo(o);
   const ws = sheetFrom(rows.length?rows:[{Aviso:'Sin líneas capturadas'}]);
@@ -2549,7 +3335,7 @@ function exportOrdenSoloExcel(id){
 }
 function exportOrdenSoloPDF(id){
   const o = STATE.ordenes.find(x=>x.id===id);
-  const { jsPDF } = window.jspdf;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({orientation:'landscape'});
   pdfHeader(doc, 'Orden de producción '+o.folio+' (sin costos)');
   doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
@@ -2567,6 +3353,7 @@ function dataCosteoDetalleOrden(o){
 function exportHojaCostoExcel(id){
   const o = STATE.ordenes.find(x=>x.id===id);
   if(!o.costeo){ toast('Esta orden aún no está confirmada.'); return; }
+  if(!librosDisponibles()) return;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom(dataCosteoDetalleOrden(o)), 'Materiales');
   const resumen = [
@@ -2584,7 +3371,7 @@ function exportHojaCostoExcel(id){
 function exportHojaCostoPDF(id){
   const o = STATE.ordenes.find(x=>x.id===id);
   if(!o.costeo){ toast('Esta orden aún no está confirmada.'); return; }
-  const { jsPDF } = window.jspdf;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF();
   pdfHeader(doc, 'Hoja de costo — Orden '+o.folio);
   doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Pares: '+o.costeo.pares, 14, 34);
@@ -2608,72 +3395,129 @@ function hexToRgb(hex){
   const n = parseInt(hex,16)||0x2F4858;
   return [(n>>16)&255, (n>>8)&255, n&255];
 }
+function dibujarCopiaFactura(doc, v, cfg, accent, items, yBase, yMax, etiqueta){
+  const pageWidth = 216, marginX = 14;
+  let y = yBase;
+
+  // etiqueta ORIGINAL / COPIA
+  doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(150,150,150);
+  doc.text(etiqueta, pageWidth-marginX, y, {align:'right'});
+  doc.setTextColor(20,20,20); doc.setFont('helvetica','normal');
+
+  if(cfg.logoBase64){
+    try{
+      const w = 22, h = w*0.55;
+      doc.addImage(cfg.logoBase64, marginX, y, w, h);
+    }catch(e){ /* logo no válido, se omite */ }
+  }
+  doc.setTextColor(...accent);
+  doc.setFontSize(14);
+  doc.text(cfg.nombre||'Artesanías D Mitzy', cfg.logoBase64?marginX+26:marginX, y+6);
+  doc.setTextColor(20,20,20);
+  y += 10;
+  doc.setFontSize(8);
+  if(cfg.direccion){ doc.text(cfg.direccion, marginX, y); y += 4; }
+  if(cfg.rfc){ doc.text('RFC: '+cfg.rfc, marginX, y); y += 4; }
+  y += 1;
+  doc.setDrawColor(...accent); doc.setLineWidth(0.4);
+  doc.line(marginX, y, pageWidth-marginX, y); y += 5;
+
+  doc.setTextColor(...accent);
+  doc.setFontSize(11);
+  doc.text('FACTURA / NOTA DE VENTA', marginX, y);
+  doc.setTextColor(20,20,20);
+  y += 5.5;
+  doc.setFontSize(9);
+  doc.text('Folio: '+v.folio, marginX, y);
+  doc.text('Fecha: '+v.fecha, pageWidth-70, y);
+  y += 5;
+  doc.text('Cliente: '+v.cliente, marginX, y);
+  doc.text('Condición: '+v.condicion, pageWidth-70, y);
+  y += 5.5;
+
+  const head = [['Producto','Origen','Cantidad','Precio unit.','Importe']];
+  const body = items.map(it=>{
+    const importe = it.importe!=null ? it.importe : it.cantidad*it.precioUnitario;
+    return [(it.descripcion!=null?it.descripcion:it.modelo), it.ordenFolio||'-', it.cantidad, money(it.precioUnitario), money(importe)];
+  });
+  doc.autoTable({head, body, startY:y, styles:{fontSize:8}, headStyles:{fillColor:accent}, margin:{left:marginX, right:marginX}, tableWidth:pageWidth-marginX*2});
+  y = doc.lastAutoTable.finalY + 6;
+  doc.setTextColor(...accent);
+  doc.setFontSize(12);
+  doc.text('TOTAL: '+money(v.total), pageWidth-marginX-55, y);
+  doc.setTextColor(20,20,20);
+  y += 6;
+  if(cfg.facturaPie){
+    doc.setFontSize(7.5);
+    const lineas = doc.splitTextToSize(cfg.facturaPie, pageWidth-marginX*2);
+    doc.text(lineas.slice(0, Math.max(1, Math.floor((yMax-y)/3.3))), marginX, y);
+  }
+}
 function verFacturaPDF(id){
   const v = STATE.ventas.find(x=>x.id===id);
   if(!v) return;
   const cfg = STATE.config;
   const accent = hexToRgb(cfg.facturaColor);
   const esTicket = cfg.facturaTamano==='ticket';
-  const { jsPDF } = window.jspdf;
-  const doc = esTicket ? new jsPDF({unit:'mm', format:[80,250]}) : new jsPDF({unit:'mm', format:'letter'});
-  const pageWidth = esTicket?80:216;
-  const marginX = esTicket?4:14;
-  let y = 14;
-
-  if(cfg.logoBase64){
-    try{
-      const w = esTicket?22:26, h = w*0.55;
-      doc.addImage(cfg.logoBase64, marginX, y, w, h);
-      y += h+4;
-    }catch(e){ /* logo no válido, se omite */ }
-  }
-  doc.setTextColor(...accent);
-  doc.setFontSize(esTicket?11:16);
-  doc.text(cfg.nombre||'Artesanías D Mitzy', marginX, y);
-  doc.setTextColor(20,20,20);
-  y += esTicket?5:7;
-  doc.setFontSize(esTicket?7:9);
-  if(cfg.direccion){ doc.text(cfg.direccion, marginX, y); y += esTicket?3.5:5; }
-  if(cfg.rfc){ doc.text('RFC: '+cfg.rfc, marginX, y); y += esTicket?3.5:5; }
-  y += 2;
-  doc.setDrawColor(...accent); doc.setLineWidth(0.4);
-  doc.line(marginX, y, pageWidth-marginX, y); y += 6;
-
-  doc.setTextColor(...accent);
-  doc.setFontSize(esTicket?9:12);
-  doc.text(esTicket?'TICKET DE VENTA':'FACTURA / TICKET DE VENTA', marginX, y);
-  doc.setTextColor(20,20,20);
-  y += 6;
-  doc.setFontSize(esTicket?7:10);
-  doc.text('Folio: '+v.folio, marginX, y);
-  if(!esTicket) doc.text('Fecha: '+v.fecha, pageWidth-70, y);
-  y += esTicket?4:5;
-  if(esTicket){ doc.text('Fecha: '+v.fecha, marginX, y); y+=4; }
-  doc.text('Cliente: '+v.cliente, marginX, y);
-  if(!esTicket) doc.text('Condición: '+v.condicion, pageWidth-70, y);
-  y += esTicket?4:6;
-  if(esTicket){ doc.text('Condición: '+v.condicion, marginX, y); y += 5; }
-
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const items = ventaItems(v);
-  const head = esTicket ? [['Producto','Cant','P.Unit','Importe']] : [['Producto','Origen','Cantidad','Precio unit.','Importe']];
-  const body = items.map(it=>{
-    const importe = it.importe!=null ? it.importe : it.cantidad*it.precioUnitario;
-    return esTicket ? [(it.descripcion!=null?it.descripcion:it.modelo), it.cantidad, money(it.precioUnitario), money(importe)] : [(it.descripcion!=null?it.descripcion:it.modelo), it.ordenFolio||'-', it.cantidad, money(it.precioUnitario), money(importe)];
-  });
-  doc.autoTable({head, body, startY:y, styles:{fontSize:esTicket?6.5:9}, headStyles:{fillColor:accent}, margin:{left:marginX, right:marginX}});
-  y = doc.lastAutoTable.finalY + (esTicket?5:10);
-  doc.setTextColor(...accent);
-  doc.setFontSize(esTicket?10:13);
-  doc.text('TOTAL: '+money(v.total), esTicket?marginX:pageWidth-80, y);
-  doc.setTextColor(20,20,20);
-  y += esTicket?7:10;
-  if(cfg.facturaPie){
-    doc.setFontSize(esTicket?6.5:8);
-    const lineas = doc.splitTextToSize(cfg.facturaPie, pageWidth-marginX*2);
-    doc.text(lineas, marginX, y);
+
+  if(esTicket){
+    const doc = new jsPDF({unit:'mm', format:[80,250]});
+    const pageWidth = 80, marginX = 4;
+    let y = 14;
+    if(cfg.logoBase64){
+      try{ const w=22,h=w*0.55; doc.addImage(cfg.logoBase64, marginX, y, w, h); y+=h+4; }catch(e){}
+    }
+    doc.setTextColor(...accent); doc.setFontSize(11);
+    doc.text(cfg.nombre||'Artesanías D Mitzy', marginX, y);
+    doc.setTextColor(20,20,20); y+=5;
+    doc.setFontSize(7);
+    if(cfg.direccion){ doc.text(cfg.direccion, marginX, y); y+=3.5; }
+    if(cfg.rfc){ doc.text('RFC: '+cfg.rfc, marginX, y); y+=3.5; }
+    y+=2;
+    doc.setDrawColor(...accent); doc.setLineWidth(0.4); doc.line(marginX,y,pageWidth-marginX,y); y+=6;
+    doc.setTextColor(...accent); doc.setFontSize(9); doc.text('TICKET DE VENTA', marginX, y); doc.setTextColor(20,20,20); y+=6;
+    doc.setFontSize(7); doc.text('Folio: '+v.folio, marginX, y); y+=4;
+    doc.text('Fecha: '+v.fecha, marginX, y); y+=4;
+    doc.text('Cliente: '+v.cliente, marginX, y); y+=4;
+    doc.text('Condición: '+v.condicion, marginX, y); y+=5;
+    const head = [['Producto','Cant','P.Unit','Importe']];
+    const body = items.map(it=>{
+      const importe = it.importe!=null ? it.importe : it.cantidad*it.precioUnitario;
+      return [(it.descripcion!=null?it.descripcion:it.modelo), it.cantidad, money(it.precioUnitario), money(importe)];
+    });
+    doc.autoTable({head, body, startY:y, styles:{fontSize:6.5}, headStyles:{fillColor:accent}, margin:{left:marginX, right:marginX}});
+    y = doc.lastAutoTable.finalY+5;
+    doc.setTextColor(...accent); doc.setFontSize(10); doc.text('TOTAL: '+money(v.total), marginX, y);
+    doc.setTextColor(20,20,20); y+=7;
+    if(cfg.facturaPie){
+      doc.setFontSize(6.5);
+      const lineas = doc.splitTextToSize(cfg.facturaPie, pageWidth-marginX*2);
+      doc.text(lineas, marginX, y);
+    }
+    doc.save(`Factura_${v.folio}.pdf`);
+    toast('Factura PDF generada.');
+    return;
   }
+
+  // Formato carta: dos copias en una sola hoja — ORIGINAL arriba, COPIA abajo
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  dibujarCopiaFactura(doc, v, cfg, accent, items, 10, 136, 'ORIGINAL');
+
+  const cutY = 140;
+  doc.setDrawColor(180,180,180); doc.setLineWidth(0.3);
+  doc.setLineDashPattern([2,1.5], 0);
+  doc.line(20, cutY, 216-14, cutY);
+  doc.setLineDashPattern([], 0);
+  doc.setFontSize(9); doc.setTextColor(150,150,150);
+  doc.text('✂', 14, cutY+1.5);
+  doc.setTextColor(20,20,20);
+
+  dibujarCopiaFactura(doc, v, cfg, accent, items, 148, 276, 'COPIA');
+
   doc.save(`Factura_${v.folio}.pdf`);
-  toast('Factura PDF generada.');
+  toast('Factura PDF generada (Original y Copia en una hoja carta).');
 }
 
 
@@ -2687,15 +3531,29 @@ function descargarBackup(){
   a.href = url; a.download = `Respaldo_ArtesaniasDMitzy_${todayStr()}.json`;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
+  return `Respaldo_ArtesaniasDMitzy_${todayStr()}.json`;
+}
+function generarReporteProduccionParaCorreo(){
+  if(!librosDisponibles()) return null;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataOrdenes().length?dataOrdenes():[{Aviso:'Sin órdenes registradas'}]), 'Ordenes');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(dataCosteo().length?dataCosteo():[{Aviso:'Sin órdenes costeadas'}]), 'Costeo');
+  const nombre = `ArtesaniasDMitzy_ReporteProduccion_${todayStr()}.xlsx`;
+  XLSX.writeFile(wb, nombre);
+  return nombre;
 }
 function respaldarYCorreo(){
-  descargarBackup();
-  const correo = STATE.config.correo || '';
-  const asunto = encodeURIComponent('Respaldo Artesanías D Mitzy — '+todayStr());
-  const cuerpo = encodeURIComponent('Adjunta aquí el archivo de respaldo que se acaba de descargar (Respaldo_ArtesaniasDMitzy_'+todayStr()+'.json) para resguardarlo en la nube.\n\nGenerado desde el Sistema Administrativo de Artesanías D Mitzy.');
+  const nombreRespaldo = descargarBackup();
+  const nombreReporte = generarReporteProduccionParaCorreo();
+  const correo = STATE.config.correo || 'firmaluel@gmail.com';
+  const asunto = encodeURIComponent('Respaldo y reporte de producción — Artesanías D Mitzy — '+todayStr());
+  const listaArchivos = nombreReporte ? `${nombreRespaldo}\n- ${nombreReporte}` : nombreRespaldo;
+  const cuerpo = encodeURIComponent('Adjunta aquí los archivos que se acaban de descargar:\n- '+listaArchivos+'\n\npara resguardarlos en la nube.\n\nGenerado desde el Sistema Administrativo de Artesanías D Mitzy.');
   const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(correo)}&su=${asunto}&body=${cuerpo}`;
   window.open(url,'_blank');
-  toast('Respaldo descargado. Adjúntalo en la pestaña de Gmail que se abrió.');
+  toast(nombreReporte
+    ? 'Respaldo y reporte de producción descargados. Adjúntalos ambos en la pestaña de Gmail que se abrió.'
+    : 'Respaldo descargado (el reporte de producción no se pudo generar sin internet la primera vez). Adjúntalo en Gmail.');
 }
 function restaurarBackup(){
   const file = document.getElementById('fileRestore').files[0];
@@ -2713,22 +3571,174 @@ function restaurarBackup(){
 }
 
 /* =================================================================
+   RESPALDO AUTOMÁTICO (versión de escritorio) Y RESPALDO LIGERO (navegador)
+   ================================================================= */
+function tamanoLegible(bytes){
+  if(bytes<1024) return bytes+' B';
+  if(bytes<1024*1024) return (bytes/1024).toFixed(1)+' KB';
+  return (bytes/(1024*1024)).toFixed(1)+' MB';
+}
+function fechaLegible(iso){
+  try{ return new Date(iso).toLocaleString('es-MX',{dateStyle:'medium', timeStyle:'short'}); }catch(e){ return iso; }
+}
+async function respaldarAhora(){
+  if(!IS_DESKTOP){ descargarBackup(); return; }
+  const res = await window.backupAPI.runNow();
+  if(res && res.ok){ toast('Respaldo generado.'); cargarHistorialRespaldos(); }
+  else toast((res&&res.msg)||'No se pudo generar el respaldo.');
+}
+async function salirDelSistema(){
+  if(!confirm('Se va a generar un respaldo y luego se cerrará el sistema. ¿Continuar?')) return;
+  reproducirSonido('click');
+  toast('Generando respaldo antes de salir…');
+  try{
+    if(IS_DESKTOP && window.backupAPI){ await window.backupAPI.runNow(); }
+    else { descargarBackup(); }
+  }catch(e){ /* si falla el respaldo, igual se permite salir */ }
+  reproducirSonido('finish');
+  toast('Respaldo listo. Cerrando…');
+  setTimeout(async ()=>{
+    if(IS_DESKTOP && window.dataAPI && window.dataAPI.exit){
+      await window.dataAPI.exit();
+    } else {
+      toast('Respaldo listo — ya puedes cerrar esta pestaña.');
+    }
+  }, 900);
+}
+async function cargarHistorialRespaldos(){
+  const tbl = document.getElementById('tblHistorialRespaldos');
+  if(!tbl) return;
+  if(!IS_DESKTOP){
+    // respaldo ligero dentro del propio navegador
+    let historial = [];
+    try{ historial = JSON.parse(localStorage.getItem('admy_backups_v1')||'[]'); }catch(e){}
+    tbl.innerHTML = historial.length ? historial.map((h,i)=>`
+      <tr><td>${fechaLegible(h.t)}</td><td class="num mono">${tamanoLegible(h.json.length)}</td>
+      <td><button class="btn ghost sm" onclick="restaurarRespaldoNavegador(${i})">Restaurar</button></td></tr>
+    `).join('') : '<tr><td colspan="3" class="muted">Todavía no hay respaldos automáticos guardados en este navegador.</td></tr>';
+    return;
+  }
+  const lista = await window.backupAPI.list();
+  tbl.innerHTML = lista.length ? lista.map(h=>`
+    <tr><td>${fechaLegible(h.date)}</td><td class="num mono">${tamanoLegible(h.size)}</td>
+    <td><button class="btn ghost sm" onclick="restaurarRespaldoArchivo('${h.file}')">Restaurar</button></td></tr>
+  `).join('') : '<tr><td colspan="3" class="muted">Todavía no hay respaldos automáticos guardados.</td></tr>';
+}
+async function restaurarRespaldoArchivo(filename){
+  if(!confirm('Esto reemplazará la información actual con la del respaldo de "'+filename+'". ¿Continuar?')) return;
+  const res = await window.backupAPI.restore(filename);
+  if(res && res.ok){
+    STATE = JSON.parse(res.json);
+    renderAll();
+    toast('Respaldo restaurado correctamente.');
+  } else toast('No se pudo restaurar ese respaldo.');
+}
+function restaurarRespaldoNavegador(i){
+  let historial = [];
+  try{ historial = JSON.parse(localStorage.getItem('admy_backups_v1')||'[]'); }catch(e){}
+  const h = historial[i];
+  if(!h) return;
+  if(!confirm('Esto reemplazará la información actual con el respaldo del '+fechaLegible(h.t)+'. ¿Continuar?')) return;
+  STATE = JSON.parse(h.json);
+  save(); renderAll();
+  toast('Respaldo restaurado correctamente.');
+}
+async function elegirCarpetaExterna(){
+  if(!IS_DESKTOP) return;
+  const res = await window.backupAPI.chooseExternalFolder();
+  if(res && res.ok){
+    document.getElementById('carpetaExternaActual').textContent = res.folder;
+    toast('Carpeta configurada. Los próximos respaldos automáticos también se copiarán ahí.');
+  }
+}
+async function quitarCarpetaExterna(){
+  if(!IS_DESKTOP) return;
+  await window.backupAPI.clearExternalFolder();
+  document.getElementById('carpetaExternaActual').textContent = 'Ninguna';
+  toast('Carpeta externa desactivada.');
+}
+async function actualizarCarpetaExternaUI(){
+  if(!IS_DESKTOP) return;
+  const res = await window.backupAPI.getExternalFolder();
+  const el = document.getElementById('carpetaExternaActual');
+  if(el) el.textContent = (res && res.folder) ? res.folder : 'Ninguna';
+}
+async function actualizarEstadoLibrerias(){
+  const el = document.getElementById('estadoLibreriasOffline');
+  if(!el) return;
+  if(!IS_DESKTOP){ el.textContent = 'No aplica en la versión de navegador (siempre usa internet).'; return; }
+  try{
+    const st = await window.libsAPI.status();
+    el.textContent = st.completas ? '✔ Guardadas en este equipo — funcionan sin internet.' : '— Aún no se han guardado; se necesita conexión una vez.';
+  }catch(e){ el.textContent = 'No se pudo consultar.'; }
+}
+async function reintentarLibrerias(){
+  if(!IS_DESKTOP){ toast('Esto solo aplica a la versión de escritorio.'); return; }
+  toast('Intentando descargar las herramientas de Excel/PDF…');
+  const res = await window.libsAPI.cacheNow();
+  const fallo = (res||[]).some(r=>!r.ok);
+  toast(fallo ? 'No se pudo completar (revisa tu conexión). Se reintentará más tarde.' : 'Listo — Excel y PDF ya funcionan sin internet en este equipo.');
+  actualizarEstadoLibrerias();
+}
+let _ultimoRespaldoLocalAt = 0;
+function respaldoLocalSiToca(json){
+  const ahora = Date.now();
+  if(ahora - _ultimoRespaldoLocalAt < 10*60*1000) return; // cada 10 minutos como máximo
+  _ultimoRespaldoLocalAt = ahora;
+  try{
+    let historial = JSON.parse(localStorage.getItem('admy_backups_v1')||'[]');
+    historial.unshift({t:new Date().toISOString(), json});
+    historial = historial.slice(0,5);
+    localStorage.setItem('admy_backups_v1', JSON.stringify(historial));
+  }catch(e){ /* almacenamiento lleno u otro problema: se ignora, no es crítico */ }
+}
+
+/* =================================================================
    INIT
    ================================================================= */
+/* =================================================================
+   CONEXIÓN A INTERNET — indicador + respaldo automático al recuperarla
+   ================================================================= */
+function actualizarIndicadorConexion(){
+  const el = document.getElementById('conexionIndicador');
+  if(!el) return;
+  const enLinea = navigator.onLine;
+  el.textContent = enLinea ? '● En línea' : '● Sin conexión (trabajando localmente)';
+  el.classList.toggle('offline', !enLinea);
+}
+async function alRecuperarConexion(){
+  actualizarIndicadorConexion();
+  toast('☁ Conexión detectada — generando respaldo…');
+  try{
+    if(IS_DESKTOP && window.libsAPI) await window.libsAPI.cacheNow().catch(()=>{});
+    if(IS_DESKTOP && window.backupAPI){ await window.backupAPI.runNow(); cargarHistorialRespaldos(); }
+    else{ descargarBackup(); }
+    reproducirSonido('finish');
+    toast('☁ Respaldo generado al recuperar internet.');
+  }catch(e){ /* si falla, no pasa nada: el respaldo automático periódico lo sigue intentando */ }
+}
+window.addEventListener('online', alRecuperarConexion);
+window.addEventListener('offline', actualizarIndicadorConexion);
+
 (async function init(){
   await load();
   renderAll();
   if(IS_DESKTOP){
     document.querySelectorAll('.respaldo-nota-navegador').forEach(el=>{
-      el.innerHTML = 'Esta versión de escritorio guarda tu información en un archivo dentro de la carpeta de datos de la aplicación en este equipo (no en la caché del navegador), así que no se pierde al limpiar el navegador. Aun así, descarga respaldos periódicos: si formateas el equipo o lo cambias, ese archivo se pierde si no lo respaldaste.';
+      el.innerHTML = 'Esta versión de escritorio guarda tu información en un archivo dentro de la carpeta de datos de la aplicación en este equipo (no en la caché del navegador), así que no se pierde al limpiar el navegador. Aun así, el respaldo automático y la carpeta externa de abajo son tu mejor protección adicional.';
     });
     try{
       const info = await window.dataAPI.info();
       const note = document.getElementById('rutaArchivoDatos');
       if(note) note.textContent = info.dataFile;
     }catch(e){}
+    document.querySelectorAll('.respaldo-auto-desktop').forEach(el=>el.style.display='block');
+    actualizarCarpetaExternaUI();
+    actualizarEstadoLibrerias();
   }
+  actualizarIndicadorConexion();
   await verificarSesionInicial();
+  cargarHistorialRespaldos();
 })();
 </script>
 </body>
