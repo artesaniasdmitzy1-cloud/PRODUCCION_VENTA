@@ -273,6 +273,8 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
       <div class="navlabel">Carteras</div>
       <button class="navbtn" data-view="cxc"><span class="ic">📥</span> Por cobrar</button>
       <button class="navbtn" data-view="cxp"><span class="ic">📤</span> Por pagar</button>
+      <button class="navbtn" data-view="pagos"><span class="ic">🗓️</span> Plan de pagos</button>
+      <button class="navbtn" data-view="pasivos"><span class="ic">🏦</span> Pasivos financieros</button>
     </div>
     <div class="navgroup">
       <div class="navlabel">Sistema</div>
@@ -331,7 +333,10 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     <section class="view" id="view-produccion">
       <div class="topbar">
         <div class="titles"><div class="eyebrow">Operación</div><h1>Órdenes de producción</h1></div>
-        <button class="btn clay" onclick="abrirOrden(null)">+ Nueva orden de producción</button>
+        <div class="actions flex">
+          <button class="btn ghost" onclick="abrirCargaMasiva('ordenes')">📥 Carga masiva</button>
+          <button class="btn clay" onclick="abrirOrden(null)">+ Nueva orden de producción</button>
+        </div>
       </div>
       <p class="muted">Cada orden reproduce la lógica de tu hoja "OP": líneas por modelo (cuña / suela / planta / cerco / marca / cliente) capturadas por talla 17–27. Al confirmar la orden, el sistema calcula material requerido, descuenta inventario de materia prima y da entrada a producto terminado.</p>
       <div class="tblwrap"><table class="tbl">
@@ -384,7 +389,10 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     <section class="view" id="view-compras">
       <div class="topbar">
         <div class="titles"><div class="eyebrow">Materia prima</div><h1>Compras</h1></div>
-        <button class="btn clay" onclick="abrirCompra(null)">+ Registrar compra</button>
+        <div class="actions flex">
+          <button class="btn ghost" onclick="abrirCargaMasiva('compras')">📥 Carga masiva</button>
+          <button class="btn clay" onclick="abrirCompra(null)">+ Registrar compra</button>
+        </div>
       </div>
       <p class="muted">Cada compra clasifica el material como directa o indirecta, entra al almacén correspondiente y —si es a crédito— genera automáticamente el movimiento en cuentas por pagar.</p>
       <div class="tblwrap"><table class="tbl">
@@ -428,7 +436,10 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     <section class="view" id="view-gastos">
       <div class="topbar">
         <div class="titles"><div class="eyebrow">Fabricación y operación</div><h1>Gastos</h1></div>
-        <button class="btn clay" onclick="abrirGasto(null)">+ Registrar gasto</button>
+        <div class="actions flex">
+          <button class="btn ghost" onclick="abrirCargaMasiva('gastos')">📥 Carga masiva</button>
+          <button class="btn clay" onclick="abrirGasto(null)">+ Registrar gasto</button>
+        </div>
       </div>
       <p class="muted">Los gastos clasificados como "Fabricación indirecta" pueden prorratearse entre las órdenes del periodo desde el módulo de Costeo (ver Configuración).</p>
       <div class="grid cols-4" id="gastosResumenCat"></div>
@@ -475,6 +486,40 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
       <div class="grid cols-3" id="cxpKpis"></div>
       <div class="section-title"><h3>Saldos por proveedor</h3></div>
       <div class="tblwrap"><table class="tbl"><thead><tr><th>Proveedor</th><th class="num">Cargos</th><th class="num">Abonos</th><th class="num">Saldo</th><th>Detalle</th></tr></thead><tbody id="tblCxpResumen"></tbody></table></div>
+    </section>
+
+    <!-- ============ PLAN DE PAGOS ============ -->
+    <section class="view" id="view-pagos">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Cartera</div><h1>Plan de pagos semanal</h1></div>
+        <button class="btn clay" onclick="abrirPagoProgramado(null)">+ Programar pago</button>
+      </div>
+      <p class="muted">Elige una semana para ver los pagos programados. Al marcar un pago como pagado, se registra automáticamente el abono en Cuentas por pagar del proveedor correspondiente.</p>
+      <div class="flex" style="margin-bottom:14px">
+        <input type="week" id="semanaPagos">
+        <button class="btn ghost sm" onclick="renderPlanPagosSemanal()">Ver semana</button>
+        <button class="btn ghost sm" onclick="exportPlanPagosExcel()">Excel</button>
+        <button class="btn ghost sm" onclick="exportPlanPagosPDF()">PDF</button>
+      </div>
+      <div class="grid cols-3" id="pagosKpis"></div>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th></th><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th class="num">Importe</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="tblPlanPagos"></tbody>
+      </table></div>
+    </section>
+
+    <!-- ============ PASIVOS FINANCIEROS ============ -->
+    <section class="view" id="view-pasivos">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Cartera</div><h1>Pasivos financieros</h1></div>
+        <button class="btn clay" onclick="abrirPasivo(null)">+ Nuevo pasivo</button>
+      </div>
+      <p class="muted">Registra préstamos y financiamientos bancarios, y aplica los abonos conforme los vayas pagando.</p>
+      <div class="grid cols-3" id="pasivosKpis"></div>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Folio</th><th>Nombre</th><th>Institución</th><th class="num">Monto original</th><th class="num">Saldo actual</th><th></th></tr></thead>
+        <tbody id="tblPasivos"></tbody>
+      </table></div>
     </section>
 
     <!-- ============ PROCESOS ============ -->
@@ -677,6 +722,7 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
         <h3>Cómo funciona el resguardo manual</h3>
         <p class="respaldo-nota-navegador">Esta aplicación guarda toda la información <b>dentro de este navegador</b> (no en un servidor). Eso la hace privada y funciona sin internet, pero significa que <b>tú</b> debes respaldarla periódicamente. No es técnicamente posible que este sistema se conecte solo, de forma segura, a tu cuenta de Gmail o Drive — eso requeriría darle tus contraseñas, algo que este sistema nunca te pedirá.</p>
         <p class="smallnote">Archivo de datos en este equipo: <span id="rutaArchivoDatos" class="mono">—</span></p>
+        <p class="smallnote" id="notaDiscoC">—</p>
         <p>Este botón hace dos cosas por ti:</p>
         <ol>
           <li>Descarga un archivo de respaldo (<span class="mono">.json</span>) con todos tus datos.</li>
@@ -845,7 +891,9 @@ function emptyState(){
     nomina: [],         // [{id, folio, periodoInicio, periodoFin, items:[{empleadoId,nombre,dias,salarioDiario,extras,descuentos,total}], total}]
     usuarios: [],        // [{id, usuario, hash, rol, activo}]
     empaques: [],        // [{id, folio, fecha, ventaFolio, destinatarioNombre, destinatario:{...}, paqueteria, numeroRastreo, contenido, finalizada}]
-    folios:{ orden:1, compra:1, venta:1, gasto:1, nomina:1, empaque:1 }
+    pasivos: [],         // [{id, folio, nombre, institucion, montoOriginal, tasaInteres, fechaInicio, notas, saldoActual, abonos:[{id,fecha,monto,concepto}]}]
+    pagosProgramados: [], // [{id, folio, fecha, concepto, proveedor, importe, pagado, fechaPago, compraId}]
+    folios:{ orden:1, compra:1, venta:1, gasto:1, nomina:1, empaque:1, pasivo:1, pago:1 }
   };
 }
 
@@ -869,6 +917,10 @@ async function load(){
     if(!STATE.nomina) STATE.nomina = [];
     if(!STATE.usuarios) STATE.usuarios = [];
     if(!STATE.empaques) STATE.empaques = [];
+    if(!STATE.pasivos) STATE.pasivos = [];
+    if(!STATE.pagosProgramados) STATE.pagosProgramados = [];
+    if(!STATE.folios.pasivo) STATE.folios.pasivo = 1;
+    if(!STATE.folios.pago) STATE.folios.pago = 1;
     if(!STATE.config.remitente) STATE.config.remitente = { nombre:STATE.config.nombre||'Artesanías D Mitzy', celular:'', direccion:STATE.config.direccion||'', codigoPostal:'', ciudad:'', estado:'', pais:'México' };
     if(!STATE.config.correo) STATE.config.correo = 'firmaluel@gmail.com';
     if(!STATE.config.facturaTamano) STATE.config.facturaTamano = 'carta';
@@ -1152,9 +1204,31 @@ function actualizarTotalesModal(){
       </table></div>`;
   }
 }
+function verificarCuadreAntesDeGuardar(orden, nec){
+  const problemas = [];
+  orden.lineas.forEach((l,i)=>{
+    SIZES.forEach(sz=>{
+      const v = Number(l.tallas[sz]);
+      if(v<0) problemas.push(`Línea ${i+1}: la talla ${sz} tiene una cantidad negativa (${v}).`);
+      if(l.tallas[sz]!=='' && l.tallas[sz]!=null && isNaN(v)) problemas.push(`Línea ${i+1}: la talla ${sz} tiene un valor no numérico.`);
+    });
+  });
+  let sumaManual = 0;
+  orden.lineas.forEach(l=> SIZES.forEach(sz=> sumaManual += (Number(l.tallas[sz])||0) ));
+  if(sumaManual !== nec.total){
+    problemas.push(`El total recalculado de las tallas (${sumaManual}) no coincide con el total de la orden (${nec.total}).`);
+  }
+  return problemas;
+}
 function guardarOrden(confirmar){
   const nec = calcNecesidades(ordenDraft);
   if(nec.total<=0){ toast('Captura al menos una talla con cantidad.'); return; }
+  const problemasCuadre = verificarCuadreAntesDeGuardar(ordenDraft, nec);
+  if(problemasCuadre.length){
+    reproducirSonido('error');
+    alert('⚠ No se puede guardar: la orden está descuadrada.\n\n'+problemasCuadre.join('\n')+'\n\nCorrige los datos e inténtalo de nuevo.');
+    return;
+  }
   if(!ordenDraft.folio){ ordenDraft.folio = folio('OP','orden'); }
   ordenDraft.necesidades = nec;
   if(confirmar){
@@ -1598,7 +1672,7 @@ function verCatalogoClientes(){
     <h3>Catálogo de clientes</h3>
     <div class="tblwrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Celular</th><th>Ciudad</th><th>Correo</th><th></th></tr></thead>
     <tbody>${nombres.map(n=>{const c=STATE.clientesInfo[n]; return `<tr><td>${n}</td><td>${c.celular||c.telefono||'-'}</td><td>${c.ciudad||'-'}</td><td>${c.correo||'-'}</td><td><button class="btn ghost sm" onclick="abrirAltaCliente('${n.replace(/'/g,"\\'")}')">Editar</button></td></tr>`;}).join('') || '<tr><td colspan="5" class="muted">Sin clientes registrados todavía.</td></tr>'}</tbody></table></div>
-    <div class="close-row"><button class="btn clay" onclick="abrirAltaCliente(null)">+ Nuevo cliente</button><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+    <div class="close-row"><button class="btn ghost" onclick="abrirCargaMasiva('clientes')">📥 Carga masiva</button><button class="btn clay" onclick="abrirAltaCliente(null)">+ Nuevo cliente</button><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
   `);
 }
 
@@ -1936,7 +2010,7 @@ function abrirEmpleados(){
   const emp = STATE.empleados||[];
   openModal(`
     <h3>Empleados</h3>
-    <div class="flex" style="margin-bottom:10px"><button class="btn clay sm" onclick="abrirEmpleado(null)">+ Nuevo empleado</button></div>
+    <div class="flex" style="margin-bottom:10px"><button class="btn ghost sm" onclick="abrirCargaMasiva('empleados')">📥 Carga masiva</button><button class="btn clay sm" onclick="abrirEmpleado(null)">+ Nuevo empleado</button></div>
     <div class="tblwrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Puesto</th><th class="num">Salario diario</th><th>Activo</th><th></th></tr></thead>
     <tbody>${emp.map(e=>`<tr>
       <td>${e.nombre}</td><td>${e.puesto||'-'}</td><td class="num mono">${money(e.salarioDiario||0)}</td>
@@ -2066,7 +2140,7 @@ function verNominaPDF(id){
   const n = STATE.nomina.find(x=>x.id===id);
   if(!n) return;
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF();
+  const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, `Nómina ${n.folio} — ${n.periodoInicio} a ${n.periodoFin}`);
   doc.autoTable({
     head:[['Empleado','Días','Salario diario','Extras','Descuentos','Total']],
@@ -2295,6 +2369,277 @@ function verDetalleCartera(tipo, nombre){
 }
 
 /* =================================================================
+   PLAN DE PAGOS SEMANAL
+   ================================================================= */
+function semanaISOaRango(valorSemana){
+  if(!valorSemana) return null;
+  const [anioStr, semanaStr] = valorSemana.split('-W');
+  const anio = Number(anioStr), semana = Number(semanaStr);
+  const enero4 = new Date(anio,0,4);
+  const diaSemana = (enero4.getDay()+6)%7; // lunes=0
+  const lunesSemana1 = new Date(enero4); lunesSemana1.setDate(enero4.getDate()-diaSemana);
+  const lunes = new Date(lunesSemana1); lunes.setDate(lunesSemana1.getDate()+(semana-1)*7);
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6);
+  return { inicio: lunes.toISOString().slice(0,10), fin: domingo.toISOString().slice(0,10) };
+}
+function semanaActualDefault(){
+  const el = document.getElementById('semanaPagos');
+  if(el && !el.value){
+    const hoy = new Date();
+    const enero1 = new Date(hoy.getFullYear(),0,1);
+    const dias = Math.floor((hoy-enero1)/86400000);
+    const semana = Math.ceil((dias+enero1.getDay()+1)/7);
+    el.value = hoy.getFullYear()+'-W'+String(semana).padStart(2,'0');
+  }
+  return el ? el.value : '';
+}
+function pagosDeLaSemana(){
+  const valor = semanaActualDefault();
+  const rango = semanaISOaRango(valor);
+  if(!rango) return { rango:null, pagos: [] };
+  const pagos = (STATE.pagosProgramados||[]).filter(p=> p.fecha>=rango.inicio && p.fecha<=rango.fin);
+  return { rango, pagos };
+}
+function renderPlanPagosSemanal(){
+  const { rango, pagos } = pagosDeLaSemana();
+  const tbl = document.getElementById('tblPlanPagos');
+  if(!tbl) return;
+  const ordenados = pagos.slice().sort((a,b)=> a.fecha.localeCompare(b.fecha));
+  tbl.innerHTML = ordenados.map(p=>`
+    <tr>
+      <td><input type="checkbox" ${p.pagado?'checked':''} onchange="marcarPagoProgramado('${p.id}', this.checked)"></td>
+      <td>${p.fecha}</td><td>${p.proveedor||'-'}</td><td>${p.concepto}</td>
+      <td class="num mono">${money(p.importe)}</td>
+      <td><span class="badge ${p.pagado?'ok':'warn'}">${p.pagado?'Pagado':'Pendiente'}</span></td>
+      <td class="flex"><button class="btn ghost sm" onclick="abrirPagoProgramado('${p.id}')">Editar</button><button class="btn danger sm" onclick="eliminarPagoProgramado('${p.id}')">Eliminar</button></td>
+    </tr>`).join('') || `<tr><td colspan="7" class="muted">Sin pagos programados en esta semana${rango?` (${rango.inicio} a ${rango.fin})`:''}.</td></tr>`;
+  const total = pagos.reduce((s,p)=>s+p.importe,0);
+  const pagado = pagos.filter(p=>p.pagado).reduce((s,p)=>s+p.importe,0);
+  document.getElementById('pagosKpis').innerHTML = `
+    <div class="card kpi"><div class="num">${money(total)}</div><div class="lbl">Total programado esta semana</div></div>
+    <div class="card kpi good"><div class="num">${money(pagado)}</div><div class="lbl">Ya pagado</div></div>
+    <div class="card kpi warn"><div class="num">${money(total-pagado)}</div><div class="lbl">Pendiente por pagar</div></div>
+  `;
+}
+function abrirPagoProgramado(id){
+  const p = id ? STATE.pagosProgramados.find(x=>x.id===id) : {id:'', fecha:todayStr(), concepto:'', proveedor:'', importe:0, pagado:false, compraId:null};
+  const proveedoresConSaldo = Object.entries(STATE.proveedores||{}).map(([n,m])=>({n, s:saldoCartera(m).saldo})).filter(x=>x.s>0);
+  const comprasCredito = STATE.compras.filter(c=>c.condicion==='credito');
+  openModal(`
+    <h3>${id?'Editar pago programado':'Programar pago'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Fecha</label><input id="pgFecha" type="date" value="${p.fecha}"></div>
+      <div class="field"><label>Proveedor</label><input id="pgProveedor" list="pgProveedoresList" value="${p.proveedor||''}"></div>
+      <datalist id="pgProveedoresList">${proveedoresConSaldo.map(x=>`<option value="${x.n}">`).join('')}</datalist>
+      <div class="field" style="grid-column:1/-1"><label>Concepto</label><input id="pgConcepto" value="${p.concepto||''}" placeholder="Ej. Pago materia prima, renta, etc."></div>
+      <div class="field"><label>Importe</label><input id="pgImporte" type="number" step="0.01" value="${p.importe||0}"></div>
+      <div class="field"><label>Vincular a una compra a crédito (opcional)</label>
+        <select id="pgCompra" onchange="autocompletarDesdeCompra()">
+          <option value="">Sin vincular</option>
+          ${comprasCredito.map(c=>`<option value="${c.id}" ${p.compraId===c.id?'selected':''}>${c.folio} — ${c.proveedor} — ${money(c.importe)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <p class="smallnote">Si vinculas una compra, se toma el proveedor e importe de esa compra. Al marcar este pago como pagado, se registra un abono en Cuentas por pagar de ese proveedor.</p>
+    <div class="close-row">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      ${id?`<button class="btn danger" onclick="eliminarPagoProgramado('${id}')">Eliminar</button>`:''}
+      <button class="btn clay" onclick="guardarPagoProgramado('${id||''}')">Guardar</button>
+    </div>
+  `);
+}
+function autocompletarDesdeCompra(){
+  const compraId = document.getElementById('pgCompra').value;
+  if(!compraId) return;
+  const c = STATE.compras.find(x=>x.id===compraId);
+  if(!c) return;
+  document.getElementById('pgProveedor').value = c.proveedor;
+  document.getElementById('pgImporte').value = c.importe;
+  if(!document.getElementById('pgConcepto').value) document.getElementById('pgConcepto').value = 'Pago de compra '+c.folio;
+}
+function guardarPagoProgramado(id){
+  const fecha = document.getElementById('pgFecha').value;
+  const proveedor = document.getElementById('pgProveedor').value.trim();
+  const concepto = document.getElementById('pgConcepto').value.trim();
+  const importe = Number(document.getElementById('pgImporte').value)||0;
+  const compraId = document.getElementById('pgCompra').value || null;
+  if(!fecha || !concepto || importe<=0){ toast('Captura fecha, concepto e importe.'); return; }
+  if(!STATE.pagosProgramados) STATE.pagosProgramados=[];
+  if(id){
+    const p = STATE.pagosProgramados.find(x=>x.id===id);
+    Object.assign(p, {fecha, proveedor, concepto, importe, compraId});
+  } else {
+    STATE.pagosProgramados.push({id:uid('pg'), folio:folio('PG','pago'), fecha, proveedor, concepto, importe, pagado:false, fechaPago:null, compraId});
+  }
+  save(); closeModal(); renderPlanPagosSemanal(); toast('Pago programado guardado.');
+}
+function marcarPagoProgramado(id, pagado){
+  const p = STATE.pagosProgramados.find(x=>x.id===id);
+  if(!p) return;
+  p.pagado = pagado;
+  p.fechaPago = pagado ? todayStr() : null;
+  if(pagado && p.proveedor){
+    movCartera('proveedores', p.proveedor, {tipo:'abono', concepto:'Pago programado: '+p.concepto+' ('+p.folio+')', monto:p.importe, fecha:todayStr()});
+    reproducirSonido('finish');
+  } else if(!pagado && p.proveedor){
+    // revertir el abono si se desmarca por error
+    movCartera('proveedores', p.proveedor, {tipo:'cargo', concepto:'Reversión de pago '+p.folio, monto:p.importe, fecha:todayStr()});
+  }
+  save(); renderPlanPagosSemanal(); renderAll();
+  toast(pagado ? 'Pago registrado y aplicado a Cuentas por pagar.' : 'Pago desmarcado.');
+}
+function eliminarPagoProgramado(id){
+  if(!puedeEliminar()) return;
+  if(!confirm('¿Eliminar este pago programado?')) return;
+  STATE.pagosProgramados = STATE.pagosProgramados.filter(x=>x.id!==id);
+  save(); closeModal(); renderPlanPagosSemanal();
+}
+function exportPlanPagosExcel(){
+  if(!librosDisponibles()) return;
+  const { rango, pagos } = pagosDeLaSemana();
+  const wb = XLSX.utils.book_new();
+  const rows = pagos.map(p=>({Fecha:p.fecha, Proveedor:p.proveedor, Concepto:p.concepto, Importe:p.importe, Estado:p.pagado?'Pagado':'Pendiente'}));
+  XLSX.utils.book_append_sheet(wb, sheetFrom(rows.length?rows:[{Aviso:'Sin pagos programados esta semana'}]), 'Plan de pagos');
+  XLSX.writeFile(wb, `PlanPagos_${rango?rango.inicio:todayStr()}.xlsx`);
+  toast('Plan de pagos exportado a Excel.');
+}
+function exportPlanPagosPDF(){
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const { rango, pagos } = pagosDeLaSemana();
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  pdfHeader(doc, `Plan de pagos semanal — ${rango?rango.inicio+' a '+rango.fin:''}`);
+  doc.autoTable({
+    head:[['Fecha','Proveedor','Concepto','Importe','Estado']],
+    body: pagos.map(p=>[p.fecha, p.proveedor||'-', p.concepto, money(p.importe), p.pagado?'Pagado':'Pendiente']),
+    startY:33, styles:{fontSize:9}, headStyles:{fillColor:[47,72,88]}
+  });
+  const y = doc.lastAutoTable.finalY+10;
+  const total = pagos.reduce((s,p)=>s+p.importe,0);
+  doc.setFontSize(11); doc.text('Total programado: '+money(total), 14, y);
+  doc.save(`PlanPagos_${rango?rango.inicio:todayStr()}.pdf`);
+  toast('Plan de pagos exportado a PDF.');
+}
+function renderPagos(){
+  const tbl = document.getElementById('tblPlanPagos');
+  if(!tbl) return;
+  renderPlanPagosSemanal();
+}
+
+/* =================================================================
+   PASIVOS FINANCIEROS
+   ================================================================= */
+function abrirPasivo(id){
+  const p = id ? STATE.pasivos.find(x=>x.id===id) : {id:'', nombre:'', institucion:'', montoOriginal:0, tasaInteres:0, fechaInicio:todayStr(), notas:''};
+  openModal(`
+    <h3>${id?'Editar pasivo':'Nuevo pasivo financiero'}</h3>
+    <div class="formgrid c2">
+      <div class="field" style="grid-column:1/-1"><label>Nombre del pasivo</label><input id="psNombre" value="${p.nombre}" placeholder="Ej. Préstamo para maquinaria"></div>
+      <div class="field"><label>Institución</label><input id="psInstitucion" value="${p.institucion||''}" placeholder="Ej. BBVA, Banorte…"></div>
+      <div class="field"><label>Fecha de inicio</label><input id="psFecha" type="date" value="${p.fechaInicio||todayStr()}"></div>
+      <div class="field"><label>Monto original</label><input id="psMonto" type="number" step="0.01" value="${p.montoOriginal||0}" ${id?'disabled':''}></div>
+      <div class="field"><label>Tasa de interés anual % (opcional)</label><input id="psTasa" type="number" step="0.01" value="${p.tasaInteres||0}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Notas</label><textarea id="psNotas">${p.notas||''}</textarea></div>
+    </div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      ${id?`<button class="btn danger" onclick="eliminarPasivo('${id}')">Eliminar</button>`:''}
+      <button class="btn clay" onclick="guardarPasivo('${id||''}')">Guardar</button>
+    </div>
+  `);
+}
+function guardarPasivo(id){
+  const nombre = document.getElementById('psNombre').value.trim();
+  if(!nombre){ toast('Escribe un nombre para el pasivo.'); return; }
+  const institucion = document.getElementById('psInstitucion').value.trim();
+  const fechaInicio = document.getElementById('psFecha').value;
+  const tasaInteres = Number(document.getElementById('psTasa').value)||0;
+  const notas = document.getElementById('psNotas').value.trim();
+  if(!STATE.pasivos) STATE.pasivos=[];
+  if(id){
+    const p = STATE.pasivos.find(x=>x.id===id);
+    Object.assign(p, {nombre, institucion, fechaInicio, tasaInteres, notas});
+  } else {
+    const montoOriginal = Number(document.getElementById('psMonto').value)||0;
+    if(montoOriginal<=0){ toast('Captura el monto original del pasivo.'); return; }
+    STATE.pasivos.push({id:uid('ps'), folio:folio('PS','pasivo'), nombre, institucion, montoOriginal, saldoActual:montoOriginal, tasaInteres, fechaInicio, notas, abonos:[]});
+  }
+  save(); closeModal(); renderPasivos(); toast('Pasivo guardado.');
+}
+function eliminarPasivo(id){
+  if(!puedeEliminar()) return;
+  if(!confirm('¿Eliminar este pasivo y todo su historial de abonos?')) return;
+  STATE.pasivos = STATE.pasivos.filter(x=>x.id!==id);
+  save(); closeModal(); renderPasivos();
+}
+function verPasivo(id){
+  const p = STATE.pasivos.find(x=>x.id===id);
+  if(!p) return;
+  openModal(`
+    <h3>${p.nombre} — ${p.folio}</h3>
+    <div class="grid cols-3" style="margin-bottom:12px">
+      <div class="card kpi alt"><div class="num">${money(p.montoOriginal)}</div><div class="lbl">Monto original</div></div>
+      <div class="card kpi good"><div class="num">${money(p.montoOriginal-p.saldoActual)}</div><div class="lbl">Abonado</div></div>
+      <div class="card kpi warn"><div class="num">${money(p.saldoActual)}</div><div class="lbl">Saldo actual</div></div>
+    </div>
+    <p class="muted">${p.institucion?('Institución: '+p.institucion+'. '):''}Inicio: ${p.fechaInicio}${p.tasaInteres?('. Tasa: '+p.tasaInteres+'% anual'):''}</p>
+    <div class="formgrid c3" style="align-items:end">
+      <div class="field"><label>Fecha del abono</label><input id="abFecha" type="date" value="${todayStr()}"></div>
+      <div class="field"><label>Monto del abono</label><input id="abMonto" type="number" step="0.01" min="0" max="${p.saldoActual}"></div>
+      <button class="btn clay" onclick="aplicarAbonoPasivo('${id}')">+ Aplicar abono</button>
+    </div>
+    <hr class="dash">
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Fecha</th><th class="num">Monto</th></tr></thead>
+    <tbody>${(p.abonos||[]).slice().reverse().map(a=>`<tr><td>${a.fecha}</td><td class="num mono">${money(a.monto)}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">Sin abonos todavía.</td></tr>'}</tbody></table></div>
+    <div class="close-row"><button class="btn ghost" onclick="verPasivoPDF('${id}')">PDF</button><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+function aplicarAbonoPasivo(id){
+  const p = STATE.pasivos.find(x=>x.id===id);
+  if(!p) return;
+  const fecha = document.getElementById('abFecha').value;
+  const monto = Number(document.getElementById('abMonto').value)||0;
+  if(monto<=0){ toast('Captura un monto de abono mayor a cero.'); return; }
+  if(monto>p.saldoActual){ toast('El abono no puede ser mayor al saldo actual ('+money(p.saldoActual)+').'); return; }
+  p.abonos.push({id:uid('ab'), fecha, monto});
+  p.saldoActual = Number((p.saldoActual-monto).toFixed(2));
+  save(); reproducirSonido('finish'); verPasivo(id); renderPasivos();
+  toast('Abono aplicado.');
+}
+function verPasivoPDF(id){
+  const p = STATE.pasivos.find(x=>x.id===id);
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  pdfHeader(doc, `Pasivo financiero — ${p.nombre}`);
+  doc.setFontSize(9);
+  doc.text(`Institución: ${p.institucion||'-'}    Inicio: ${p.fechaInicio}    Monto original: ${money(p.montoOriginal)}    Saldo actual: ${money(p.saldoActual)}`, 14, 34);
+  doc.autoTable({
+    head:[['Fecha','Monto abonado']],
+    body:(p.abonos||[]).map(a=>[a.fecha, money(a.monto)]),
+    startY:42, styles:{fontSize:9}, headStyles:{fillColor:[47,72,88]}
+  });
+  doc.save(`Pasivo_${p.folio}.pdf`);
+  toast('PDF de pasivo generado.');
+}
+function renderPasivos(){
+  const tbl = document.getElementById('tblPasivos');
+  if(!tbl) return;
+  const pasivos = STATE.pasivos||[];
+  tbl.innerHTML = pasivos.map(p=>`
+    <tr><td>${p.folio}</td><td>${p.nombre}</td><td>${p.institucion||'-'}</td>
+    <td class="num mono">${money(p.montoOriginal)}</td><td class="num mono">${money(p.saldoActual)}</td>
+    <td class="flex"><button class="btn ghost sm" onclick="verPasivo('${p.id}')">Ver / abonar</button><button class="btn ghost sm" onclick="abrirPasivo('${p.id}')">Editar</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="muted">Sin pasivos registrados.</td></tr>';
+  const totalOriginal = pasivos.reduce((s,p)=>s+p.montoOriginal,0);
+  const totalSaldo = pasivos.reduce((s,p)=>s+p.saldoActual,0);
+  document.getElementById('pasivosKpis').innerHTML = `
+    <div class="card kpi alt"><div class="num">${money(totalOriginal)}</div><div class="lbl">Monto original total</div></div>
+    <div class="card kpi good"><div class="num">${money(totalOriginal-totalSaldo)}</div><div class="lbl">Total abonado</div></div>
+    <div class="card kpi warn"><div class="num">${money(totalSaldo)}</div><div class="lbl">Saldo total pendiente</div></div>
+  `;
+}
+
+
+/* =================================================================
    RENDER — DASHBOARD
    ================================================================= */
 function renderDashboard(){
@@ -2496,6 +2841,8 @@ function renderReportes(){
     {t:'Ventas', fn:()=>exportExcelModulo('Ventas')},
     {t:'Gastos', fn:()=>exportExcelModulo('Gastos')},
     {t:'Nómina', fn:()=>exportExcelModulo('Nomina')},
+    {t:'Pasivos financieros', fn:()=>exportExcelModulo('Pasivos')},
+    {t:'Plan de pagos (histórico)', fn:()=>exportExcelModulo('Pagos')},
     {t:'Cuentas por cobrar', fn:()=>exportExcelModulo('CxC')},
     {t:'Cuentas por pagar', fn:()=>exportExcelModulo('CxP')},
     {t:'Libro completo (todas las hojas)', fn:()=>exportExcelCompleto()},
@@ -2574,7 +2921,7 @@ function exportMesPDF(){
   const mes = mesActualDefault();
   const r = calcResumenMes(mes);
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF();
+  const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, 'Reporte mensual — '+mes);
   doc.autoTable({
     head:[['Concepto','Valor']],
@@ -2629,7 +2976,7 @@ function renderEstadoResultados(){
 function exportEstadoResultadosPDF(){
   const r = calcEstadoResultados();
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF();
+  const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, `Estado de resultados — ${r.desde==='0000-01-01'?'histórico':r.desde} a ${r.hasta==='9999-12-31'?'hoy':r.hasta}`);
   const body = [
     ['Ventas netas', money(r.ventasNetas)],
@@ -2674,7 +3021,7 @@ function exportResumenClientesPDF(){
   const rows = resumenSaldosClientes();
   if(!rows.length){ toast('No hay movimientos de clientes todavía.'); return; }
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF();
+  const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, 'Resumen de cartera por cliente');
   doc.autoTable({head:[['Cliente','Cargos','Abonos','Saldo']], body:rows.map(r=>[r.nombre,money(r.cargos),money(r.abonos),money(r.saldo)]), startY:33, styles:{fontSize:9.5}, headStyles:{fillColor:[47,72,88]}});
   doc.save('ArtesaniasDMitzy_ResumenClientes.pdf');
@@ -2720,6 +3067,8 @@ function renderAll(){
   document.getElementById('remEstado').value = rem.estado||'';
   document.getElementById('remPais').value = rem.pais||'México';
   renderEmpaques();
+  renderPagos();
+  renderPasivos();
   actualizarUserbox();
   aplicarPermisosNav();
 }
@@ -2793,6 +3142,8 @@ const MODULOS_PERMISO = [
   {key:'empaque', label:'Lista de empaque'},
   {key:'cxc', label:'Cuentas por cobrar'},
   {key:'cxp', label:'Cuentas por pagar'},
+  {key:'pagos', label:'Plan de pagos'},
+  {key:'pasivos', label:'Pasivos financieros'},
   {key:'procesos', label:'Procesos'},
   {key:'reportes', label:'Reportes'},
   {key:'respaldo', label:'Respaldo / Nube'},
@@ -2820,7 +3171,7 @@ function puedeAdministrarUsuarios(){
   return true;
 }
 function primerModuloPermitido(){
-  const orden = ['dashboard','produccion','ventas','inventario','compras','costeo','gastos','nomina','empaque','cxc','cxp','procesos','reportes','respaldo','config'];
+  const orden = ['dashboard','produccion','ventas','inventario','compras','costeo','gastos','nomina','empaque','cxc','cxp','pagos','pasivos','procesos','reportes','respaldo','config'];
   for(const m of orden){ if(puedeAcceder(m)) return m; }
   return 'dashboard';
 }
@@ -3056,6 +3407,228 @@ function pdfDisponible(){
   return window.jspdf.jsPDF;
 }
 function sheetFrom(rows){ return XLSX.utils.json_to_sheet(rows); }
+
+/* =================================================================
+   CARGA MASIVA POR EXCEL
+   ================================================================= */
+const CARGA_MASIVA_CONFIG = {
+  gastos: {
+    titulo: 'Gastos',
+    columnas: ['Fecha','Categoria','Concepto','Importe','Condicion','Proveedor'],
+    ejemplo: ['2026-08-16','Fabricación indirecta','Renta del taller',1500,'contado',''],
+    ayuda: 'Fecha en formato AAAA-MM-DD. Categoria: Fabricación indirecta, Administración, Venta o Nómina. Condicion: contado o credito. Proveedor solo se usa si es a crédito.',
+  },
+  compras: {
+    titulo: 'Compras',
+    columnas: ['Fecha','Proveedor','Material','Cantidad','Importe','Condicion'],
+    ejemplo: ['2026-08-16','Proveedor de ejemplo','CHINELA VAQUETA',50,900,'contado'],
+    ayuda: 'El texto en "Material" debe coincidir exactamente con el nombre de un material ya existente en Inventario. Condicion: contado o credito.',
+  },
+  clientes: {
+    titulo: 'Clientes',
+    columnas: ['Nombre','Celular','Correo','Direccion','CodigoPostal','Ciudad','Estado','Pais','Referencia','Notas'],
+    ejemplo: ['Juan Pérez','5551234567','juan@correo.com','Calle 123','58000','Morelia','Michoacán','México','Frente a la farmacia',''],
+    ayuda: 'Si el "Nombre" ya existe en tu catálogo de clientes, se actualizan sus datos; si no existe, se crea nuevo.',
+  },
+  empleados: {
+    titulo: 'Empleados',
+    columnas: ['Nombre','Puesto','SalarioDiario','Activo'],
+    ejemplo: ['María López','Costurera',250,'Si'],
+    ayuda: 'Activo: Si o No. Si el nombre ya existe en tu catálogo de empleados, se actualizan sus datos.',
+  },
+  ordenes: {
+    titulo: 'Órdenes de producción',
+    columnas: ['Orden','Fecha','Cliente','Modelo','Marca','Planta','Cuña','Suela','Cerco','Comentarios','ManoObra', ...SIZES.map(s=>'Talla'+s)],
+    ejemplo: ['ORD1','2026-08-16','','','','CERCO','CANELA','BLANCA','NATURAL','',6650, ...SIZES.map(()=>0)],
+    ayuda: 'La columna "Orden" agrupa varias filas en una sola orden de producción (repite el mismo texto, ej. ORD1, en todas las filas que pertenezcan a la misma orden — cada fila es una combinación distinta de modelo/cuña/suela). Las órdenes se importan como BORRADOR: revísalas y confírmalas manualmente desde Producción antes de que afecten inventario.',
+  },
+};
+function abrirCargaMasiva(tipo){
+  const cfg = CARGA_MASIVA_CONFIG[tipo];
+  if(!cfg) return;
+  openModal(`
+    <h3>Carga masiva — ${cfg.titulo}</h3>
+    <p class="muted">${cfg.ayuda}</p>
+    <div class="flex" style="margin-bottom:12px">
+      <button class="btn ghost sm" onclick="descargarPlantillaCarga('${tipo}')">1. Descargar plantilla Excel</button>
+    </div>
+    <div class="field"><label>2. Sube el archivo Excel ya lleno</label><input type="file" id="cargaMasivaArchivo" accept=".xlsx,.xls"></div>
+    <div id="cargaMasivaResultado" style="margin-top:12px"></div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="closeModal()">Cerrar</button>
+      <button class="btn clay" onclick="procesarCargaMasiva('${tipo}')">3. Procesar archivo</button>
+    </div>
+  `);
+}
+function descargarPlantillaCarga(tipo){
+  if(!librosDisponibles()) return;
+  const cfg = CARGA_MASIVA_CONFIG[tipo];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([cfg.columnas, cfg.ejemplo]);
+  XLSX.utils.book_append_sheet(wb, ws, cfg.titulo.replace(/[^\w áéíóúñÁÉÍÓÚÑ]/g,'').slice(0,31));
+  XLSX.writeFile(wb, `Plantilla_${tipo}.xlsx`);
+  toast('Plantilla descargada — llénala y súbela de vuelta aquí mismo.');
+}
+function leerExcelComoFilas(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      try{
+        const wb = XLSX.read(e.target.result, {type:'binary'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        resolve(XLSX.utils.sheet_to_json(ws, {defval:''}));
+      }catch(err){ reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsBinaryString(file);
+  });
+}
+async function procesarCargaMasiva(tipo){
+  if(!librosDisponibles()) return;
+  const file = document.getElementById('cargaMasivaArchivo').files[0];
+  if(!file){ toast('Selecciona un archivo primero.'); return; }
+  let filas;
+  try{ filas = await leerExcelComoFilas(file); }
+  catch(e){ toast('No se pudo leer el archivo. Verifica que sea un Excel válido (.xlsx).'); return; }
+  if(!filas.length){ toast('El archivo no tiene filas con datos.'); return; }
+
+  let resultado;
+  if(tipo==='gastos') resultado = importarGastosMasivo(filas);
+  else if(tipo==='compras') resultado = importarComprasMasivo(filas);
+  else if(tipo==='clientes') resultado = importarClientesMasivo(filas);
+  else if(tipo==='empleados') resultado = importarEmpleadosMasivo(filas);
+  else if(tipo==='ordenes') resultado = importarOrdenesMasivo(filas);
+  else return;
+
+  save(); renderAll();
+  const resumen = tipo==='ordenes'
+    ? `${resultado.ordenesCreadas||0} orden(es) creada(s) como borrador, con ${resultado.ok} línea(s) en total`
+    : `${resultado.ok} registro(s) importado(s) correctamente`;
+  document.getElementById('cargaMasivaResultado').innerHTML = `
+    <div class="badge ${resultado.errores.length?'warn':'ok'}" style="font-size:13px;padding:6px 14px;margin-bottom:10px;display:inline-block">
+      ${resumen}${resultado.errores.length?` — ${resultado.errores.length} fila(s) con error`:''}
+    </div>
+    ${resultado.errores.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>Fila</th><th>Motivo</th></tr></thead><tbody>${resultado.errores.map(e=>`<tr><td>${e.fila}</td><td>${e.motivo}</td></tr>`).join('')}</tbody></table></div>`:''}
+  `;
+  if(resultado.ok || resultado.ordenesCreadas) reproducirSonido('finish');
+  toast(`Carga masiva terminada.`);
+}
+function importarGastosMasivo(filas){
+  let ok=0; const errores=[];
+  const categoriasValidas = ['Fabricación indirecta','Administración','Venta','Nómina'];
+  filas.forEach((f,i)=>{
+    const fila = i+2;
+    const fecha = String(f.Fecha||'').slice(0,10);
+    const categoria = String(f.Categoria||'').trim();
+    const concepto = String(f.Concepto||'').trim();
+    const importe = Number(f.Importe)||0;
+    const condicion = String(f.Condicion||'contado').toLowerCase()==='credito' ? 'credito' : 'contado';
+    const proveedor = String(f.Proveedor||'').trim();
+    if(!fecha || !categoria || !concepto || importe<=0){ errores.push({fila, motivo:'Faltan datos obligatorios (fecha, categoría, concepto o importe).'}); return; }
+    if(!categoriasValidas.includes(categoria)){ errores.push({fila, motivo:'Categoría no reconocida: "'+categoria+'".'}); return; }
+    const nuevo = {id:uid('gt'), folio:folio('GT','gasto'), fecha, categoria, concepto, importe, condicion, proveedor};
+    STATE.gastos.push(nuevo);
+    if(condicion==='credito') movCartera('proveedores', proveedor||'Gastos varios', {tipo:'cargo', concepto:'Gasto '+nuevo.folio, monto:importe, fecha});
+    ok++;
+  });
+  return {ok, errores};
+}
+function importarComprasMasivo(filas){
+  let ok=0; const errores=[];
+  filas.forEach((f,i)=>{
+    const fila = i+2;
+    const fecha = String(f.Fecha||'').slice(0,10);
+    const proveedor = String(f.Proveedor||'').trim();
+    const materialNombre = String(f.Material||'').trim();
+    const cantidad = Number(f.Cantidad)||0;
+    const importe = Number(f.Importe)||0;
+    const condicion = String(f.Condicion||'contado').toLowerCase()==='credito' ? 'credito' : 'contado';
+    if(!fecha || !proveedor || !materialNombre || cantidad<=0){ errores.push({fila, motivo:'Faltan datos obligatorios (fecha, proveedor, material o cantidad).'}); return; }
+    const material = STATE.materiales.find(m=>m.nombre.toLowerCase()===materialNombre.toLowerCase());
+    if(!material){ errores.push({fila, motivo:'Material no encontrado en el catálogo: "'+materialNombre+'".'}); return; }
+    const nueva = {id:uid('cp'), folio:folio('CP','compra'), fecha, proveedor, materialId:material.id, cantidad, importe, condicion};
+    STATE.compras.push(nueva);
+    material.stock = Number((material.stock + cantidad).toFixed(4));
+    if(condicion==='credito') movCartera('proveedores', proveedor, {tipo:'cargo', concepto:'Compra '+nueva.folio, monto:importe, fecha});
+    ok++;
+  });
+  return {ok, errores};
+}
+function importarClientesMasivo(filas){
+  let ok=0; const errores=[];
+  if(!STATE.clientesInfo) STATE.clientesInfo={};
+  filas.forEach((f,i)=>{
+    const fila = i+2;
+    const nombre = String(f.Nombre||'').trim();
+    if(!nombre){ errores.push({fila, motivo:'Falta el nombre del cliente.'}); return; }
+    const celular = String(f.Celular||'');
+    STATE.clientesInfo[nombre] = {
+      celular, telefono:celular,
+      correo: String(f.Correo||''),
+      direccion: String(f.Direccion||''),
+      codigoPostal: String(f.CodigoPostal||''),
+      ciudad: String(f.Ciudad||''),
+      estado: String(f.Estado||''),
+      pais: String(f.Pais||'México'),
+      referencia: String(f.Referencia||''),
+      notas: String(f.Notas||''),
+    };
+    ok++;
+  });
+  return {ok, errores};
+}
+function importarEmpleadosMasivo(filas){
+  let ok=0; const errores=[];
+  if(!STATE.empleados) STATE.empleados=[];
+  filas.forEach((f,i)=>{
+    const fila = i+2;
+    const nombre = String(f.Nombre||'').trim();
+    if(!nombre){ errores.push({fila, motivo:'Falta el nombre del empleado.'}); return; }
+    const salarioDiario = Number(f.SalarioDiario)||0;
+    const activo = String(f.Activo||'Si').toLowerCase()!=='no';
+    const puesto = String(f.Puesto||'');
+    const existente = STATE.empleados.find(e=>e.nombre.toLowerCase()===nombre.toLowerCase());
+    if(existente){ Object.assign(existente, {puesto, salarioDiario, activo}); }
+    else{ STATE.empleados.push({id:uid('emp'), nombre, puesto, salarioDiario, activo}); }
+    ok++;
+  });
+  return {ok, errores};
+}
+function importarOrdenesMasivo(filas){
+  const errores = [];
+  let okLineas = 0, ordenesCreadas = 0;
+  const grupos = {};
+  filas.forEach((f,i)=>{
+    const fila = i+2;
+    const clave = String(f.Orden||'').trim() || ('__FILA_'+fila);
+    if(!grupos[clave]) grupos[clave]=[];
+    grupos[clave].push({f,fila});
+  });
+  Object.values(grupos).forEach(filasGrupo=>{
+    const primero = filasGrupo[0].f;
+    const fecha = String(primero.Fecha||todayStr()).slice(0,10);
+    const manoObra = Number(primero.ManoObra)||STATE.config.manoObraDefault||0;
+    const lineas = [];
+    filasGrupo.forEach(({f,fila})=>{
+      const tallas = {};
+      let totalLinea = 0;
+      SIZES.forEach(sz=>{ const v=Number(f['Talla'+sz])||0; tallas[sz]=v; totalLinea+=v; });
+      if(totalLinea<=0){ errores.push({fila, motivo:'La fila no tiene ninguna talla (17 a 27) con cantidad mayor a cero.'}); return; }
+      lineas.push({
+        id:uid('l'), modelo:String(f.Modelo||''), planta:String(f.Planta||'CERCO')||'CERCO',
+        cuña:String(f.Cuña||f.Cuna||'CANELA')||'CANELA', suela:String(f.Suela||'BLANCA')||'BLANCA',
+        cerco:String(f.Cerco||'NATURAL')||'NATURAL', marca:String(f.Marca||''),
+        cliente:String(f.Cliente||''), comentarios:String(f.Comentarios||''), tallas
+      });
+      okLineas++;
+    });
+    if(!lineas.length) return;
+    STATE.ordenes.push({ id:uid('op'), folio: folio('OP','orden'), fecha, estado:'borrador', lineas, manoObra });
+    ordenesCreadas++;
+  });
+  return {ok: okLineas, ordenesCreadas, errores};
+}
+
 function setLandscape(wb, fit){
   wb.SheetNames.forEach(name=>{
     const ws = wb.Sheets[name];
@@ -3079,9 +3652,15 @@ function dataNomina(){
   }));
   return out;
 }
+function dataPasivos(){
+  return (STATE.pasivos||[]).map(p=>({Folio:p.folio, Nombre:p.nombre, Institución:p.institucion, 'Monto original':p.montoOriginal, 'Saldo actual':p.saldoActual, 'Tasa interés %':p.tasaInteres||0, 'Fecha inicio':p.fechaInicio}));
+}
+function dataPagosProgramados(){
+  return (STATE.pagosProgramados||[]).map(p=>({Folio:p.folio, Fecha:p.fecha, Proveedor:p.proveedor, Concepto:p.concepto, Importe:p.importe, Estado:p.pagado?'Pagado':'Pendiente'}));
+}
 
 function exportExcelModulo(nombre){
-  const map = {Ordenes:dataOrdenes, Costeo:dataCosteo, Inventario:dataInventario, Compras:dataCompras, Ventas:dataVentas, Gastos:dataGastos, Nomina:dataNomina, CxC:()=>dataCartera('clientes'), CxP:()=>dataCartera('proveedores')};
+  const map = {Ordenes:dataOrdenes, Costeo:dataCosteo, Inventario:dataInventario, Compras:dataCompras, Ventas:dataVentas, Gastos:dataGastos, Nomina:dataNomina, Pasivos:dataPasivos, Pagos:dataPagosProgramados, CxC:()=>dataCartera('clientes'), CxP:()=>dataCartera('proveedores')};
   const rows = map[nombre]();
   if(!librosDisponibles()) return;
   const wb = XLSX.utils.book_new();
@@ -3109,9 +3688,19 @@ function exportExcelCompleto(){
    EXPORTACIÓN — PDF (jsPDF + autotable)
    ================================================================= */
 function pdfHeader(doc,title){
-  doc.setFontSize(14); doc.text(STATE.config.nombre||'Artesanías D Mitzy', 14, 16);
+  const cfg = STATE.config;
+  const accent = hexToRgb(cfg.facturaColor);
+  let x = 14;
+  if(cfg.logoBase64){
+    try{ doc.addImage(cfg.logoBase64, 14, 8, 18, 10); x = 36; }catch(e){ /* logo no válido, se omite */ }
+  }
+  doc.setTextColor(...accent);
+  doc.setFontSize(14); doc.text(cfg.nombre||'Artesanías D Mitzy', x, 15);
+  doc.setTextColor(60,60,60);
   doc.setFontSize(10); doc.text(title, 14, 23);
   doc.setFontSize(8); doc.text('Generado: '+new Date().toLocaleString('es-MX'), 14, 28);
+  doc.setDrawColor(...accent); doc.setLineWidth(0.4); doc.line(14,30.5,doc.internal.pageSize.getWidth()-14,30.5);
+  doc.setTextColor(20,20,20);
 }
 function exportPDFModulo(titulo){
   const map = {
@@ -3124,10 +3713,12 @@ function exportPDFModulo(titulo){
     'Nómina': [['Folio','Periodo','Empleado','Días','Salario diario','Total'], (STATE.nomina||[]).flatMap(n=>n.items.map(it=>[n.folio, n.periodoInicio+' a '+n.periodoFin, it.nombre, it.dias, money(it.salarioDiario), money((Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0))]))],
     'Cuentas por cobrar': [['Cliente','Cargos','Abonos','Saldo'], Object.entries(STATE.clientes).map(([n,m])=>{const s=saldoCartera(m);return [n,money(s.cargos),money(s.abonos),money(s.saldo)];})],
     'Cuentas por pagar': [['Proveedor','Cargos','Abonos','Saldo'], Object.entries(STATE.proveedores).map(([n,m])=>{const s=saldoCartera(m);return [n,money(s.cargos),money(s.abonos),money(s.saldo)];})],
+    'Pasivos financieros': [['Folio','Nombre','Institución','Monto original','Saldo actual'], (STATE.pasivos||[]).map(p=>[p.folio,p.nombre,p.institucion||'-',money(p.montoOriginal),money(p.saldoActual)])],
+    'Plan de pagos (histórico)': [['Folio','Fecha','Proveedor','Concepto','Importe','Estado'], (STATE.pagosProgramados||[]).map(p=>[p.folio,p.fecha,p.proveedor||'-',p.concepto,money(p.importe),p.pagado?'Pagado':'Pendiente'])],
   };
   const [head, body] = map[titulo] || [[],[]];
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF({orientation: body.length && head.length>6 ? 'landscape':'portrait'});
+  const doc = new jsPDF({orientation: body.length && head.length>6 ? 'landscape':'portrait', unit:'mm', format:'letter'});
   pdfHeader(doc, titulo);
   doc.autoTable({head:[head], body, startY:33, styles:{fontSize:8}, headStyles:{fillColor:[47,72,88]}});
   doc.save(`ArtesaniasDMitzy_${titulo.replace(/\s+/g,'_')}_${todayStr()}.pdf`);
@@ -3137,7 +3728,7 @@ function verFichaOrdenPDF(id){ generarFichaOrdenPDF(id); }
 function generarFichaOrdenPDF(id){
   const o = STATE.ordenes.find(x=>x.id===id);
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF();
+  const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, 'Ficha de orden de producción '+o.folio);
   doc.setFontSize(9);
   doc.text('Fecha: '+o.fecha+'    Estado: '+o.estado+'    Pares totales: '+(o.necesidades?o.necesidades.total:0), 14, 34);
@@ -3257,7 +3848,7 @@ function generarHojaCortePDF(id){
   const o = STATE.ordenes.find(x=>x.id===id);
   const ac = calcAcumulados(o);
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF({orientation:'landscape'});
+  const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'letter'});
   pdfHeader(doc, 'Hoja de corte — Acumulado por talla — Orden '+o.folio);
   doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
   let y = 40;
@@ -3336,7 +3927,7 @@ function exportOrdenSoloExcel(id){
 function exportOrdenSoloPDF(id){
   const o = STATE.ordenes.find(x=>x.id===id);
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF({orientation:'landscape'});
+  const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'letter'});
   pdfHeader(doc, 'Orden de producción '+o.folio+' (sin costos)');
   doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
   const head = ['Cliente','Modelo','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
@@ -3372,7 +3963,7 @@ function exportHojaCostoPDF(id){
   const o = STATE.ordenes.find(x=>x.id===id);
   if(!o.costeo){ toast('Esta orden aún no está confirmada.'); return; }
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
-  const doc = new jsPDF();
+  const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, 'Hoja de costo — Orden '+o.folio);
   doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Pares: '+o.costeo.pares, 14, 34);
   doc.autoTable({
@@ -3731,6 +4322,14 @@ window.addEventListener('offline', actualizarIndicadorConexion);
       const info = await window.dataAPI.info();
       const note = document.getElementById('rutaArchivoDatos');
       if(note) note.textContent = info.dataFile;
+      const notaDiscoC = document.getElementById('notaDiscoC');
+      if(notaDiscoC){
+        notaDiscoC.textContent = info.usandoDiscoC
+          ? 'Guardando en el disco C (carpeta '+info.carpetaBase+'), como pediste.'
+          : 'No fue posible escribir en la raíz del disco C en este equipo (falta de permisos), así que se está usando la carpeta segura de datos de la aplicación en su lugar: '+info.carpetaBase;
+        notaDiscoC.className = info.usandoDiscoC ? 'smallnote' : 'smallnote';
+        notaDiscoC.style.color = info.usandoDiscoC ? 'var(--good)' : 'var(--gold)';
+      }
     }catch(e){}
     document.querySelectorAll('.respaldo-auto-desktop').forEach(el=>el.style.display='block');
     actualizarCarpetaExternaUI();
