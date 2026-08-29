@@ -459,7 +459,20 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
           <button class="btn clay" onclick="abrirNomina(null)">+ Nueva nómina</button>
         </div>
       </div>
-      <p class="muted">Registra los pagos de mano de obra por periodo. Cada nómina guardada se refleja automáticamente como gasto (categoría "Nómina") para tus reportes mensuales.</p>
+      <p class="muted">Registra los pagos de mano de obra por periodo. Cada nómina guardada se refleja automáticamente como gasto (categoría "Nómina") para tus reportes mensuales. Cada nómina se puede imprimir como "Lista de raya" con espacio para firma.</p>
+
+      <div class="card" style="margin-bottom:16px">
+        <h3>Reporte semanal consolidado</h3>
+        <p class="muted">Suma todas las nóminas cuyo periodo cae dentro de la semana elegida (útil si registras nóminas separadas por equipo o área).</p>
+        <div class="flex" style="margin-bottom:10px">
+          <input type="week" id="semanaNomina">
+          <button class="btn clay sm" onclick="renderReporteSemanalNomina()">Ver semana</button>
+          <button class="btn ghost sm" onclick="exportReporteSemanalNominaExcel()">Excel</button>
+          <button class="btn ghost sm" onclick="exportReporteSemanalNominaPDF()">PDF</button>
+        </div>
+        <div id="reporteSemanalNomina"></div>
+      </div>
+
       <div class="tblwrap"><table class="tbl">
         <thead><tr><th>Folio</th><th>Periodo</th><th class="num">Empleados</th><th class="num">Total</th><th>Acciones</th></tr></thead>
         <tbody id="tblNomina"></tbody>
@@ -470,7 +483,10 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     <section class="view" id="view-cxc">
       <div class="topbar">
         <div class="titles"><div class="eyebrow">Cartera</div><h1>Cuentas por cobrar</h1></div>
-        <button class="btn clay" onclick="abrirMovCxc(null)">+ Movimiento manual</button>
+        <div class="actions flex">
+          <button class="btn ghost" onclick="exportEstadosCuentaMasivo('clientes')">Estados de cuenta (todos)</button>
+          <button class="btn clay" onclick="abrirMovCxc(null)">+ Movimiento manual</button>
+        </div>
       </div>
       <div class="grid cols-3" id="cxcKpis"></div>
       <div class="section-title"><h3>Saldos por cliente</h3></div>
@@ -481,7 +497,10 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
     <section class="view" id="view-cxp">
       <div class="topbar">
         <div class="titles"><div class="eyebrow">Cartera</div><h1>Cuentas por pagar</h1></div>
-        <button class="btn clay" onclick="abrirMovCxp(null)">+ Movimiento manual</button>
+        <div class="actions flex">
+          <button class="btn ghost" onclick="exportEstadosCuentaMasivo('proveedores')">Estados de cuenta (todos)</button>
+          <button class="btn clay" onclick="abrirMovCxp(null)">+ Movimiento manual</button>
+        </div>
       </div>
       <div class="grid cols-3" id="cxpKpis"></div>
       <div class="section-title"><h3>Saldos por proveedor</h3></div>
@@ -527,61 +546,11 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
       <div class="topbar"><div class="titles"><div class="eyebrow">Organización</div><h1>Procesos</h1></div></div>
 
       <div class="card" style="margin-bottom:20px">
-        <h3>Croquis — línea de producción</h3>
-        <p class="muted">Acomodo del taller: el proceso avanza en serpentina de izquierda a derecha y de vuelta.</p>
-        <div style="overflow-x:auto">
-        <svg viewBox="0 0 500 240" style="width:100%;max-width:640px;height:auto">
-          <defs>
-            <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" style="fill:var(--clay)"></path>
-            </marker>
-          </defs>
-          <line x1="120" y1="60" x2="136" y2="60" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
-          <line x1="240" y1="60" x2="256" y2="60" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
-          <line x1="360" y1="60" x2="376" y2="60" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
-          <line x1="430" y1="92" x2="430" y2="156" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
-          <line x1="380" y1="190" x2="364" y2="190" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
-          <line x1="260" y1="190" x2="244" y2="190" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
-          <line x1="140" y1="190" x2="124" y2="190" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flecha)"></line>
-
-          <g>
-            <rect x="20" y="30" width="100" height="60" rx="8" style="fill:var(--indigo)"></rect>
-            <text x="70" y="55" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">RECEPCIÓN DE</text>
-            <text x="70" y="68" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">MATERIA PRIMA</text>
-          </g>
-          <g>
-            <rect x="140" y="30" width="100" height="60" rx="8" style="fill:var(--indigo)"></rect>
-            <text x="190" y="64" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">CORTE</text>
-          </g>
-          <g>
-            <rect x="260" y="30" width="100" height="60" rx="8" style="fill:var(--indigo)"></rect>
-            <text x="310" y="64" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">COSTURA</text>
-          </g>
-          <g>
-            <rect x="380" y="30" width="100" height="60" rx="8" style="fill:var(--indigo)"></rect>
-            <text x="430" y="64" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">PEGADO</text>
-          </g>
-          <g>
-            <rect x="380" y="160" width="100" height="60" rx="8" style="fill:var(--clay)"></rect>
-            <text x="430" y="185" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">PINTURA /</text>
-            <text x="430" y="198" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">ACABADO</text>
-          </g>
-          <g>
-            <rect x="260" y="160" width="100" height="60" rx="8" style="fill:var(--clay)"></rect>
-            <text x="310" y="185" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">CONTROL DE</text>
-            <text x="310" y="198" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">CALIDAD</text>
-          </g>
-          <g>
-            <rect x="140" y="160" width="100" height="60" rx="8" style="fill:var(--clay)"></rect>
-            <text x="190" y="194" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">EMPAQUE</text>
-          </g>
-          <g>
-            <rect x="20" y="160" width="100" height="60" rx="8" style="fill:var(--good)"></rect>
-            <text x="70" y="185" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">ALMACÉN /</text>
-            <text x="70" y="198" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">VENTA</text>
-          </g>
-        </svg>
+        <div class="flex" style="justify-content:space-between">
+          <div><h3>Croquis — línea de producción</h3><p class="muted">Acomodo del taller: el proceso avanza en serpentina de izquierda a derecha y de vuelta. Puedes editar, agregar o quitar pasos.</p></div>
+          <button class="btn gold sm" onclick="abrirEditorProceso()">✏ Editar diagrama</button>
         </div>
+        <div style="overflow-x:auto" id="croquisProcesoSvg"></div>
       </div>
 
       <div class="card">
@@ -893,6 +862,16 @@ function emptyState(){
     empaques: [],        // [{id, folio, fecha, ventaFolio, destinatarioNombre, destinatario:{...}, paqueteria, numeroRastreo, contenido, finalizada}]
     pasivos: [],         // [{id, folio, nombre, institucion, montoOriginal, tasaInteres, fechaInicio, notas, saldoActual, abonos:[{id,fecha,monto,concepto}]}]
     pagosProgramados: [], // [{id, folio, fecha, concepto, proveedor, importe, pagado, fechaPago, compraId}]
+    procesoFlujo: [
+      {id:'pf1', nombre:'RECEPCIÓN DE MATERIA PRIMA', color:'indigo'},
+      {id:'pf2', nombre:'CORTE', color:'indigo'},
+      {id:'pf3', nombre:'COSTURA', color:'indigo'},
+      {id:'pf4', nombre:'PEGADO', color:'indigo'},
+      {id:'pf5', nombre:'PINTURA / ACABADO', color:'clay'},
+      {id:'pf6', nombre:'CONTROL DE CALIDAD', color:'clay'},
+      {id:'pf7', nombre:'EMPAQUE', color:'clay'},
+      {id:'pf8', nombre:'ALMACÉN / VENTA', color:'good'},
+    ],
     folios:{ orden:1, compra:1, venta:1, gasto:1, nomina:1, empaque:1, pasivo:1, pago:1 }
   };
 }
@@ -918,6 +897,16 @@ async function load(){
     if(!STATE.usuarios) STATE.usuarios = [];
     if(!STATE.empaques) STATE.empaques = [];
     if(!STATE.pasivos) STATE.pasivos = [];
+    if(!STATE.procesoFlujo || !STATE.procesoFlujo.length) STATE.procesoFlujo = [
+      {id:'pf1', nombre:'RECEPCIÓN DE MATERIA PRIMA', color:'indigo'},
+      {id:'pf2', nombre:'CORTE', color:'indigo'},
+      {id:'pf3', nombre:'COSTURA', color:'indigo'},
+      {id:'pf4', nombre:'PEGADO', color:'indigo'},
+      {id:'pf5', nombre:'PINTURA / ACABADO', color:'clay'},
+      {id:'pf6', nombre:'CONTROL DE CALIDAD', color:'clay'},
+      {id:'pf7', nombre:'EMPAQUE', color:'clay'},
+      {id:'pf8', nombre:'ALMACÉN / VENTA', color:'good'},
+    ];
     if(!STATE.pagosProgramados) STATE.pagosProgramados = [];
     if(!STATE.folios.pasivo) STATE.folios.pasivo = 1;
     if(!STATE.folios.pago) STATE.folios.pago = 1;
@@ -1671,7 +1660,7 @@ function verCatalogoClientes(){
   openModal(`
     <h3>Catálogo de clientes</h3>
     <div class="tblwrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Celular</th><th>Ciudad</th><th>Correo</th><th></th></tr></thead>
-    <tbody>${nombres.map(n=>{const c=STATE.clientesInfo[n]; return `<tr><td>${n}</td><td>${c.celular||c.telefono||'-'}</td><td>${c.ciudad||'-'}</td><td>${c.correo||'-'}</td><td><button class="btn ghost sm" onclick="abrirAltaCliente('${n.replace(/'/g,"\\'")}')">Editar</button></td></tr>`;}).join('') || '<tr><td colspan="5" class="muted">Sin clientes registrados todavía.</td></tr>'}</tbody></table></div>
+    <tbody>${nombres.map(n=>{const c=STATE.clientesInfo[n]; return `<tr><td>${n}</td><td>${c.celular||c.telefono||'-'}</td><td>${c.ciudad||'-'}</td><td>${c.correo||'-'}</td><td class="flex"><button class="btn ghost sm" onclick="abrirAltaCliente('${n.replace(/'/g,"\\'")}')">Editar</button><button class="btn danger sm" onclick="borrarCliente('${n.replace(/'/g,"\\'")}')">Eliminar</button></td></tr>`;}).join('') || '<tr><td colspan="5" class="muted">Sin clientes registrados todavía.</td></tr>'}</tbody></table></div>
     <div class="close-row"><button class="btn ghost" onclick="abrirCargaMasiva('clientes')">📥 Carga masiva</button><button class="btn clay" onclick="abrirAltaCliente(null)">+ Nuevo cliente</button><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
   `);
 }
@@ -2148,12 +2137,52 @@ function verNominaPDF(id){
       const total = (Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0);
       return [it.nombre, it.dias, money(it.salarioDiario), money(it.extras||0), money(it.descuentos||0), money(total)];
     }),
-    startY:36, styles:{fontSize:9}, headStyles:{fillColor:[47,72,88]}
+    startY:39, styles:{fontSize:9}, headStyles:{fillColor:[47,72,88]}
   });
   const y = doc.lastAutoTable.finalY+10;
   doc.setFontSize(13); doc.text('TOTAL: '+money(n.total), 14, y);
+  pdfFooter(doc);
   doc.save(`Nomina_${n.folio}.pdf`);
   toast('PDF de nómina generado.');
+}
+function verListaDeRayaPDF(id){
+  const n = STATE.nomina.find(x=>x.id===id);
+  if(!n) return;
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const doc = new jsPDF({unit:'mm', format:'letter', orientation:'landscape'});
+  pdfHeader(doc, `Lista de raya — periodo ${n.periodoInicio} a ${n.periodoFin}`);
+  doc.autoTable({
+    head:[['No.','Empleado','Puesto','Días','Salario diario','Extras','Descuentos','Total a pagar','Firma de recibido']],
+    body: n.items.map((it,i)=>{
+      const total = (Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0);
+      const empleado = (STATE.empleados||[]).find(e=>e.id===it.empleadoId);
+      return [i+1, it.nombre, (empleado&&empleado.puesto)||'-', it.dias, money(it.salarioDiario), money(it.extras||0), money(it.descuentos||0), money(total), ''];
+    }),
+    startY:39, styles:{fontSize:9, cellPadding:3}, headStyles:{fillColor:hexToRgb(STATE.config.facturaColor)},
+    columnStyles:{8:{cellWidth:50}}
+  });
+  const y = doc.lastAutoTable.finalY+12;
+  doc.setFontSize(12); doc.text('TOTAL DE LA NÓMINA: '+money(n.total), 14, y);
+  doc.setFontSize(8);
+  doc.text('Elaboró: _______________________________', 14, y+16);
+  doc.text('Autorizó: _______________________________', 150, y+16);
+  pdfFooter(doc);
+  doc.save(`ListaDeRaya_${n.folio}.pdf`);
+  toast('Lista de raya (PDF) generada.');
+}
+function exportListaDeRayaExcel(id){
+  if(!librosDisponibles()) return;
+  const n = STATE.nomina.find(x=>x.id===id);
+  if(!n) return;
+  const rows = n.items.map((it,i)=>{
+    const total = (Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0);
+    const empleado = (STATE.empleados||[]).find(e=>e.id===it.empleadoId);
+    return {'No.':i+1, Empleado:it.nombre, Puesto:(empleado&&empleado.puesto)||'', Días:it.dias, 'Salario diario':it.salarioDiario, Extras:it.extras||0, Descuentos:it.descuentos||0, 'Total a pagar':total, Firma:''};
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(rows), 'Lista de raya');
+  XLSX.writeFile(wb, `ListaDeRaya_${n.folio}.xlsx`);
+  toast('Lista de raya (Excel) generada.');
 }
 function renderNomina(){
   const tbl = document.getElementById('tblNomina');
@@ -2162,7 +2191,7 @@ function renderNomina(){
     <tr>
       <td>${n.folio}</td><td>${n.periodoInicio} a ${n.periodoFin}</td>
       <td class="num mono">${n.items.length}</td><td class="num mono">${money(n.total)}</td>
-      <td class="flex"><button class="btn ghost sm" onclick="verNominaPDF('${n.id}')">PDF</button><button class="btn ghost sm" onclick="abrirNomina('${n.id}')">Editar</button><button class="btn danger sm" onclick="eliminarNomina('${n.id}')">Eliminar</button></td>
+      <td class="flex"><button class="btn ghost sm" onclick="verListaDeRayaPDF('${n.id}')">Lista de raya PDF</button><button class="btn ghost sm" onclick="exportListaDeRayaExcel('${n.id}')">Excel</button><button class="btn ghost sm" onclick="abrirNomina('${n.id}')">Editar</button><button class="btn danger sm" onclick="eliminarNomina('${n.id}')">Eliminar</button></td>
     </tr>`).join('') || '<tr><td colspan="5" class="muted">Sin nóminas registradas. Primero da de alta a tus empleados.</td></tr>';
 }
 
@@ -2276,7 +2305,7 @@ function verListaEmpaquePDF(id){
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, 'Lista de empaque — '+e.folio);
-  doc.setFontSize(9); doc.text('Fecha: '+e.fecha+(e.ventaFolio?'    Venta relacionada: '+e.ventaFolio:''), 14, 34);
+  doc.setFontSize(9); doc.text('Fecha: '+e.fecha+(e.ventaFolio?'    Venta relacionada: '+e.ventaFolio:''), 14, 38);
 
   doc.setDrawColor(200,200,200);
   doc.setFontSize(11); doc.setFont('helvetica','bold');
@@ -2302,6 +2331,7 @@ function verListaEmpaquePDF(id){
     const lineas = doc.splitTextToSize(e.contenido, 180);
     doc.text(lineas, 14, y);
   }
+  pdfFooter(doc);
   doc.save(`ListaEmpaque_${e.folio}.pdf`);
   toast('Lista de empaque (PDF) generada.');
 }
@@ -2355,6 +2385,7 @@ function guardarMovCartera(tipo){
 function verDetalleCartera(tipo, nombre){
   const movs = STATE[tipo][nombre]||[];
   const s = saldoCartera(movs);
+  const filas = movs.map((m,i)=>({m,i})).reverse();
   openModal(`
     <h3>${tipo==='clientes'?'Cliente':'Proveedor'}: ${nombre}</h3>
     <div class="grid cols-3" style="margin-bottom:12px">
@@ -2362,10 +2393,80 @@ function verDetalleCartera(tipo, nombre){
       <div class="card kpi good"><div class="num">${money(s.abonos)}</div><div class="lbl">Abonos</div></div>
       <div class="card kpi ${s.saldo>0?'warn':'good'}"><div class="num">${money(s.saldo)}</div><div class="lbl">Saldo</div></div>
     </div>
-    <div class="tblwrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th class="num">Importe</th></tr></thead>
-    <tbody>${movs.slice().reverse().map(m=>`<tr><td>${m.fecha}</td><td>${m.concepto}</td><td><span class="badge ${m.tipo==='cargo'?'bad':'ok'}">${m.tipo}</span></td><td class="num mono">${money(m.monto)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sin movimientos</td></tr>'}</tbody></table></div>
-    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th class="num">Importe</th><th></th></tr></thead>
+    <tbody>${filas.map(({m,i})=>`<tr><td>${m.fecha}</td><td>${m.concepto}</td><td><span class="badge ${m.tipo==='cargo'?'bad':'ok'}">${m.tipo}</span></td><td class="num mono">${money(m.monto)}</td><td><button class="btn danger sm" onclick="eliminarMovimientoCartera('${tipo}','${nombre.replace(/'/g,"\\'")}',${i})">Eliminar</button></td></tr>`).join('')||'<tr><td colspan="5" class="muted">Sin movimientos</td></tr>'}</tbody></table></div>
+    <div class="close-row">
+      <button class="btn ghost" onclick="exportEstadoCuentaExcel('${tipo}','${nombre.replace(/'/g,"\\'")}')">Estado de cuenta Excel</button>
+      <button class="btn gold" onclick="exportEstadoCuentaPDF('${tipo}','${nombre.replace(/'/g,"\\'")}')">Estado de cuenta PDF</button>
+      <button class="btn ghost" onclick="closeModal()">Cerrar</button>
+    </div>
   `);
+}
+function eliminarMovimientoCartera(tipo, nombre, index){
+  if(!puedeEliminar()) return;
+  if(!confirm('¿Eliminar este movimiento? Esto corrige el saldo mostrado, pero no revierte automáticamente la venta, compra o gasto que lo originó — solo bórralo si fue un error de captura.')) return;
+  STATE[tipo][nombre].splice(index,1);
+  save(); verDetalleCartera(tipo, nombre); renderAll();
+  toast('Movimiento eliminado.');
+}
+function exportEstadoCuentaPDF(tipo, nombre){
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const movs = (STATE[tipo][nombre]||[]).slice().sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  let saldoCorrido = 0;
+  const filas = movs.map(m=>{
+    saldoCorrido += (m.tipo==='cargo'?m.monto:-m.monto);
+    return {...m, saldoCorrido};
+  });
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  pdfHeader(doc, `Estado de cuenta — ${tipo==='clientes'?'Cliente':'Proveedor'}: ${nombre}`);
+  const s = saldoCartera(movs);
+  doc.setFontSize(9);
+  doc.text(`Cargos: ${money(s.cargos)}     Abonos: ${money(s.abonos)}     Saldo actual: ${money(s.saldo)}`, 14, 38);
+  doc.autoTable({
+    head:[['Fecha','Concepto','Cargo','Abono','Saldo']],
+    body: filas.map(m=>[m.fecha, m.concepto, m.tipo==='cargo'?money(m.monto):'', m.tipo==='abono'?money(m.monto):'', money(m.saldoCorrido)]),
+    startY:44, styles:{fontSize:8.5}, headStyles:{fillColor:hexToRgb(STATE.config.facturaColor)}
+  });
+  pdfFooter(doc);
+  doc.save(`EstadoCuenta_${tipo}_${nombre.replace(/[^\w]+/g,'_')}.pdf`);
+  toast('Estado de cuenta (PDF) generado.');
+}
+function exportEstadoCuentaExcel(tipo, nombre){
+  if(!librosDisponibles()) return;
+  const movs = (STATE[tipo][nombre]||[]).slice().sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  let saldoCorrido = 0;
+  const rows = movs.map(m=>{
+    saldoCorrido += (m.tipo==='cargo'?m.monto:-m.monto);
+    return {Fecha:m.fecha, Concepto:m.concepto, Cargo:m.tipo==='cargo'?m.monto:'', Abono:m.tipo==='abono'?m.monto:'', Saldo:saldoCorrido};
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(rows.length?rows:[{Aviso:'Sin movimientos'}]), 'Estado de cuenta');
+  XLSX.writeFile(wb, `EstadoCuenta_${tipo}_${nombre.replace(/[^\w]+/g,'_')}.xlsx`);
+  toast('Estado de cuenta (Excel) generado.');
+}
+function exportEstadosCuentaMasivo(tipo){
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const nombres = Object.keys(STATE[tipo]||{});
+  if(!nombres.length){ toast('No hay movimientos registrados todavía.'); return; }
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  nombres.forEach((nombre,idx)=>{
+    if(idx>0) doc.addPage();
+    const movs = (STATE[tipo][nombre]||[]).slice().sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    let saldoCorrido = 0;
+    const filas = movs.map(m=>{ saldoCorrido += (m.tipo==='cargo'?m.monto:-m.monto); return {...m, saldoCorrido}; });
+    pdfHeader(doc, `Estado de cuenta — ${tipo==='clientes'?'Cliente':'Proveedor'}: ${nombre}`);
+    const s = saldoCartera(movs);
+    doc.setFontSize(9);
+    doc.text(`Cargos: ${money(s.cargos)}     Abonos: ${money(s.abonos)}     Saldo actual: ${money(s.saldo)}`, 14, 38);
+    doc.autoTable({
+      head:[['Fecha','Concepto','Cargo','Abono','Saldo']],
+      body: filas.map(m=>[m.fecha, m.concepto, m.tipo==='cargo'?money(m.monto):'', m.tipo==='abono'?money(m.monto):'', money(m.saldoCorrido)]),
+      startY:44, styles:{fontSize:8.5}, headStyles:{fillColor:hexToRgb(STATE.config.facturaColor)}
+    });
+  });
+  pdfFooter(doc);
+  doc.save(`EstadosCuenta_${tipo}_${todayStr()}.pdf`);
+  toast('Estados de cuenta generados (uno por página).');
 }
 
 /* =================================================================
@@ -2511,11 +2612,12 @@ function exportPlanPagosPDF(){
   doc.autoTable({
     head:[['Fecha','Proveedor','Concepto','Importe','Estado']],
     body: pagos.map(p=>[p.fecha, p.proveedor||'-', p.concepto, money(p.importe), p.pagado?'Pagado':'Pendiente']),
-    startY:33, styles:{fontSize:9}, headStyles:{fillColor:[47,72,88]}
+    startY:37, styles:{fontSize:9}, headStyles:{fillColor:[47,72,88]}
   });
   const y = doc.lastAutoTable.finalY+10;
   const total = pagos.reduce((s,p)=>s+p.importe,0);
   doc.setFontSize(11); doc.text('Total programado: '+money(total), 14, y);
+  pdfFooter(doc);
   doc.save(`PlanPagos_${rango?rango.inicio:todayStr()}.pdf`);
   toast('Plan de pagos exportado a PDF.');
 }
@@ -2523,6 +2625,74 @@ function renderPagos(){
   const tbl = document.getElementById('tblPlanPagos');
   if(!tbl) return;
   renderPlanPagosSemanal();
+}
+
+/* ---------- Reporte semanal consolidado de nómina ---------- */
+function semanaNominaActualDefault(){
+  const el = document.getElementById('semanaNomina');
+  if(el && !el.value){
+    const hoy = new Date();
+    const enero1 = new Date(hoy.getFullYear(),0,1);
+    const dias = Math.floor((hoy-enero1)/86400000);
+    const semana = Math.ceil((dias+enero1.getDay()+1)/7);
+    el.value = hoy.getFullYear()+'-W'+String(semana).padStart(2,'0');
+  }
+  return el ? el.value : '';
+}
+function nominasDeLaSemana(){
+  const valor = semanaNominaActualDefault();
+  const rango = semanaISOaRango(valor);
+  if(!rango) return { rango:null, nominas: [] };
+  // considera cualquier nómina cuyo periodo se traslape con la semana elegida
+  const nominas = (STATE.nomina||[]).filter(n=> n.periodoInicio<=rango.fin && n.periodoFin>=rango.inicio);
+  return { rango, nominas };
+}
+function renderReporteSemanalNomina(){
+  const { rango, nominas } = nominasDeLaSemana();
+  const cont = document.getElementById('reporteSemanalNomina');
+  if(!cont) return;
+  const totalGeneral = nominas.reduce((s,n)=>s+n.total,0);
+  const totalEmpleados = new Set(nominas.flatMap(n=>n.items.map(it=>it.empleadoId||it.nombre))).size;
+  cont.innerHTML = `
+    <div class="grid cols-3" style="margin-bottom:10px">
+      <div class="card kpi"><div class="num">${nominas.length}</div><div class="lbl">Nóminas en la semana</div></div>
+      <div class="card kpi alt"><div class="num">${totalEmpleados}</div><div class="lbl">Empleados distintos</div></div>
+      <div class="card kpi good"><div class="num">${money(totalGeneral)}</div><div class="lbl">Total pagado en la semana</div></div>
+    </div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Folio</th><th>Periodo</th><th class="num">Empleados</th><th class="num">Total</th></tr></thead>
+    <tbody>${nominas.map(n=>`<tr><td>${n.folio}</td><td>${n.periodoInicio} a ${n.periodoFin}</td><td class="num mono">${n.items.length}</td><td class="num mono">${money(n.total)}</td></tr>`).join('') || `<tr><td colspan="4" class="muted">Sin nóminas en esta semana${rango?` (${rango.inicio} a ${rango.fin})`:''}.</td></tr>`}</tbody></table></div>
+  `;
+}
+function exportReporteSemanalNominaExcel(){
+  if(!librosDisponibles()) return;
+  const { rango, nominas } = nominasDeLaSemana();
+  const rows = [];
+  nominas.forEach(n=> n.items.forEach(it=>{
+    const total = (Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0);
+    rows.push({Folio:n.folio, Periodo:n.periodoInicio+' a '+n.periodoFin, Empleado:it.nombre, Días:it.dias, 'Salario diario':it.salarioDiario, Extras:it.extras||0, Descuentos:it.descuentos||0, Total:total});
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(rows.length?rows:[{Aviso:'Sin nóminas esta semana'}]), 'Reporte semanal');
+  XLSX.writeFile(wb, `ReporteSemanalNomina_${rango?rango.inicio:todayStr()}.xlsx`);
+  toast('Reporte semanal de nómina exportado a Excel.');
+}
+function exportReporteSemanalNominaPDF(){
+  const jsPDF = pdfDisponible(); if(!jsPDF) return;
+  const { rango, nominas } = nominasDeLaSemana();
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  pdfHeader(doc, `Reporte semanal de nómina — ${rango?rango.inicio+' a '+rango.fin:''}`);
+  const body = [];
+  nominas.forEach(n=> n.items.forEach(it=>{
+    const total = (Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0);
+    body.push([n.folio, it.nombre, it.dias, money(it.salarioDiario), money(total)]);
+  }));
+  doc.autoTable({head:[['Folio','Empleado','Días','Salario diario','Total']], body, startY:39, styles:{fontSize:9}, headStyles:{fillColor:hexToRgb(STATE.config.facturaColor)}});
+  const y = doc.lastAutoTable.finalY+10;
+  const totalGeneral = nominas.reduce((s,n)=>s+n.total,0);
+  doc.setFontSize(12); doc.text('TOTAL DE LA SEMANA: '+money(totalGeneral), 14, y);
+  pdfFooter(doc);
+  doc.save(`ReporteSemanalNomina_${rango?rango.inicio:todayStr()}.pdf`);
+  toast('Reporte semanal de nómina exportado a PDF.');
 }
 
 /* =================================================================
@@ -2588,10 +2758,22 @@ function verPasivo(id){
       <button class="btn clay" onclick="aplicarAbonoPasivo('${id}')">+ Aplicar abono</button>
     </div>
     <hr class="dash">
-    <div class="tblwrap"><table class="tbl"><thead><tr><th>Fecha</th><th class="num">Monto</th></tr></thead>
-    <tbody>${(p.abonos||[]).slice().reverse().map(a=>`<tr><td>${a.fecha}</td><td class="num mono">${money(a.monto)}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">Sin abonos todavía.</td></tr>'}</tbody></table></div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Fecha</th><th class="num">Monto</th><th></th></tr></thead>
+    <tbody>${(p.abonos||[]).map((a,i)=>({a,i})).reverse().map(({a,i})=>`<tr><td>${a.fecha}</td><td class="num mono">${money(a.monto)}</td><td><button class="btn danger sm" onclick="eliminarAbonoPasivo('${id}',${i})">Eliminar</button></td></tr>`).join('') || '<tr><td colspan="3" class="muted">Sin abonos todavía.</td></tr>'}</tbody></table></div>
     <div class="close-row"><button class="btn ghost" onclick="verPasivoPDF('${id}')">PDF</button><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>
   `);
+}
+function eliminarAbonoPasivo(id, index){
+  if(!puedeEliminar()) return;
+  const p = STATE.pasivos.find(x=>x.id===id);
+  if(!p) return;
+  const abono = p.abonos[index];
+  if(!abono) return;
+  if(!confirm('¿Eliminar este abono? El saldo del pasivo aumentará de nuevo en '+money(abono.monto)+'.')) return;
+  p.saldoActual = Number((p.saldoActual+abono.monto).toFixed(2));
+  p.abonos.splice(index,1);
+  save(); verPasivo(id); renderPasivos();
+  toast('Abono eliminado.');
 }
 function aplicarAbonoPasivo(id){
   const p = STATE.pasivos.find(x=>x.id===id);
@@ -2611,12 +2793,13 @@ function verPasivoPDF(id){
   const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, `Pasivo financiero — ${p.nombre}`);
   doc.setFontSize(9);
-  doc.text(`Institución: ${p.institucion||'-'}    Inicio: ${p.fechaInicio}    Monto original: ${money(p.montoOriginal)}    Saldo actual: ${money(p.saldoActual)}`, 14, 34);
+  doc.text(`Institución: ${p.institucion||'-'}    Inicio: ${p.fechaInicio}    Monto original: ${money(p.montoOriginal)}    Saldo actual: ${money(p.saldoActual)}`, 14, 38);
   doc.autoTable({
     head:[['Fecha','Monto abonado']],
     body:(p.abonos||[]).map(a=>[a.fecha, money(a.monto)]),
     startY:42, styles:{fontSize:9}, headStyles:{fillColor:[47,72,88]}
   });
+  pdfFooter(doc);
   doc.save(`Pasivo_${p.folio}.pdf`);
   toast('PDF de pasivo generado.');
 }
@@ -2636,6 +2819,108 @@ function renderPasivos(){
     <div class="card kpi good"><div class="num">${money(totalOriginal-totalSaldo)}</div><div class="lbl">Total abonado</div></div>
     <div class="card kpi warn"><div class="num">${money(totalSaldo)}</div><div class="lbl">Saldo total pendiente</div></div>
   `;
+}
+
+/* =================================================================
+   DIAGRAMA DE FLUJO DEL PROCESO — editable
+   ================================================================= */
+const PROCESO_COLORES = { indigo:'var(--indigo)', clay:'var(--clay)', good:'var(--good)', gold:'var(--gold)' };
+function renderCroquisProceso(){
+  const cont = document.getElementById('croquisProcesoSvg');
+  if(!cont) return;
+  const pasos = STATE.procesoFlujo||[];
+  if(!pasos.length){ cont.innerHTML = '<p class="empty">Sin pasos definidos todavía. Usa "Editar diagrama" para agregarlos.</p>'; return; }
+  const cols = Math.min(4, pasos.length);
+  const boxW=110, boxH=60, gapX=22, gapY=90, marginX=20, marginY=25;
+  const rows = Math.ceil(pasos.length/cols);
+  const width = marginX*2 + cols*boxW + (cols-1)*gapX;
+  const height = marginY*2 + rows*boxH + (rows-1)*gapY;
+
+  const posiciones = [];
+  let cajas = '';
+  pasos.forEach((paso,i)=>{
+    const row = Math.floor(i/cols);
+    const dir = row%2===0 ? 1 : -1;
+    const kEnFila = i - row*cols;
+    const col = dir===1 ? kEnFila : (cols-1-kEnFila);
+    const x = marginX + col*(boxW+gapX);
+    const y = marginY + row*(boxH+gapY);
+    posiciones.push({x,y,row});
+    const color = PROCESO_COLORES[paso.color]||PROCESO_COLORES.indigo;
+    const lineas = String(paso.nombre||'PASO').split('/').map(s=>s.trim()).slice(0,2);
+    cajas += `<g><rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="8" style="fill:${color}"></rect>`;
+    if(lineas.length>1){
+      cajas += `<text x="${x+boxW/2}" y="${y+boxH/2-3}" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">${escaparHTML(lineas[0].toUpperCase())}</text>`;
+      cajas += `<text x="${x+boxW/2}" y="${y+boxH/2+10}" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">${escaparHTML(lineas[1].toUpperCase())}</text>`;
+    } else {
+      cajas += `<text x="${x+boxW/2}" y="${y+boxH/2+4}" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:700">${escaparHTML(lineas[0].toUpperCase())}</text>`;
+    }
+    cajas += `<text x="${x+8}" y="${y+14}" style="fill:rgba(255,255,255,.6);font-size:9px;font-weight:700">${i+1}</text>`;
+    cajas += `</g>`;
+  });
+  let flechas = '';
+  for(let i=0;i<pasos.length-1;i++){
+    const a = posiciones[i], b = posiciones[i+1];
+    if(a.row===b.row){
+      const dir = a.row%2===0 ? 1 : -1;
+      const x1 = dir===1 ? a.x+boxW : a.x;
+      const x2 = dir===1 ? b.x : b.x+boxW;
+      const y = a.y+boxH/2;
+      flechas += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flechaProc)"></line>`;
+    } else {
+      const x = a.x+boxW/2;
+      flechas += `<line x1="${x}" y1="${a.y+boxH}" x2="${x}" y2="${b.y}" style="stroke:var(--clay);stroke-width:2.5" marker-end="url(#flechaProc)"></line>`;
+    }
+  }
+  cont.innerHTML = `<svg viewBox="0 0 ${width} ${height}" style="width:100%;max-width:680px;height:auto">
+    <defs><marker id="flechaProc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--clay)"></path></marker></defs>
+    ${flechas}${cajas}
+  </svg>`;
+}
+function escaparHTML(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+let procesoDraft = null;
+function abrirEditorProceso(){
+  procesoDraft = JSON.parse(JSON.stringify(STATE.procesoFlujo||[]));
+  renderEditorProceso();
+}
+function renderEditorProceso(){
+  openModal(`
+    <h3>Editar diagrama de proceso</h3>
+    <p class="muted">Agrega, quita, renombra o reordena los pasos de tu línea de producción — el diagrama se acomoda solo en serpentina, sin importar cuántos pasos tengas.</p>
+    <div id="listaPasosProceso">${procesoDraft.map((p,i)=>`
+      <div class="flex" style="margin-bottom:8px">
+        <span class="muted mono" style="width:20px">${i+1}</span>
+        <input style="flex:1" value="${p.nombre}" oninput="procesoDraft[${i}].nombre=this.value">
+        <select onchange="procesoDraft[${i}].color=this.value" style="width:110px">
+          <option value="indigo" ${p.color==='indigo'?'selected':''}>Azul</option>
+          <option value="clay" ${p.color==='clay'?'selected':''}>Terracota</option>
+          <option value="good" ${p.color==='good'?'selected':''}>Verde</option>
+          <option value="gold" ${p.color==='gold'?'selected':''}>Dorado</option>
+        </select>
+        <button class="btn ghost sm" ${i===0?'disabled':''} onclick="moverPasoProceso(${i},-1)">↑</button>
+        <button class="btn ghost sm" ${i===procesoDraft.length-1?'disabled':''} onclick="moverPasoProceso(${i},1)">↓</button>
+        <button class="btn danger sm" onclick="procesoDraft.splice(${i},1);renderEditorProceso()">✕</button>
+      </div>
+    `).join('') || '<p class="muted">Sin pasos. Agrega el primero abajo.</p>'}</div>
+    <button class="btn ghost sm" onclick="procesoDraft.push({id:uid('pf'),nombre:'Nuevo paso',color:'indigo'});renderEditorProceso()">+ Agregar paso</button>
+    <div class="close-row">
+      <button class="btn ghost" onclick="procesoDraft=null;closeModal()">Cancelar</button>
+      <button class="btn clay" onclick="guardarEditorProceso()">Guardar diagrama</button>
+    </div>
+  `);
+}
+function moverPasoProceso(i, delta){
+  const j = i+delta;
+  if(j<0||j>=procesoDraft.length) return;
+  const tmp = procesoDraft[i]; procesoDraft[i]=procesoDraft[j]; procesoDraft[j]=tmp;
+  renderEditorProceso();
+}
+function guardarEditorProceso(){
+  STATE.procesoFlujo = procesoDraft;
+  procesoDraft = null;
+  save(); closeModal(); renderCroquisProceso();
+  toast('Diagrama de proceso actualizado.');
 }
 
 
@@ -2760,7 +3045,7 @@ function renderInventario(){
       <td class="num mono">${num(m.minimo,2)}</td>
       <td class="num mono">${money(m.costo)}</td>
       <td class="num mono">${money(m.stock*m.costo)}</td>
-      <td class="flex"><button class="btn ghost sm" onclick="abrirMaterial('${m.id}')">Editar</button></td>
+      <td class="flex"><button class="btn ghost sm" onclick="abrirMaterial('${m.id}')">Editar</button><button class="btn danger sm" onclick="borrarMaterial('${m.id}')">Eliminar</button></td>
     </tr>`;
   document.getElementById('tblInvDirecta').innerHTML = dir.map(rowMat).join('') || '<tr><td colspan="7" class="muted">Sin materiales directos.</td></tr>';
   document.getElementById('tblInvIndirecta').innerHTML = ind.map(rowMat).join('') || '<tr><td colspan="7" class="muted">Sin materiales indirectos.</td></tr>';
@@ -2934,8 +3219,9 @@ function exportMesPDF(){
       ['Compras del mes', money(r.comprasTotal)],
       ['Utilidad neta estimada', money(r.utilidadNeta)],
     ],
-    startY:33, styles:{fontSize:10}, headStyles:{fillColor:[47,72,88]}
+    startY:37, styles:{fontSize:10}, headStyles:{fillColor:[47,72,88]}
   });
+  pdfFooter(doc);
   doc.save(`ArtesaniasDMitzy_Reporte_${mes}.pdf`);
   toast('Reporte mensual (PDF) generado.');
 }
@@ -2986,7 +3272,8 @@ function exportEstadoResultadosPDF(){
     ['Total de gastos', money(r.gastosTotal)],
     ['= Utilidad neta', money(r.utilidadNeta)],
   ];
-  doc.autoTable({head:[['Concepto','Importe']], body, startY:33, styles:{fontSize:10}, headStyles:{fillColor:[47,72,88]}});
+  doc.autoTable({head:[['Concepto','Importe']], body, startY:37, styles:{fontSize:10}, headStyles:{fillColor:[47,72,88]}});
+  pdfFooter(doc);
   doc.save(`ArtesaniasDMitzy_EstadoResultados.pdf`);
   toast('Estado de resultados (PDF) generado.');
 }
@@ -3023,7 +3310,8 @@ function exportResumenClientesPDF(){
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, 'Resumen de cartera por cliente');
-  doc.autoTable({head:[['Cliente','Cargos','Abonos','Saldo']], body:rows.map(r=>[r.nombre,money(r.cargos),money(r.abonos),money(r.saldo)]), startY:33, styles:{fontSize:9.5}, headStyles:{fillColor:[47,72,88]}});
+  doc.autoTable({head:[['Cliente','Cargos','Abonos','Saldo']], body:rows.map(r=>[r.nombre,money(r.cargos),money(r.abonos),money(r.saldo)]), startY:37, styles:{fontSize:9.5}, headStyles:{fillColor:[47,72,88]}});
+  pdfFooter(doc);
   doc.save('ArtesaniasDMitzy_ResumenClientes.pdf');
   toast('Resumen de clientes (PDF) generado.');
 }
@@ -3069,6 +3357,8 @@ function renderAll(){
   renderEmpaques();
   renderPagos();
   renderPasivos();
+  renderReporteSemanalNomina();
+  renderCroquisProceso();
   actualizarUserbox();
   aplicarPermisosNav();
 }
@@ -3695,12 +3985,32 @@ function pdfHeader(doc,title){
     try{ doc.addImage(cfg.logoBase64, 14, 8, 18, 10); x = 36; }catch(e){ /* logo no válido, se omite */ }
   }
   doc.setTextColor(...accent);
-  doc.setFontSize(14); doc.text(cfg.nombre||'Artesanías D Mitzy', x, 15);
+  doc.setFontSize(14); doc.text(cfg.nombre||'Artesanías D Mitzy', x, 14);
+  doc.setTextColor(90,90,90);
+  doc.setFontSize(7.5);
+  const datosContacto = [cfg.direccion, cfg.rfc?('RFC: '+cfg.rfc):null, cfg.correo].filter(Boolean).join('   ·   ');
+  if(datosContacto) doc.text(datosContacto, x, 19);
   doc.setTextColor(60,60,60);
-  doc.setFontSize(10); doc.text(title, 14, 23);
-  doc.setFontSize(8); doc.text('Generado: '+new Date().toLocaleString('es-MX'), 14, 28);
-  doc.setDrawColor(...accent); doc.setLineWidth(0.4); doc.line(14,30.5,doc.internal.pageSize.getWidth()-14,30.5);
+  doc.setFontSize(10); doc.text(title, 14, 26);
+  doc.setFontSize(8); doc.text('Generado: '+new Date().toLocaleString('es-MX'), 14, 31);
+  doc.setDrawColor(...accent); doc.setLineWidth(0.4); doc.line(14,33.5,doc.internal.pageSize.getWidth()-14,33.5);
   doc.setTextColor(20,20,20);
+}
+function pdfFooter(doc){
+  const cfg = STATE.config;
+  const accent = hexToRgb(cfg.facturaColor);
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for(let i=1;i<=totalPaginas;i++){
+    doc.setPage(i);
+    const w = doc.internal.pageSize.getWidth();
+    const h = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(...accent); doc.setLineWidth(0.3);
+    doc.line(14, h-14, w-14, h-14);
+    doc.setFontSize(7.5); doc.setTextColor(120,120,120);
+    doc.text(cfg.nombre||'Artesanías D Mitzy', 14, h-9);
+    doc.text('Página '+i+' de '+totalPaginas, w-14, h-9, {align:'right'});
+    doc.setTextColor(20,20,20);
+  }
 }
 function exportPDFModulo(titulo){
   const map = {
@@ -3720,7 +4030,8 @@ function exportPDFModulo(titulo){
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({orientation: body.length && head.length>6 ? 'landscape':'portrait', unit:'mm', format:'letter'});
   pdfHeader(doc, titulo);
-  doc.autoTable({head:[head], body, startY:33, styles:{fontSize:8}, headStyles:{fillColor:[47,72,88]}});
+  doc.autoTable({head:[head], body, startY:37, styles:{fontSize:8}, headStyles:{fillColor:[47,72,88]}});
+  pdfFooter(doc);
   doc.save(`ArtesaniasDMitzy_${titulo.replace(/\s+/g,'_')}_${todayStr()}.pdf`);
   toast('PDF generado.');
 }
@@ -3731,7 +4042,7 @@ function generarFichaOrdenPDF(id){
   const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, 'Ficha de orden de producción '+o.folio);
   doc.setFontSize(9);
-  doc.text('Fecha: '+o.fecha+'    Estado: '+o.estado+'    Pares totales: '+(o.necesidades?o.necesidades.total:0), 14, 34);
+  doc.text('Fecha: '+o.fecha+'    Estado: '+o.estado+'    Pares totales: '+(o.necesidades?o.necesidades.total:0), 14, 38);
   const headLineas = ['Cliente','Modelo','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
   const bodyLineas = o.lineas.map(l=>[l.cliente||'EXTRA', l.modelo||'-', l.marca||'-', l.planta, l.cuña, l.suela, l.cerco, ...SIZES.map(sz=>l.tallas[sz]||0), SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0), l.comentarios||'']);
   doc.autoTable({head:[headLineas], body:bodyLineas, startY:40, styles:{fontSize:6.5}, headStyles:{fillColor:[47,72,88]}});
@@ -3746,6 +4057,7 @@ function generarFichaOrdenPDF(id){
     doc.text(`Mano de obra: ${money(o.costeo.manoObra)}   Gastos indirectos: ${money(o.costeo.gastosInd)}   Inversión total: ${money(o.costeo.inversionTotal)}`, 14, y); y+=6;
     doc.setFontSize(12); doc.text(`Costo unitario: ${money(o.costeo.costoUnitario)}`, 14, y);
   }
+  pdfFooter(doc);
   doc.save(`OrdenProduccion_${o.folio}.pdf`);
   toast('Ficha PDF generada.');
 }
@@ -3850,7 +4162,7 @@ function generarHojaCortePDF(id){
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'letter'});
   pdfHeader(doc, 'Hoja de corte — Acumulado por talla — Orden '+o.folio);
-  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
+  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 38);
   let y = 40;
   function tabla(titulo, rows, color){
     if(!rows.length) return;
@@ -3875,6 +4187,7 @@ function generarHojaCortePDF(id){
       if(y>190){ doc.addPage('landscape'); y=20; }
     });
   }
+  pdfFooter(doc);
   doc.save(`HojaCorte_${o.folio}.pdf`);
   toast('Hoja de corte (PDF) generada.');
 }
@@ -3929,10 +4242,11 @@ function exportOrdenSoloPDF(id){
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'letter'});
   pdfHeader(doc, 'Orden de producción '+o.folio+' (sin costos)');
-  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 34);
+  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Total de pares: '+(o.necesidades?o.necesidades.total:0), 14, 38);
   const head = ['Cliente','Modelo','Marca','Planta','Cuña','Suela','Cerco', ...SIZES.map(String), 'Total','Comentarios'];
   const body = o.lineas.map(l=>[l.cliente||'EXTRA', l.modelo||'-', l.marca||'-', l.planta, l.cuña, l.suela, l.cerco, ...SIZES.map(sz=>l.tallas[sz]||0), SIZES.reduce((s,sz)=>s+(Number(l.tallas[sz])||0),0), l.comentarios||'']);
   doc.autoTable({head:[head], body, startY:40, styles:{fontSize:7}, headStyles:{fillColor:[47,72,88]}});
+  pdfFooter(doc);
   doc.save(`OrdenProduccion_${o.folio}_SinCosto.pdf`);
   toast('PDF de orden (sin costos, horizontal) generado.');
 }
@@ -3965,7 +4279,7 @@ function exportHojaCostoPDF(id){
   const jsPDF = pdfDisponible(); if(!jsPDF) return;
   const doc = new jsPDF({unit:'mm', format:'letter'});
   pdfHeader(doc, 'Hoja de costo — Orden '+o.folio);
-  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Pares: '+o.costeo.pares, 14, 34);
+  doc.setFontSize(9); doc.text('Fecha: '+o.fecha+'    Pares: '+o.costeo.pares, 14, 38);
   doc.autoTable({
     head:[['Material','Clasif.','Base de cálculo','Cant. base','Requerido','Unidad','Costo unit.','Inversión']],
     body: o.necesidades.detalle.map(d=>[d.nombre,d.clasificacion,BASE_LABELS[d.base],num(d.baseCant,2),num(d.requerido,2),d.unidad,money(d.costo),money(d.inversion)]),
@@ -3976,6 +4290,7 @@ function exportHojaCostoPDF(id){
   doc.text(`Materia prima: ${money(o.costeo.invMateriales)}    Mano de obra: ${money(o.costeo.manoObra)}    Gastos indirectos: ${money(o.costeo.gastosInd)}`, 14, y); y+=6;
   doc.text(`Inversión total: ${money(o.costeo.inversionTotal)}`, 14, y); y+=8;
   doc.setFontSize(13); doc.text(`Costo unitario: ${money(o.costeo.costoUnitario)}`, 14, y);
+  pdfFooter(doc);
   doc.save(`HojaCosto_${o.folio}.pdf`);
   toast('PDF de hoja de costo generado.');
 }
