@@ -69,50 +69,59 @@ a{color:var(--clay);}
 button{cursor:pointer;font-family:inherit;}
 
 /* ---- layout ---- */
-#app{display:flex;flex-direction:column;min-height:100vh;}
+#app{display:flex;flex-direction:row;min-height:100vh;}
 #sidebar{
-  width:100%;flex:none;
+  width:224px;flex:0 0 224px;
   background:var(--indigo);
   color:#EDEEE6;
   padding:0;
-  position:sticky;top:0;z-index:40;
-  display:flex;flex-direction:row;align-items:stretch;
-  overflow-x:auto;overflow-y:hidden;
-  box-shadow:0 2px 10px rgba(0,0,0,.15);
+  position:sticky;top:0;height:100vh;z-index:40;
+  display:flex;flex-direction:column;align-items:stretch;
+  overflow-x:hidden;overflow-y:auto;
+  box-shadow:2px 0 10px rgba(0,0,0,.15);
 }
+#sidebar::-webkit-scrollbar{width:6px;}
+#sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px;}
 #sidebar .brand{
-  padding:8px 18px;
-  border-bottom:none;border-right:1px dashed rgba(255,255,255,.25);
-  margin-bottom:0;flex:0 0 auto;
+  padding:16px 18px 14px 18px;
+  border-bottom:1px dashed rgba(255,255,255,.25);border-right:none;
+  margin-bottom:6px;flex:0 0 auto;
   display:flex;flex-direction:column;justify-content:center;
 }
 #sidebar .brand .logo{
-  font-family:Georgia,serif;font-size:15px;font-weight:700;color:#fff;line-height:1.15;white-space:nowrap;
+  font-family:Georgia,serif;font-size:18px;font-weight:700;color:#fff;line-height:1.15;
 }
-#sidebar .brand .sub{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-top:2px;white-space:nowrap;}
-.navgroup{margin:0;display:flex;flex-direction:row;align-items:stretch;flex:0 0 auto;}
-.navgroup+.navgroup{border-left:1px dashed rgba(255,255,255,.2);margin-left:2px;padding-left:2px;}
-.navlabel{display:none;}
+#sidebar .brand .sub{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-top:4px;}
+.navgroup{margin:0;padding:4px 0;display:flex;flex-direction:column;align-items:stretch;flex:0 0 auto;}
+.navgroup+.navgroup{border-top:1px dashed rgba(255,255,255,.15);}
+.navlabel{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);padding:8px 18px 3px 18px;}
 .navbtn{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  width:auto;text-align:center;background:none;border:none;color:#EDEEE6;
-  padding:8px 13px;font-size:10.8px;border-bottom:3px solid transparent;white-space:nowrap;
+  display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;
+  width:100%;text-align:left;background:none;border:none;color:#EDEEE6;
+  padding:9px 18px;font-size:13px;border-left:3px solid transparent;white-space:nowrap;
 }
 .navbtn:hover{background:rgba(255,255,255,.06);}
-.navbtn.active{background:rgba(255,255,255,.1);border-bottom-color:var(--clay);color:#fff;font-weight:600;}
-.navbtn .ic{font-size:17px;line-height:1;}
-.sidebar-right{margin-left:auto;flex:0 0 auto;display:flex;flex-direction:row;align-items:stretch;}
+.navbtn.active{background:rgba(255,255,255,.1);border-left-color:var(--clay);color:#fff;font-weight:600;}
+.navbtn .ic{font-size:17px;line-height:1;width:22px;text-align:center;flex:0 0 22px;}
+.sidebar-right{margin-top:auto;flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;border-top:1px dashed rgba(255,255,255,.25);padding-top:4px;}
 #sidebar .userbox{
   margin-top:0;flex:0 0 auto;
-  padding:6px 18px;border-top:none;border-left:1px dashed rgba(255,255,255,.25);
-  display:flex;flex-direction:row;align-items:center;gap:10px;font-size:11.5px;white-space:nowrap;
+  padding:8px 18px;border:none;
+  display:flex;flex-direction:column;align-items:flex-start;gap:3px;font-size:11.5px;
 }
-#sidebar .userbox b{color:#fff;display:inline;font-size:12.5px;}
-#sidebar .userbox button{margin-top:0;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 9px;border-radius:5px;font-size:11px;}
-#btnSalir{border-left:1px dashed rgba(255,255,255,.25);}
+#sidebar .userbox b{color:#fff;display:block;font-size:13px;}
+#sidebar .userbox button{margin-top:4px;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 9px;border-radius:5px;font-size:11px;}
+#btnSalir{border-top:1px dashed rgba(255,255,255,.25);}
 #btnSalir:hover{background:rgba(178,58,52,.35);}
-.conexion-indicador{align-self:center;font-size:11px;padding:4px 10px;color:rgba(255,255,255,.75);white-space:nowrap;}
+.conexion-indicador{align-self:flex-start;font-size:11px;padding:6px 18px 2px 18px;color:rgba(255,255,255,.75);white-space:nowrap;}
 .conexion-indicador.offline{color:#F0C67A;}
+@media(max-width:800px){
+  #app{flex-direction:column;}
+  #sidebar{width:100%;flex:none;height:auto;max-height:46vh;position:sticky;}
+  .navlabel{display:none;}
+  .navgroup{padding:0;}
+}
+@media print{#sidebar{display:none !important;}#app{display:block;}}
 
 #main{flex:1;min-width:0;padding:22px 28px 60px 28px;}
 .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
@@ -285,6 +294,7 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
       <div class="navlabel">Contabilidad</div>
       <button class="navbtn" data-view="bancos"><span class="ic">🏛️</span> Bancos</button>
       <button class="navbtn" data-view="polizas"><span class="ic">📔</span> Pólizas / Diario</button>
+      <button class="navbtn" data-view="fiscal"><span class="ic">🧾</span> Fiscal (ISR / IVA)</button>
       <button class="navbtn" data-view="estadosfinancieros"><span class="ic">📈</span> Estados financieros</button>
     </div>
     <div class="navgroup">
@@ -580,6 +590,21 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
         <thead><tr><th>Cuenta</th><th>Banco</th><th>No. de cuenta</th><th class="num">Saldo actual</th><th></th></tr></thead>
         <tbody id="tblBancos"></tbody>
       </table></div>
+    </section>
+
+    <!-- ============ FISCAL ============ -->
+    <section class="view" id="view-fiscal">
+      <div class="topbar">
+        <div class="titles"><div class="eyebrow">Contabilidad</div><h1>Fiscal — ISR e IVA</h1></div>
+        <div class="actions flex">
+          <select id="fiscMes" onchange="fiscalCambiarMes(this.value)"></select>
+          <input id="fiscEjercicio" maxlength="4" style="width:80px" onchange="fiscalCambiarEjercicio(this.value)" title="Ejercicio">
+          <button class="btn ghost" onclick="abrirConfigFiscal()">Configuración fiscal</button>
+          <button class="btn clay" onclick="exportPredeclaracionExcel()">Descargar predeclaración (Excel)</button>
+        </div>
+      </div>
+      <p class="muted">Persona física con actividad empresarial (régimen general). Los ingresos se toman de Contabilidad (pólizas); los egresos y el IVA acreditable se capturan manualmente. Es una herramienta interna de apoyo para estimar pagos provisionales: no es la declaración oficial y debe validarse con tu contador.</p>
+      <div id="fiscalContenido"></div>
     </section>
 
     <!-- ============ POLIZAS / DIARIO ============ -->
@@ -1051,6 +1076,7 @@ function emptyState(){
     movimientosBancarios: [], // [{id, cuentaId, fecha, concepto, tipo, monto, conciliado, origenModulo, origenId}]
     presupuesto: [],        // [{id, anio, mes, categoria, monto}]
     mapeoCuentasAuto: JSON.parse(JSON.stringify(MAPEO_CUENTAS_AUTO_DEFAULT)),
+    fiscal: null, // módulo fiscal: se inicializa con fiscalInit()
     prepolizas: [],  // [{id, nombre, tipo, concepto, lineas:[{cuenta,cargo,abono}]}]
     cierrePeriodo: null,      // 'YYYY-MM-DD' — todo lo que tenga fecha <= esta queda bloqueado
     historialCierres: [],     // [{id, accion:'cerrar'|'reabrir', fecha, usuario, fechaAnterior}]
@@ -1100,6 +1126,7 @@ async function load(){
     }
     if(!STATE.mapeoCuentasAuto) STATE.mapeoCuentasAuto = JSON.parse(JSON.stringify(MAPEO_CUENTAS_AUTO_DEFAULT));
     if(!STATE.prepolizas) STATE.prepolizas = [];
+    fiscalInit();
     if(STATE.cierrePeriodo===undefined) STATE.cierrePeriodo = null;
     if(!STATE.historialCierres) STATE.historialCierres = [];
     if(STATE.notasEstadosFinancieros===undefined) STATE.notasEstadosFinancieros = '';
@@ -3778,6 +3805,473 @@ function generarPolizaCierre(){
   toast('Póliza de cierre del ejercicio '+anio+' generada.');
 }
 
+/* =================================================================
+   MÓDULO FISCAL — Persona física con actividad empresarial (régimen general)
+   Herramienta de apoyo: estimación de pagos provisionales de ISR e IVA.
+   NO sustituye la declaración oficial: validar con el contador.
+   ================================================================= */
+const FISC_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+// Tarifa mensual art. 96 LISR 2026 (Anexo 8 RMF): [límite inferior, límite superior, cuota fija, % excedente]. Editable en Configuración fiscal.
+const TARIFA_ISR_MENSUAL_DEFAULT = [
+  [0.01,844.59,0,1.92],[844.60,7168.51,16.22,6.40],[7168.52,12598.02,420.95,10.88],[12598.03,14644.64,1011.68,16.00],
+  [14644.65,17533.64,1339.14,17.92],[17533.65,35362.83,1856.84,21.36],[35362.84,55736.68,5665.16,23.52],
+  [55736.69,106410.50,10457.09,30.00],[106410.51,141880.66,25659.23,32.00],[141880.67,425641.99,37009.69,34.00],
+  [425642.00,null,133488.54,35.00]
+];
+function fiscalDefault(){
+  return { ejercicio:String(new Date().getFullYear()), mes:null, tasaIVA:16, aplicarPerdidasProv:true,
+    tarifa: JSON.parse(JSON.stringify(TARIFA_ISR_MENSUAL_DEFAULT)), inpc:{}, perdidas:[], egresos:[],
+    meses:{}, saldoIVAInicial:0, devolucionesIVA:[] };
+}
+function fiscalInit(){
+  if(!STATE.fiscal) STATE.fiscal = fiscalDefault();
+  const f = STATE.fiscal, d = fiscalDefault();
+  Object.keys(d).forEach(k=>{ if(f[k]===undefined) f[k]=d[k]; });
+  return f;
+}
+const r2 = n => Math.round((Number(n)||0)*100)/100;
+function fiscalMk(ej,m){ return ej+'-'+String(m).padStart(2,'0'); }
+function fiscalRango(ej,m){
+  const ult = new Date(Number(ej),m,0).getDate();
+  return { desde:fiscalMk(ej,m)+'-01', hasta:fiscalMk(ej,m)+'-'+String(ult).padStart(2,'0') };
+}
+// Ingresos de contabilidad (cuentas tipo Ingresos, naturaleza acreedora). Excluye pólizas de cierre y apertura.
+function fiscalIngresosContab(desde,hasta){
+  const cuentas = (STATE.catalogoCuentas||[]).filter(c=>c.tipo==='Ingresos');
+  const out = cuentas.map(c=>{
+    let cargos=0,abonos=0;
+    (STATE.polizas||[]).filter(p=>p.fecha>=desde&&p.fecha<=hasta&&p.tipo!=='Cierre'&&p.tipo!=='Apertura').forEach(p=>{
+      (p.lineas||[]).filter(l=>l.cuenta===c.codigo).forEach(l=>{ cargos+=Number(l.cargo)||0; abonos+=Number(l.abono)||0; });
+    });
+    return {codigo:c.codigo,nombre:c.nombre,saldo:r2(abonos-cargos)};
+  }).filter(c=>Math.abs(c.saldo)>0.004);
+  return { cuentas:out, total:r2(out.reduce((s,c)=>s+c.saldo,0)) };
+}
+function tarifaISR(base, nMeses){
+  const f = fiscalInit(); const n = nMeses||1;
+  if(!(base>0)) return {isr:0, fila:null, li:0, cuota:0, pct:0, exced:0};
+  const t = f.tarifa;
+  let i = 0;
+  for(let k=t.length-1;k>=1;k--){ if(base>=t[k][0]*n){ i=k; break; } }
+  const li = i===0 ? 0 : t[i][0]*n;
+  return { isr:r2(t[i][2]*n + (base-li)*t[i][3]/100), fila:i, li:r2(li), cuota:r2(t[i][2]*n), pct:t[i][3], exced:r2(base-li) };
+}
+function fiscalInpc(ej,m){ const v = Number((fiscalInit().inpc||{})[fiscalMk(ej,m)]); return v>0?v:null; }
+// Pérdidas fiscales pendientes, actualizadas al mes de aplicación (art. 109 / 57 LISR — se actualiza con INPC; factor editable)
+function fiscalPerdidasActualizadas(ej,m){
+  const f = fiscalInit();
+  // mes anterior al de aplicación
+  let ey=Number(ej), em=m-1; if(em<1){ em=12; ey--; }
+  const inpcFinal = fiscalInpc(ey,em);
+  return (f.perdidas||[]).map(p=>{
+    const pendiente = Math.max(0,(Number(p.monto)||0)-(Number(p.aplicadoPrevio)||0));
+    let factor = 1, nota='';
+    if(Number(p.factorManual)>0) { factor = Number(p.factorManual); nota='factor manual'; }
+    else {
+      const ini = Number((f.inpc||{})[p.inpcBase]);
+      if(ini>0 && inpcFinal){ factor = Math.max(1, inpcFinal/ini); }
+      else nota='sin INPC (factor 1)';
+    }
+    const vencida = Number(p.ejercicio)+10 < Number(ej);
+    return { ...p, pendiente:r2(pendiente), factor:Math.round(factor*10000)/10000, actualizada: vencida?0:r2(pendiente*factor), vencida, nota };
+  });
+}
+function fiscalMesData(ej,mk){ const f=fiscalInit(); return Object.assign({ajusteIngresos:0,retencionesISR:0,retencionesIVA:0,ptu:0,isrPagadoReal:null,nota:''}, f.meses[mk]||{}); }
+
+function calcFiscalEjercicio(ej){
+  const f = fiscalInit();
+  const tasa = (Number(f.tasaIVA)||0)/100;
+  const res = [];
+  let ingAcum=0, dedAcum=0, ptuAcum=0, retAcum=0, isrPagadoPrev=0;
+  let saldoIVA = Number(f.saldoIVAInicial)||0;
+  for(let m=1;m<=12;m++){
+    const mk = fiscalMk(ej,m), rg = fiscalRango(ej,m), md = fiscalMesData(ej,mk);
+    const contab = fiscalIngresosContab(rg.desde,rg.hasta);
+    const ingMes = r2(contab.total + (Number(md.ajusteIngresos)||0));
+    const egr = (f.egresos||[]).filter(e=>(e.fecha||'').slice(0,7)===mk);
+    const dedMes = r2(egr.filter(e=>e.deducible!==false).reduce((s,e)=>s+(Number(e.base)||0),0));
+    const ivaAcredMes = r2(egr.filter(e=>e.acreditable!==false).reduce((s,e)=>s+(Number(e.iva)||0),0));
+    ingAcum = r2(ingAcum+ingMes); dedAcum = r2(dedAcum+dedMes);
+    ptuAcum = r2(ptuAcum+(Number(md.ptu)||0)); retAcum = r2(retAcum+(Number(md.retencionesISR)||0));
+    const utilAntes = r2(ingAcum-dedAcum-ptuAcum);
+    const perd = fiscalPerdidasActualizadas(ej,m);
+    const perdDisp = r2(perd.reduce((s,p)=>s+p.actualizada,0));
+    const perdAplicada = f.aplicarPerdidasProv ? r2(Math.min(Math.max(0,utilAntes),perdDisp)) : 0;
+    const base = r2(Math.max(0,utilAntes-perdAplicada));
+    const t = tarifaISR(base,m);
+    const pagoCalc = r2(Math.max(0, t.isr - retAcum - isrPagadoPrev));
+    const aFavorISR = r2(Math.max(0, retAcum + isrPagadoPrev - t.isr));
+    const isrPagado = (md.isrPagadoReal!==null && md.isrPagadoReal!=='' && md.isrPagadoReal!==undefined) ? r2(md.isrPagadoReal) : pagoCalc;
+    // IVA
+    const ivaTras = r2(ingMes*tasa);
+    const retIVA = r2(md.retencionesIVA);
+    const neto = r2(ivaTras - ivaAcredMes - retIVA);
+    const devol = r2((f.devolucionesIVA||[]).filter(d=>(d.fecha||'').slice(0,7)===mk).reduce((s,d)=>s+(Number(d.monto)||0),0));
+    const saldoIni = r2(saldoIVA);
+    let aplicado=0, generado=0, ivaPagar=0;
+    if(neto>0){ aplicado = r2(Math.min(Math.max(0,saldoIni-devol),neto)); ivaPagar = r2(neto-aplicado); }
+    else { generado = r2(-neto); }
+    const saldoFin = r2(Math.max(0, saldoIni - devol - aplicado + generado));
+    saldoIVA = saldoFin;
+    res.push({ m, mk, nombre:FISC_MESES[m-1], contab, ajusteIngresos:Number(md.ajusteIngresos)||0, ingMes, ingAcum, dedMes, dedAcum, ptuAcum, retAcum,
+      utilAntes, perdDisp, perdAplicada, perd, base, isrCausado:t.isr, tramo:t, isrPagadoPrev, pagoCalc, isrPagado, aFavorISR,
+      ivaTras, ivaAcredMes, retIVA, neto, saldoIni, devol, aplicado, generado, ivaPagar, saldoFin, md, egr,
+      limite: (m===12? (Number(ej)+1)+'-01-17' : fiscalMk(ej,m+1)+'-17') });
+    isrPagadoPrev = r2(isrPagadoPrev + isrPagado);
+  }
+  return res;
+}
+
+/* ---------- vista ---------- */
+function fiscalMesSel(){ const f=fiscalInit(); const m = Number(f.mes)|| (new Date().getMonth()+1); return Math.min(12,Math.max(1,m)); }
+function fiscalCambiarEjercicio(v){ const f=fiscalInit(); if(/^\d{4}$/.test(v)){ f.ejercicio=v; save(); renderFiscal(); } }
+function fiscalCambiarMes(m){ fiscalInit().mes=Number(m); save(); renderFiscal(); }
+function renderFiscal(){
+  const el = document.getElementById('fiscalContenido'); if(!el) return;
+  const f = fiscalInit(), ej = f.ejercicio, m = fiscalMesSel();
+  const R = calcFiscalEjercicio(ej), r = R[m-1];
+  document.getElementById('fiscEjercicio').value = ej;
+  document.getElementById('fiscMes').innerHTML = FISC_MESES.map((n,i)=>`<option value="${i+1}" ${i+1===m?'selected':''}>${n}</option>`).join('');
+  const sinINPC = f.perdidas.length && r.perd.some(p=>p.nota==='sin INPC (factor 1)');
+  const bad = n=>n>0?'warn':'good';
+  el.innerHTML = `
+    <div class="grid cols-4" style="margin-bottom:16px">
+      <div class="card kpi"><div class="num">${money(r.ingMes)}</div><div class="lbl">Ingresos del mes (contabilidad${r.ajusteIngresos?' + ajuste':''})</div></div>
+      <div class="card kpi"><div class="num">${money(r.base)}</div><div class="lbl">Base del pago provisional (acumulada)</div></div>
+      <div class="card kpi ${bad(r.isrPagado)}"><div class="num">${money(r.isrPagado)}</div><div class="lbl">ISR provisional a pagar — vence ${r.limite}</div></div>
+      <div class="card kpi ${r.ivaPagar>0?'warn':'good'}"><div class="num">${money(r.ivaPagar)}</div><div class="lbl">IVA a pagar ${r.generado>0?'· saldo a favor generado '+money(r.generado):''}</div></div>
+    </div>
+    <div class="grid cols-3" style="margin-bottom:16px">
+      <div class="card kpi good"><div class="num">${money(r.saldoFin)}</div><div class="lbl">Saldo a favor de IVA al cierre del mes</div></div>
+      <div class="card kpi"><div class="num">${money(r.perdAplicada)}</div><div class="lbl">Pérdidas fiscales aplicadas (actualizadas)</div></div>
+      <div class="card kpi"><div class="num">${money(r.dedAcum)}</div><div class="lbl">Deducciones acumuladas (egresos capturados)</div></div>
+    </div>
+    ${sinINPC?`<div class="card" style="border-left:4px solid var(--gold);margin-bottom:14px"><b>Aviso:</b> hay pérdidas fiscales sin INPC capturado para actualizarlas (se usa factor 1). Captura el INPC en «Pérdidas fiscales / INPC» o un factor manual.</div>`:''}
+    <div class="card" style="margin-bottom:16px">
+      <h3>Cálculo de ${FISC_MESES[m-1]} ${ej}</h3>
+      <div class="tblwrap"><table class="tbl">
+        <tbody>
+          <tr><th colspan="2">ISR — pago provisional (acumulado enero–${FISC_MESES[m-1].toLowerCase()})</th></tr>
+          <tr><td>Ingresos acumulados (contabilidad${''} + ajustes)</td><td class="num mono">${money(r.ingAcum)}</td></tr>
+          <tr><td>(–) Deducciones autorizadas acumuladas</td><td class="num mono">${money(r.dedAcum)}</td></tr>
+          <tr><td>(–) PTU pagada en el ejercicio</td><td class="num mono">${money(r.ptuAcum)}</td></tr>
+          <tr><td>= Utilidad fiscal antes de pérdidas</td><td class="num mono">${money(r.utilAntes)}</td></tr>
+          <tr><td>(–) Pérdidas fiscales de ejercicios anteriores (actualizadas)</td><td class="num mono">${money(r.perdAplicada)}</td></tr>
+          <tr><td><b>= Base del pago provisional</b></td><td class="num mono"><b>${money(r.base)}</b></td></tr>
+          <tr><td>ISR según tarifa art. 96 (× ${m} mes${m>1?'es':''})${r.tramo.fila!==null?` · límite inf. ${money(r.tramo.li)} · cuota ${money(r.tramo.cuota)} · ${r.tramo.pct}%`:''}</td><td class="num mono">${money(r.isrCausado)}</td></tr>
+          <tr><td>(–) ISR retenido acumulado</td><td class="num mono">${money(r.retAcum)}</td></tr>
+          <tr><td>(–) Pagos provisionales de meses anteriores</td><td class="num mono">${money(r.isrPagadoPrev)}</td></tr>
+          <tr><td><b>= ISR provisional a pagar</b>${r.md.isrPagadoReal!==null&&r.md.isrPagadoReal!==''&&r.md.isrPagadoReal!==undefined?' <span class="muted">(capturado manualmente; calculado: '+money(r.pagoCalc)+')</span>':''}</td><td class="num mono"><b>${money(r.isrPagado)}</b></td></tr>
+          ${r.aFavorISR>0?`<tr><td class="muted">Excedente de pagos/retenciones (no genera pago)</td><td class="num mono">${money(r.aFavorISR)}</td></tr>`:''}
+          <tr><th colspan="2">IVA (${f.tasaIVA}%) — pago mensual definitivo</th></tr>
+          <tr><td>IVA trasladado (${f.tasaIVA}% × ingresos del mes)</td><td class="num mono">${money(r.ivaTras)}</td></tr>
+          <tr><td>(–) IVA acreditable (egresos capturados)</td><td class="num mono">${money(r.ivaAcredMes)}</td></tr>
+          <tr><td>(–) IVA retenido</td><td class="num mono">${money(r.retIVA)}</td></tr>
+          <tr><td>= IVA a cargo / (a favor) del mes</td><td class="num mono">${money(r.neto)}</td></tr>
+          <tr><td>(–) Saldo a favor anterior aplicado</td><td class="num mono">${money(r.aplicado)}</td></tr>
+          <tr><td><b>= IVA a pagar</b></td><td class="num mono"><b>${money(r.ivaPagar)}</b></td></tr>
+          <tr><td>Saldo a favor de IVA al cierre del mes</td><td class="num mono">${money(r.saldoFin)}</td></tr>
+        </tbody></table></div>
+      <h4 style="margin-top:14px">Ajustes del mes</h4>
+      <div class="formgrid c2">
+        <div class="field"><label>Ajuste a ingresos (+/–) — ej. ventas a crédito no cobradas (–) o cobros de meses anteriores (+)</label><input id="fxAjuste" type="number" step="0.01" value="${r.md.ajusteIngresos||0}"></div>
+        <div class="field"><label>ISR retenido en el mes</label><input id="fxRetISR" type="number" step="0.01" value="${r.md.retencionesISR||0}"></div>
+        <div class="field"><label>IVA retenido en el mes</label><input id="fxRetIVA" type="number" step="0.01" value="${r.md.retencionesIVA||0}"></div>
+        <div class="field"><label>PTU pagada en el mes (si aplica)</label><input id="fxPTU" type="number" step="0.01" value="${r.md.ptu||0}"></div>
+        <div class="field"><label>ISR efectivamente pagado (vacío = usar el calculado)</label><input id="fxISRReal" type="number" step="0.01" value="${r.md.isrPagadoReal===null||r.md.isrPagadoReal===undefined?'':r.md.isrPagadoReal}"></div>
+        <div class="field"><label>Nota</label><input id="fxNota" value="${escaparHTML(r.md.nota||'')}"></div>
+      </div>
+      <div class="flex" style="margin-top:8px"><button class="btn clay" onclick="guardarAjustesFiscalesMes()">Guardar ajustes del mes</button></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Resumen del ejercicio ${ej}</h3>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Mes</th><th class="num">Ingresos mes</th><th class="num">Ingresos acum.</th><th class="num">Deducciones acum.</th><th class="num">Pérdidas aplic.</th><th class="num">Base</th><th class="num">ISR causado</th><th class="num">ISR a pagar</th><th class="num">IVA trasladado</th><th class="num">IVA acreditable</th><th class="num">IVA a pagar</th><th class="num">Saldo a favor IVA</th></tr></thead>
+        <tbody>${R.map(x=>`<tr style="${x.m===m?'background:rgba(201,162,39,.16);':''}cursor:pointer" onclick="fiscalCambiarMes(${x.m})">
+          <td>${x.nombre}</td><td class="num mono">${money(x.ingMes)}</td><td class="num mono">${money(x.ingAcum)}</td><td class="num mono">${money(x.dedAcum)}</td><td class="num mono">${money(x.perdAplicada)}</td><td class="num mono">${money(x.base)}</td><td class="num mono">${money(x.isrCausado)}</td><td class="num mono"><b>${money(x.isrPagado)}</b></td><td class="num mono">${money(x.ivaTras)}</td><td class="num mono">${money(x.ivaAcredMes)}</td><td class="num mono"><b>${money(x.ivaPagar)}</b></td><td class="num mono">${money(x.saldoFin)}</td></tr>`).join('')}
+          <tr><td><b>Total</b></td><td class="num mono"><b>${money(R.reduce((s,x)=>s+x.ingMes,0))}</b></td><td></td><td></td><td></td><td></td><td></td><td class="num mono"><b>${money(R.reduce((s,x)=>s+x.isrPagado,0))}</b></td><td class="num mono"><b>${money(R.reduce((s,x)=>s+x.ivaTras,0))}</b></td><td class="num mono"><b>${money(R.reduce((s,x)=>s+x.ivaAcredMes,0))}</b></td><td class="num mono"><b>${money(R.reduce((s,x)=>s+x.ivaPagar,0))}</b></td><td></td></tr>
+        </tbody></table></div>
+      <p class="muted">Toca un mes para ver su cálculo detallado.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="flex" style="justify-content:space-between;align-items:center"><h3>Egresos del ejercicio (captura manual)</h3><button class="btn clay sm" onclick="abrirEgresoFiscal(null)">+ Egreso</button></div>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Concepto</th><th>Proveedor / RFC</th><th class="num">Base</th><th class="num">IVA</th><th>Deducible ISR</th><th>IVA acreditable</th><th></th></tr></thead>
+      <tbody>${(f.egresos||[]).filter(e=>(e.fecha||'').slice(0,4)===ej).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).map(e=>`<tr>
+        <td>${e.fecha}</td><td>${escaparHTML(e.concepto||'')}</td><td>${escaparHTML((e.proveedor||'')+(e.rfc?' · '+e.rfc:''))}</td>
+        <td class="num mono">${money(e.base)}</td><td class="num mono">${money(e.iva)}</td><td>${e.deducible!==false?'Sí':'No'}</td><td>${e.acreditable!==false?'Sí':'No'}</td>
+        <td class="flex"><button class="btn ghost sm" onclick="abrirEgresoFiscal('${e.id}')">Editar</button><button class="btn danger sm" onclick="eliminarEgresoFiscal('${e.id}')">Eliminar</button></td></tr>`).join('')||'<tr><td colspan="8" class="muted">Sin egresos capturados en este ejercicio. Las deducciones y el IVA acreditable salen de aquí.</td></tr>'}</tbody></table></div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <div class="flex" style="justify-content:space-between;align-items:center"><h3>Pérdidas fiscales</h3><div class="flex"><button class="btn ghost sm" onclick="abrirINPC()">INPC</button><button class="btn clay sm" onclick="abrirPerdidaFiscal(null)">+ Pérdida</button></div></div>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Ejercicio</th><th class="num">Pendiente</th><th class="num">Factor</th><th class="num">Actualizada</th><th></th></tr></thead>
+        <tbody>${r.perd.map(p=>`<tr><td>${p.ejercicio}${p.vencida?' <span class="muted">(prescrita)</span>':''}</td><td class="num mono">${money(p.pendiente)}</td><td class="num mono">${p.factor.toFixed(4)}</td><td class="num mono">${money(p.actualizada)}</td>
+          <td class="flex"><button class="btn ghost sm" onclick="abrirPerdidaFiscal('${p.id}')">Editar</button></td></tr>`).join('')||'<tr><td colspan="5" class="muted">Sin pérdidas fiscales pendientes.</td></tr>'}</tbody></table></div>
+        <p class="muted">Se actualizan con el INPC del mes anterior al de aplicación entre el INPC base de cada pérdida. Prescriben a los 10 ejercicios.</p>
+        <button class="btn ghost sm" onclick="registrarAmortizacionPerdidas()">Registrar amortización del ejercicio (cierre)</button>
+      </div>
+      <div class="card">
+        <div class="flex" style="justify-content:space-between;align-items:center"><h3>Saldo a favor de IVA</h3><button class="btn clay sm" onclick="abrirDevolucionIVA()">+ Devolución / compensación</button></div>
+        <div class="field"><label>Saldo a favor al inicio del ejercicio (de ejercicio anterior)</label><input id="fxSaldoIni" type="number" step="0.01" value="${f.saldoIVAInicial||0}" onchange="guardarSaldoIVAInicial(this.value)"></div>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Mes</th><th class="num">Inicial</th><th class="num">Generado</th><th class="num">Aplicado</th><th class="num">Devuelto</th><th class="num">Final</th></tr></thead>
+        <tbody>${R.map(x=>`<tr><td>${x.nombre.slice(0,3)}</td><td class="num mono">${money(x.saldoIni)}</td><td class="num mono">${money(x.generado)}</td><td class="num mono">${money(x.aplicado)}</td><td class="num mono">${money(x.devol)}</td><td class="num mono"><b>${money(x.saldoFin)}</b></td></tr>`).join('')}</tbody></table></div>
+        ${(f.devolucionesIVA||[]).length?`<h4 style="margin-top:10px">Devoluciones / compensaciones registradas</h4><div class="tblwrap"><table class="tbl"><tbody>${f.devolucionesIVA.map(d=>`<tr><td>${d.fecha}</td><td>${escaparHTML(d.nota||'')}</td><td class="num mono">${money(d.monto)}</td><td><button class="btn danger sm" onclick="eliminarDevolucionIVA('${d.id}')">Eliminar</button></td></tr>`).join('')}</tbody></table></div>`:''}
+      </div>
+    </div>`;
+}
+function guardarAjustesFiscalesMes(){
+  const f=fiscalInit(), mk=fiscalMk(f.ejercicio,fiscalMesSel());
+  const real = document.getElementById('fxISRReal').value;
+  f.meses[mk] = { ajusteIngresos:Number(document.getElementById('fxAjuste').value)||0, retencionesISR:Number(document.getElementById('fxRetISR').value)||0,
+    retencionesIVA:Number(document.getElementById('fxRetIVA').value)||0, ptu:Number(document.getElementById('fxPTU').value)||0,
+    isrPagadoReal: real===''?null:Number(real), nota:document.getElementById('fxNota').value };
+  save(); renderFiscal(); toast('Ajustes del mes guardados.');
+}
+function guardarSaldoIVAInicial(v){ fiscalInit().saldoIVAInicial = Number(v)||0; save(); renderFiscal(); }
+
+/* ---------- egresos ---------- */
+function abrirEgresoFiscal(id){
+  const f=fiscalInit();
+  const e = id ? f.egresos.find(x=>x.id===id) : {id:'',fecha:todayStr(),concepto:'',proveedor:'',rfc:'',base:0,iva:0,deducible:true,acreditable:true};
+  openModal(`
+    <h3>${id?'Editar egreso':'Nuevo egreso'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Fecha de pago</label><input id="egFecha" type="date" value="${e.fecha}"></div>
+      <div class="field"><label>Proveedor</label><input id="egProv" value="${escaparHTML(e.proveedor||'')}"></div>
+      <div class="field" style="grid-column:1/-1"><label>Concepto</label><input id="egConcepto" value="${escaparHTML(e.concepto||'')}"></div>
+      <div class="field"><label>RFC del proveedor (opcional)</label><input id="egRfc" value="${escaparHTML(e.rfc||'')}"></div>
+      <div class="field"><label>Base (subtotal sin IVA)</label><input id="egBase" type="number" step="0.01" value="${e.base||0}" oninput="if(document.getElementById('egIvaAuto').checked) document.getElementById('egIva').value=(Math.round((Number(this.value)||0)*${(Number(f.tasaIVA)||16)}))/100"></div>
+      <div class="field"><label>IVA</label><input id="egIva" type="number" step="0.01" value="${e.iva||0}"></div>
+      <div class="field"><label><input type="checkbox" id="egIvaAuto" ${id?'':'checked'}> Calcular IVA automáticamente (${f.tasaIVA}% de la base)</label></div>
+      <div class="field"><label><input type="checkbox" id="egDed" ${e.deducible!==false?'checked':''}> Deducible para ISR</label></div>
+      <div class="field"><label><input type="checkbox" id="egAcred" ${e.acreditable!==false?'checked':''}> IVA acreditable</label></div>
+    </div>
+    <p class="muted">Captura solo egresos con CFDI y efectivamente pagados. Si el gasto no es deducible o el IVA no es acreditable, desmarca la casilla.</p>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarEgresoFiscal('${id||''}')">Guardar</button></div>`);
+}
+function guardarEgresoFiscal(id){
+  const f=fiscalInit();
+  const o = { id:id||uid('eg'), fecha:document.getElementById('egFecha').value, concepto:document.getElementById('egConcepto').value.trim(), proveedor:document.getElementById('egProv').value.trim(),
+    rfc:document.getElementById('egRfc').value.trim().toUpperCase(), base:Number(document.getElementById('egBase').value)||0, iva:Number(document.getElementById('egIva').value)||0,
+    deducible:document.getElementById('egDed').checked, acreditable:document.getElementById('egAcred').checked };
+  if(!o.fecha){ toast('Indica la fecha.'); return; }
+  if(!o.concepto){ toast('Indica el concepto.'); return; }
+  const i = f.egresos.findIndex(x=>x.id===o.id); if(i>=0) f.egresos[i]=o; else f.egresos.push(o);
+  save(); closeModal(); renderFiscal(); toast('Egreso guardado.');
+}
+function eliminarEgresoFiscal(id){
+  if(!confirm('¿Eliminar este egreso?')) return;
+  const f=fiscalInit(); f.egresos = f.egresos.filter(x=>x.id!==id); save(); renderFiscal();
+}
+
+/* ---------- pérdidas fiscales e INPC ---------- */
+function abrirPerdidaFiscal(id){
+  const f=fiscalInit();
+  const p = id ? f.perdidas.find(x=>x.id===id) : {id:'',ejercicio:String(Number(f.ejercicio)-1),monto:0,aplicadoPrevio:0,inpcBase:'',factorManual:''};
+  openModal(`
+    <h3>${id?'Editar pérdida fiscal':'Nueva pérdida fiscal pendiente de aplicar'}</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Ejercicio en que se generó</label><input id="pfEj" value="${p.ejercicio}" maxlength="4"></div>
+      <div class="field"><label>Monto original de la pérdida</label><input id="pfMonto" type="number" step="0.01" value="${p.monto||0}"></div>
+      <div class="field"><label>Ya aplicada en ejercicios anteriores</label><input id="pfApl" type="number" step="0.01" value="${p.aplicadoPrevio||0}"></div>
+      <div class="field"><label>Mes del INPC base (AAAA-MM)</label><input id="pfBase" value="${p.inpcBase||''}" placeholder="Ej. ${Number(p.ejercicio)||2025}-12"></div>
+      <div class="field" style="grid-column:1/-1"><label>Factor de actualización manual (opcional; si lo dejas vacío se calcula con el INPC)</label><input id="pfFactor" type="number" step="0.0001" value="${p.factorManual||''}"></div>
+    </div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button>
+    ${id?`<button class="btn danger" onclick="eliminarPerdidaFiscal('${id}')">Eliminar</button>`:''}
+    <button class="btn clay" onclick="guardarPerdidaFiscal('${id||''}')">Guardar</button></div>`);
+}
+function guardarPerdidaFiscal(id){
+  const f=fiscalInit();
+  const o={ id:id||uid('pf'), ejercicio:document.getElementById('pfEj').value.trim(), monto:Number(document.getElementById('pfMonto').value)||0,
+    aplicadoPrevio:Number(document.getElementById('pfApl').value)||0, inpcBase:document.getElementById('pfBase').value.trim(), factorManual:Number(document.getElementById('pfFactor').value)||0 };
+  if(!/^\d{4}$/.test(o.ejercicio)){ toast('Ejercicio inválido.'); return; }
+  const i=f.perdidas.findIndex(x=>x.id===o.id); if(i>=0) f.perdidas[i]=o; else f.perdidas.push(o);
+  save(); closeModal(); renderFiscal(); toast('Pérdida fiscal guardada.');
+}
+function eliminarPerdidaFiscal(id){
+  if(!confirm('¿Eliminar esta pérdida fiscal?')) return;
+  const f=fiscalInit(); f.perdidas=f.perdidas.filter(x=>x.id!==id); save(); closeModal(); renderFiscal();
+}
+function abrirINPC(){
+  const f=fiscalInit();
+  const claves = new Set(Object.keys(f.inpc||{}));
+  const ej=Number(f.ejercicio);
+  for(let y=ej-1;y<=ej;y++) for(let m=1;m<=12;m++) claves.add(fiscalMk(y,m));
+  (f.perdidas||[]).forEach(p=>{ if(p.inpcBase) claves.add(p.inpcBase); });
+  const lista=[...claves].sort();
+  openModal(`
+    <h3>INPC (Índice Nacional de Precios al Consumidor)</h3>
+    <p class="muted">Captura el INPC publicado por INEGI/DOF. Para actualizar una pérdida se usa el INPC del mes anterior al de aplicación entre el INPC del mes base de la pérdida.</p>
+    <div class="formgrid c3" style="max-height:50vh;overflow:auto">${lista.map(k=>`<div class="field"><label>${k}</label><input data-inpc="${k}" type="number" step="0.000001" value="${(f.inpc||{})[k]||''}"></div>`).join('')}</div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarINPC()">Guardar</button></div>`, true);
+}
+function guardarINPC(){
+  const f=fiscalInit(); const o={};
+  document.querySelectorAll('[data-inpc]').forEach(i=>{ const v=Number(i.value); if(v>0) o[i.dataset.inpc]=v; });
+  f.inpc=o; save(); closeModal(); renderFiscal(); toast('INPC guardado.');
+}
+// Al cierre del ejercicio: baja de las pérdidas pendientes (más antiguas primero) el monto amortizado, expresado en valores originales
+function registrarAmortizacionPerdidas(){
+  const f=fiscalInit(), R=calcFiscalEjercicio(f.ejercicio), dic=R[11];
+  if(!dic.perdAplicada){ toast('No hay pérdidas aplicadas en diciembre para amortizar.'); return; }
+  if(!confirm('Se descontará de las pérdidas pendientes el monto aplicado al cierre de '+f.ejercicio+' ('+money(dic.perdAplicada)+' actualizados). ¿Registrar?')) return;
+  let restante = dic.perdAplicada;
+  const orden = [...dic.perd].filter(p=>!p.vencida).sort((a,b)=>a.ejercicio.localeCompare(b.ejercicio));
+  orden.forEach(p=>{
+    if(restante<=0) return;
+    const usarAct = Math.min(restante,p.actualizada);
+    const usarOrig = r2(usarAct/(p.factor||1));
+    const real = f.perdidas.find(x=>x.id===p.id);
+    real.aplicadoPrevio = r2((Number(real.aplicadoPrevio)||0)+usarOrig);
+    restante = r2(restante-usarAct);
+  });
+  save(); renderFiscal(); toast('Amortización registrada en las pérdidas fiscales.');
+}
+
+/* ---------- saldo a favor IVA: devoluciones / compensaciones ---------- */
+function abrirDevolucionIVA(){
+  openModal(`
+    <h3>Devolución o compensación de saldo a favor de IVA</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Fecha</label><input id="dvFecha" type="date" value="${todayStr()}"></div>
+      <div class="field"><label>Monto</label><input id="dvMonto" type="number" step="0.01" value="0"></div>
+      <div class="field" style="grid-column:1/-1"><label>Nota (devolución recibida, compensación contra ISR/otro impuesto…)</label><input id="dvNota"></div>
+    </div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarDevolucionIVA()">Guardar</button></div>`);
+}
+function guardarDevolucionIVA(){
+  const f=fiscalInit(); const m=Number(document.getElementById('dvMonto').value)||0;
+  if(m<=0){ toast('Indica un monto mayor a cero.'); return; }
+  f.devolucionesIVA.push({id:uid('dv'),fecha:document.getElementById('dvFecha').value,monto:m,nota:document.getElementById('dvNota').value});
+  save(); closeModal(); renderFiscal();
+}
+function eliminarDevolucionIVA(id){ const f=fiscalInit(); f.devolucionesIVA=f.devolucionesIVA.filter(d=>d.id!==id); save(); renderFiscal(); }
+
+/* ---------- configuración fiscal ---------- */
+function abrirConfigFiscal(){
+  const f=fiscalInit();
+  openModal(`
+    <h3>Configuración fiscal</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Tasa de IVA %</label><input id="cfIVA" type="number" step="0.01" value="${f.tasaIVA}"></div>
+      <div class="field"><label>Aplicar pérdidas fiscales en pagos provisionales</label><select id="cfPerd"><option value="si" ${f.aplicarPerdidasProv?'selected':''}>Sí</option><option value="no" ${f.aplicarPerdidasProv?'':'selected'}>No</option></select></div>
+      <div class="field" style="grid-column:1/-1"><label>Tarifa mensual ISR (art. 96 LISR). Una fila por renglón: límite inferior, límite superior (vacío en el último), cuota fija, % — separados por coma</label>
+      <textarea id="cfTarifa" rows="11" style="font-family:monospace">${f.tarifa.map(t=>t.map(x=>x===null?'':x).join(',')).join('\n')}</textarea></div>
+    </div>
+    <p class="muted">La tarifa precargada es la mensual 2026. Verifícala contra el Anexo 8 de la RMF y cámbiala cada ejercicio. Para pagos provisionales acumulados el sistema multiplica la tarifa por el número de meses del periodo.</p>
+    <div class="close-row"><button class="btn ghost" onclick="restaurarTarifaISR()">Restaurar tarifa 2026</button><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarConfigFiscal()">Guardar</button></div>`);
+}
+function restaurarTarifaISR(){ document.getElementById('cfTarifa').value = TARIFA_ISR_MENSUAL_DEFAULT.map(t=>t.map(x=>x===null?'':x).join(',')).join('\n'); }
+function guardarConfigFiscal(){
+  const f=fiscalInit();
+  const filas = document.getElementById('cfTarifa').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const p=l.split(',').map(x=>x.trim()); return [Number(p[0]), p[1]===''||p[1]===undefined?null:Number(p[1]), Number(p[2]), Number(p[3])]; });
+  if(!filas.length || filas.some(t=>[t[0],t[2],t[3]].some(x=>isNaN(x)) || (t[1]!==null&&isNaN(t[1])))){ toast('Revisa la tarifa: hay valores no numéricos.'); return; }
+  f.tarifa=filas; f.tasaIVA=Number(document.getElementById('cfIVA').value)||16; f.aplicarPerdidasProv=document.getElementById('cfPerd').value==='si';
+  save(); closeModal(); renderFiscal(); toast('Configuración fiscal guardada.');
+}
+
+/* ---------- predeclaración / papel de trabajo en Excel ---------- */
+function exportPredeclaracionExcel(){
+  if(!librosDisponibles()) return;
+  const f=fiscalInit(), ej=f.ejercicio, m=fiscalMesSel();
+  const R=calcFiscalEjercicio(ej), r=R[m-1];
+  const cfg=STATE.config||{};
+  const N=(v,fm)=> fm? {t:'n',v:v,f:fm} : {t:'n',v:v};
+  const wb=XLSX.utils.book_new();
+  const fmt = ws => { Object.keys(ws).forEach(k=>{ if(k[0]!=='!' && ws[k].t==='n') ws[k].z='#,##0.00;[Red]-#,##0.00'; }); return ws; };
+
+  // 1. Predeclaración (con fórmulas)
+  const A=[
+    [cfg.nombre||'Artesanías D Mitzy'],
+    ['PREDECLARACIÓN — PAGO PROVISIONAL ISR E IVA (papel de trabajo)'],
+    ['RFC: '+(cfg.rfc||'')+'   |   Régimen: Persona física con actividad empresarial (régimen general)'],
+    ['Periodo: '+FISC_MESES[m-1]+' '+ej+'   |   Fecha límite de pago: '+r.limite],
+    ['Herramienta interna de apoyo. No es la declaración oficial: validar con el contador antes de presentar.'],
+    [],
+    ['ISR — PAGO PROVISIONAL ACUMULADO (enero a '+FISC_MESES[m-1].toLowerCase()+')',''],
+    ['Ingresos acumulados (contabilidad + ajustes)', N(r.ingAcum)],            //8  B8
+    ['(–) Deducciones autorizadas acumuladas', N(r.dedAcum)],                  //9
+    ['(–) PTU pagada en el ejercicio', N(r.ptuAcum)],                          //10
+    ['= Utilidad fiscal antes de pérdidas', N(r.utilAntes,'B8-B9-B10')],       //11
+    ['(–) Pérdidas fiscales de ejercicios anteriores (actualizadas)', N(r.perdAplicada)], //12
+    ['= Base del pago provisional', N(r.base,'MAX(0,B11-B12)')],               //13
+    ['ISR según tarifa art. 96 (tarifa mensual × '+m+' mes(es))', N(r.isrCausado)], //14
+    ['(–) ISR retenido acumulado', N(r.retAcum)],                              //15
+    ['(–) Pagos provisionales de meses anteriores', N(r.isrPagadoPrev)],       //16
+    ['= ISR PROVISIONAL A PAGAR', N(r.pagoCalc,'MAX(0,B14-B15-B16)')],         //17
+    r.md.isrPagadoReal!==null&&r.md.isrPagadoReal!==undefined&&r.md.isrPagadoReal!==''?['ISR capturado manualmente (prevalece)', N(r.isrPagado)]:[],
+    [],
+    ['IVA — PAGO MENSUAL DEFINITIVO ('+f.tasaIVA+'%)',''],                    //20 (índice depende)
+  ];
+  const baseIVA = A.length; // siguiente fila (1-indexed = baseIVA+1)
+  const i0 = baseIVA+1;
+  A.push(['Ingresos del mes (contabilidad + ajuste)', N(r.ingMes)]);                                   // i0
+  A.push(['IVA trasladado ('+f.tasaIVA+'% de ingresos)', N(r.ivaTras,'ROUND(B'+i0+'*'+f.tasaIVA+'/100,2)')]);  // i0+1
+  A.push(['(–) IVA acreditable (egresos capturados)', N(r.ivaAcredMes)]);                              // i0+2
+  A.push(['(–) IVA retenido', N(r.retIVA)]);                                                           // i0+3
+  A.push(['= IVA a cargo / (a favor) del mes', N(r.neto,'B'+(i0+1)+'-B'+(i0+2)+'-B'+(i0+3))]);          // i0+4
+  A.push(['Saldo a favor de IVA de meses anteriores', N(r.saldoIni)]);                                 // i0+5
+  A.push(['(–) Devoluciones / compensaciones del mes', N(r.devol)]);                                   // i0+6
+  A.push(['(–) Saldo a favor aplicado', N(r.aplicado,'IF(B'+(i0+4)+'>0,MIN(MAX(0,B'+(i0+5)+'-B'+(i0+6)+'),B'+(i0+4)+'),0)')]); // i0+7
+  A.push(['= IVA A PAGAR', N(r.ivaPagar,'IF(B'+(i0+4)+'>0,B'+(i0+4)+'-B'+(i0+7)+',0)')]);               // i0+8
+  A.push(['Saldo a favor de IVA para el mes siguiente', N(r.saldoFin,'MAX(0,B'+(i0+5)+'-B'+(i0+6)+'-B'+(i0+7)+'+IF(B'+(i0+4)+'<0,-B'+(i0+4)+',0))')]);
+  A.push([]);
+  A.push(['TOTAL A PAGAR (ISR + IVA)', N(r.isrPagado+r.ivaPagar,'B17+B'+(i0+8))]);
+  if(r.md.nota) A.push(['Nota: '+r.md.nota]);
+  const ws1=fmt(XLSX.utils.aoa_to_sheet(A)); ws1['!cols']=[{wch:68},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Predeclaración');
+
+  // 2. Papel de trabajo ISR (12 meses)
+  const hdr=['Concepto',...FISC_MESES];
+  const fila=(t,fn)=>[t,...R.map(fn)];
+  const ws2=fmt(XLSX.utils.aoa_to_sheet([
+    ['PAPEL DE TRABAJO — ISR PAGOS PROVISIONALES '+ej], hdr,
+    fila('Ingresos del mes (contabilidad)',x=>x.contab.total), fila('Ajuste a ingresos',x=>x.ajusteIngresos), fila('Ingresos del mes',x=>x.ingMes),
+    fila('Ingresos acumulados',x=>x.ingAcum), fila('Deducciones del mes',x=>x.dedMes), fila('Deducciones acumuladas',x=>x.dedAcum), fila('PTU pagada acumulada',x=>x.ptuAcum),
+    fila('Utilidad fiscal antes de pérdidas',x=>x.utilAntes), fila('Pérdidas fiscales disponibles (actualizadas)',x=>x.perdDisp), fila('Pérdidas aplicadas',x=>x.perdAplicada),
+    fila('Base del pago provisional',x=>x.base), fila('ISR según tarifa acumulada',x=>x.isrCausado), fila('ISR retenido acumulado',x=>x.retAcum),
+    fila('Pagos provisionales anteriores',x=>x.isrPagadoPrev), fila('ISR provisional a pagar',x=>x.isrPagado), fila('Fecha límite',x=>x.limite)]));
+  ws2['!cols']=[{wch:44},...FISC_MESES.map(()=>({wch:14}))]; XLSX.utils.book_append_sheet(wb,ws2,'Papel ISR');
+
+  // 3. Papel de trabajo IVA
+  const ws3=fmt(XLSX.utils.aoa_to_sheet([
+    ['PAPEL DE TRABAJO — IVA '+ej+' (tasa '+f.tasaIVA+'%)'], hdr,
+    fila('Ingresos del mes',x=>x.ingMes), fila('IVA trasladado',x=>x.ivaTras), fila('IVA acreditable',x=>x.ivaAcredMes), fila('IVA retenido',x=>x.retIVA),
+    fila('IVA a cargo / (a favor)',x=>x.neto), fila('Saldo a favor inicial',x=>x.saldoIni), fila('Saldo a favor generado',x=>x.generado), fila('Saldo a favor aplicado',x=>x.aplicado),
+    fila('Devoluciones / compensaciones',x=>x.devol), fila('Saldo a favor final',x=>x.saldoFin), fila('IVA a pagar',x=>x.ivaPagar), fila('Fecha límite',x=>x.limite)]));
+  ws3['!cols']=[{wch:34},...FISC_MESES.map(()=>({wch:14}))]; XLSX.utils.book_append_sheet(wb,ws3,'Papel IVA');
+
+  // 4. Ingresos de contabilidad del mes
+  const ing=[['INGRESOS TOMADOS DE CONTABILIDAD — '+FISC_MESES[m-1]+' '+ej],['Cuenta','Nombre','Importe'],...r.contab.cuentas.map(c=>[c.codigo,c.nombre,N(c.saldo)]),['','Total contabilidad',N(r.contab.total,'SUM(C3:C'+(2+r.contab.cuentas.length)+')')],['','Ajuste manual',N(r.ajusteIngresos)],['','Ingresos del mes',N(r.ingMes)]];
+  const ws4=fmt(XLSX.utils.aoa_to_sheet(ing)); ws4['!cols']=[{wch:14},{wch:46},{wch:18}]; XLSX.utils.book_append_sheet(wb,ws4,'Ingresos');
+
+  // 5. Egresos
+  const eg=(f.egresos||[]).filter(e=>(e.fecha||'').slice(0,4)===ej).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  const ws5=fmt(XLSX.utils.aoa_to_sheet([['EGRESOS CAPTURADOS — '+ej],['Fecha','Concepto','Proveedor','RFC','Base','IVA','Deducible ISR','IVA acreditable'],
+    ...eg.map(e=>[e.fecha,e.concepto,e.proveedor||'',e.rfc||'',N(e.base),N(e.iva),e.deducible!==false?'Sí':'No',e.acreditable!==false?'Sí':'No']),
+    ['','','','Total',N(r2(eg.reduce((s,e)=>s+e.base,0)),'SUM(E3:E'+(2+eg.length)+')'),N(r2(eg.reduce((s,e)=>s+e.iva,0)),'SUM(F3:F'+(2+eg.length)+')')]]));
+  ws5['!cols']=[{wch:12},{wch:36},{wch:26},{wch:16},{wch:14},{wch:14},{wch:14},{wch:16}]; XLSX.utils.book_append_sheet(wb,ws5,'Egresos');
+
+  // 6. Pérdidas fiscales
+  const ws6=fmt(XLSX.utils.aoa_to_sheet([['PÉRDIDAS FISCALES PENDIENTES — actualizadas a '+FISC_MESES[m-1]+' '+ej],['Ejercicio','Monto original','Aplicado en ejercicios anteriores','Pendiente','Factor de actualización','Pérdida actualizada','Observación'],
+    ...r.perd.map(p=>[p.ejercicio,N(Number(p.monto)||0),N(Number(p.aplicadoPrevio)||0),N(p.pendiente),p.factor,N(p.actualizada),p.vencida?'Prescrita (más de 10 ejercicios)':p.nota]),
+    ['Total','','','','',N(r.perdDisp)],[],['Pérdida aplicada en este pago provisional',N(r.perdAplicada)]]));
+  ws6['!cols']=[{wch:12},{wch:16},{wch:18},{wch:16},{wch:14},{wch:18},{wch:34}]; XLSX.utils.book_append_sheet(wb,ws6,'Pérdidas fiscales');
+
+  // 7. Tarifa
+  const n=m;
+  const ws7=fmt(XLSX.utils.aoa_to_sheet([['TARIFA ART. 96 LISR UTILIZADA — acumulada a '+n+' mes(es)'],['Límite inferior','Límite superior','Cuota fija','% sobre excedente'],
+    ...f.tarifa.map(t=>[N(r2(t[0]*n)),t[1]===null?'En adelante':N(r2(t[1]*n)),N(r2(t[2]*n)),t[3]]),[],['Base del pago provisional',N(r.base)],['ISR calculado',N(r.isrCausado)]]));
+  ws7['!cols']=[{wch:18},{wch:18},{wch:16},{wch:18}]; XLSX.utils.book_append_sheet(wb,ws7,'Tarifa ISR');
+
+  XLSX.writeFile(wb,`Predeclaracion_${ej}-${String(m).padStart(2,'0')}_ArtesaniasDMitzy.xlsx`);
+  toast('Predeclaración (papel de trabajo) generada en Excel.');
+}
+
 function renderBancos(){
   const tbl = document.getElementById('tblBancos');
   if(!tbl) return;
@@ -4865,6 +5359,7 @@ function renderAll(){
   renderCroquisProceso();
   renderPolizas();
   renderBancos();
+  renderFiscal();
   renderCierrePeriodos();
   actualizarUserbox();
   aplicarPermisosNav();
@@ -4943,6 +5438,7 @@ const MODULOS_PERMISO = [
   {key:'pasivos', label:'Pasivos financieros'},
   {key:'bancos', label:'Bancos'},
   {key:'polizas', label:'Pólizas / Diario'},
+  {key:'fiscal', label:'Fiscal (ISR / IVA)'},
   {key:'estadosfinancieros', label:'Estados financieros'},
   {key:'procesos', label:'Procesos'},
   {key:'reportes', label:'Reportes'},
@@ -5014,7 +5510,7 @@ function renderCierrePeriodos(){
   `;
 }
 function primerModuloPermitido(){
-  const orden = ['dashboard','produccion','ventas','inventario','compras','costeo','gastos','nomina','empaque','cxc','cxp','pagos','pasivos','bancos','polizas','estadosfinancieros','procesos','reportes','respaldo','config'];
+  const orden = ['dashboard','produccion','ventas','inventario','compras','costeo','gastos','nomina','empaque','cxc','cxp','pagos','pasivos','bancos','polizas','fiscal','estadosfinancieros','procesos','reportes','respaldo','config'];
   for(const m of orden){ if(puedeAcceder(m)) return m; }
   return 'dashboard';
 }
@@ -5022,6 +5518,10 @@ function aplicarPermisosNav(){
   document.querySelectorAll('.navbtn[data-view]').forEach(b=>{
     const v = b.dataset.view;
     b.style.display = puedeAcceder(v) ? '' : 'none';
+  });
+  document.querySelectorAll('#sidebar .navgroup').forEach(g=>{
+    const hay=[...g.querySelectorAll('.navbtn[data-view]')].some(b=>b.style.display!=='none');
+    g.style.display = hay ? '' : 'none';
   });
 }
 
