@@ -304,6 +304,7 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
 #sidebar .brand .brand-logo{width:100%;height:auto;max-height:92px;object-fit:contain;background:#fff;border-radius:10px;padding:6px 8px;}
 #sidebar .brand .logo{display:none;}
 #sidebar .brand .sub{text-align:center;margin-top:0;}
+details.hojacosto{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:10px;background:var(--paper-2)}details.hojacosto>summary{cursor:pointer;list-style:none;padding:4px 0}details.hojacosto>summary::-webkit-details-marker{display:none}details.hojacosto>summary::before{content:'▸ ';color:var(--ink-2,#0B2447)}details.hojacosto[open]>summary::before{content:'▾ '}
 </style>
 </head>
 <body>
@@ -646,7 +647,9 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
         <div class="titles"><div class="eyebrow">Cartera</div><h1>Cuentas por pagar</h1></div>
         <div class="actions flex">
           <button class="btn ghost" onclick="exportEstadosCuentaMasivo('proveedores')">Estados de cuenta (todos)</button>
-          <button class="btn clay" onclick="abrirMovCxp(null)">+ Movimiento manual</button>
+          <button class="btn ghost" onclick="verCatalogoProveedores()">🏭 Proveedores</button>
+          <button class="btn ghost" onclick="abrirMovCxp(null)">+ Movimiento manual</button>
+          <button class="btn clay" onclick="abrirPagoProveedor(null)">💳 Aplicar pago</button>
         </div>
       </div>
       <div class="grid cols-3" id="cxpKpis"></div>
@@ -1084,6 +1087,8 @@ hr.dash{border:none;border-top:1px dashed var(--line);margin:14px 0;}
         <h3>Datos de la empresa</h3>
         <div class="formgrid c2">
           <div class="field"><label>Nombre</label><input id="cfgNombre"></div>
+          <div class="field"><label>Firma de estados financieros — nombre</label><input id="cfgFirmaNombre" placeholder="C.P. Jorge Fabián Villanueva Ávalos"></div>
+          <div class="field"><label>Firma de estados financieros — cargo</label><input id="cfgFirmaCargo" placeholder="CEO / Director General"></div>
           <div class="field"><label>RFC (opcional)</label><input id="cfgRfc"></div>
         </div>
         <div class="formgrid c2">
@@ -1240,6 +1245,7 @@ const MAPEO_CUENTAS_AUTO_DEFAULT = {
   gastosAdmin: '603-82-000',
   gastosVenta: '602-84-000',
   gastosFinancieros: '701-11-000',
+  sueldosPorPagar: '210-01-000',
 };
 
 function emptyState(){
@@ -1597,7 +1603,10 @@ function renderOrdenModal(){
     </div>
     ${bloqueado?'':'<button class="btn ghost sm" style="margin-top:8px" onclick="ordenDraft.lineas.push(nuevaLinea());renderOrdenModal()">+ Agregar línea</button>'}
     <hr class="stitch">
-    <div id="previewNecesidades"></div>
+    <details id="detHojaCosto" class="hojacosto" ${window._hojaCostoAbierta?'open':''} ontoggle="window._hojaCostoAbierta=this.open">
+      <summary><b>📋 Hoja de costo</b> — material requerido e inversión <span class="muted" id="hojaCostoResumen"></span> <span class="smallnote">(clic para desplegar / ocultar)</span></summary>
+      <div id="previewNecesidades"></div>
+    </details>
     <div class="close-row">
       <button class="btn ghost" onclick="closeModal()">Cerrar</button>
       ${bloqueado?`
@@ -1618,6 +1627,7 @@ function actualizarTotalesModal(){
   });
   const nec = calcNecesidades(ordenDraft);
   const prev = document.getElementById('previewNecesidades');
+  { const rs=document.getElementById('hojaCostoResumen'); if(rs) rs.textContent='· Inversión en materiales: '+money(nec.invMateriales); }
   if(prev){
     prev.innerHTML = `
       <h4 style="font-size:13px">Vista previa — material requerido</h4>
@@ -1713,6 +1723,10 @@ function abrirMaterial(id){
       <div class="field"><label>Existencia actual</label><input id="mStock" type="number" step="0.0001" value="${m.stock}"></div>
       <div class="field"><label>Existencia mínima</label><input id="mMinimo" type="number" step="0.0001" value="${m.minimo}"></div>
       <div class="field" style="grid-column:1/-1"><label><input type="checkbox" id="mCorte" ${esMaterialDeCorte(m)?'checked':''}> Se corta en el departamento de Corte (aparece en el reporte de corte)</label></div>
+      <div style="grid-column:1/-1"><h4 class="fh">Contabilidad</h4></div>
+      ${ctaCampo('mCuenta', m.cuenta||ctaSugerida('materia',m.nombre), 'materia', 'Cuenta contable de la materia prima (inventario)')}
+      <div class="field"><label>Proveedor habitual</label><input id="mProv" list="mProvDl" value="${_attrq(m.proveedor||'')}" onchange="ctaProvAutorrelleno('mProv','mCuentaProv')"><datalist id="mProvDl">${listaProveedores().map(n=>`<option value="${_attrq(n)}">`).join('')}</datalist></div>
+      ${ctaCampo('mCuentaProv', m.proveedor?(provInfo(m.proveedor).cuenta||ctaSugerida('proveedor',m.proveedor)):'', 'proveedor', 'Cuenta contable del proveedor', '')}
     </div>
     <div class="close-row">
       <button class="btn ghost" onclick="closeModal()">Cancelar</button>
@@ -1734,9 +1748,12 @@ function guardarMaterial(id){
     corte: document.getElementById('mCorte').checked,
   };
   if(!data.nombre){ toast('Escribe un nombre de material.'); return; }
+  data.cuenta = ctaLeer('mCuenta','materia',data.nombre);
+  data.proveedor = document.getElementById('mProv').value.trim();
+  ctaGuardarProveedorDeForm('mProv','mCuentaProv');
   if(id){ Object.assign(materialById(id), data); }
   else{ STATE.materiales.push(Object.assign({id:uid('m')}, data)); }
-  save(); closeModal(); renderAll(); toast('Material guardado.');
+  save(); closeModal(); renderAll(); toast('Material guardado.'); ctaAvisoCreadas();
 }
 function borrarMaterial(id){
   if(!puedeEliminar()) return;
@@ -1776,11 +1793,12 @@ function abrirCompra(id){
     <h3>${id?'Editar compra':'Registrar compra de materia prima'}</h3>
     <div class="formgrid c2">
       <div class="field"><label>Fecha</label><input id="cpFecha" type="date" value="${c.fecha}"></div>
-      <div class="field"><label>Proveedor</label><input id="cpProv" value="${c.proveedor}"></div>
+      <div class="field"><label>Proveedor</label><input id="cpProv" list="cpProvDl" value="${_attrq(c.proveedor)}" onchange="ctaProvAutorrelleno('cpProv','cpCuentaProv')"><datalist id="cpProvDl">${listaProveedores().map(n=>`<option value="${_attrq(n)}">`).join('')}</datalist></div>
       <div class="field"><label>Material</label><select id="cpMat">${STATE.materiales.map(m=>`<option value="${m.id}" ${m.id===c.materialId?'selected':''}>${m.nombre} — almacén ${m.clasificacion}</option>`).join('')}</select></div>
       <div class="field"><label>Cantidad</label><input id="cpCant" type="number" step="0.0001" value="${c.cantidad}"></div>
       <div class="field"><label>Importe total ($)</label><input id="cpImp" type="number" step="0.01" value="${c.importe}"></div>
       <div class="field"><label>Condición</label><select id="cpCond"><option value="contado" ${c.condicion==='contado'?'selected':''}>Contado</option><option value="credito" ${c.condicion==='credito'?'selected':''}>Crédito</option></select></div>
+      ${ctaCampo('cpCuentaProv', c.proveedor?(provInfo(c.proveedor).cuenta||ctaSugerida('proveedor',c.proveedor)):'', 'proveedor', 'Cuenta contable del proveedor (la compra se provisiona aquí)')}
     </div>
     <p class="smallnote">Al guardar, la cantidad se suma al almacén del material elegido. Si es a crédito, se genera un cargo al proveedor en Cuentas por pagar.</p>
     <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarCompra('${id||''}')">Guardar</button></div>
@@ -1797,6 +1815,7 @@ function guardarCompra(id){
   };
   if(data.cantidad<=0){ toast('Captura una cantidad mayor a cero.'); return; }
   if(!periodoPermiteGuardar(data.fecha)) return;
+  ctaGuardarProveedorDeForm('cpProv','cpCuentaProv'); ctaAvisoCreadas();
   if(id){
     const old = STATE.compras.find(x=>x.id===id);
     // revertir efectos previos
@@ -2361,7 +2380,7 @@ function abrirGasto(id){
     <h3>${id?'Editar gasto':'Registrar gasto'}</h3>
     <div class="formgrid c2">
       <div class="field"><label>Fecha</label><input id="gtFecha" type="date" value="${g.fecha}"></div>
-      <div class="field"><label>Categoría</label><select id="gtCat">
+      <div class="field"><label>Categoría</label><select id="gtCat" onchange="gastoCatCambio()">
         <option ${g.categoria==='Fabricación indirecta'?'selected':''}>Fabricación indirecta</option>
         <option ${g.categoria==='Administración'?'selected':''}>Administración</option>
         <option ${g.categoria==='Venta'?'selected':''}>Venta</option>
@@ -2370,12 +2389,15 @@ function abrirGasto(id){
       <div class="field"><label>Concepto</label><input id="gtConcepto" value="${g.concepto}"></div>
       <div class="field"><label>Importe ($)</label><input id="gtImporte" type="number" step="0.01" value="${g.importe}"></div>
       <div class="field"><label>Condición</label><select id="gtCond"><option value="contado" ${g.condicion==='contado'?'selected':''}>Contado</option><option value="credito" ${g.condicion==='credito'?'selected':''}>Crédito</option></select></div>
-      <div class="field"><label>Proveedor / beneficiario (si es crédito)</label><input id="gtProv" value="${g.proveedor||''}"></div>
+      <div class="field"><label>Proveedor / beneficiario</label><input id="gtProv" list="gtProvDl" value="${_attrq(g.proveedor||'')}" onchange="ctaProvAutorrelleno('gtProv','gtCuentaProv')"><datalist id="gtProvDl">${listaProveedores().map(n=>`<option value="${_attrq(n)}">`).join('')}</datalist></div>
+      <div id="gtCtaBox" style="grid-column:1/-1">${ctaCampo('gtCuenta', ctaGasto(g), ctaFamGasto(g.categoria), 'Cuenta contable del gasto')}</div>
+      ${ctaCampo('gtCuentaProv', g.proveedor?(provInfo(g.proveedor).cuenta||ctaSugerida('proveedor',g.proveedor)):'', 'proveedor', 'Cuenta contable del proveedor / acreedor (el gasto se provisiona aquí)')}
     </div>
     <p class="smallnote">Los gastos de "Fabricación indirecta" se prorratean automáticamente entre las órdenes del periodo en el módulo de Costeo, si así lo indicaste en Configuración.</p>
     <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarGasto('${id||''}')">Guardar</button></div>
   `);
 }
+function gastoCatCambio(){ const c=document.getElementById('gtCat').value; document.getElementById('gtCtaBox').innerHTML=ctaCampo('gtCuenta', ctaGasto({categoria:c}), ctaFamGasto(c), 'Cuenta contable del gasto'); }
 function guardarGasto(id){
   const data = {
     fecha: document.getElementById('gtFecha').value,
@@ -2387,6 +2409,9 @@ function guardarGasto(id){
   };
   if(data.importe<=0){ toast('Captura un importe mayor a cero.'); return; }
   if(!periodoPermiteGuardar(data.fecha)) return;
+  data.cuenta = ctaLeer('gtCuenta', ctaFamGasto(data.categoria), data.concepto);
+  if(data.proveedor) ctaGuardarProveedorDeForm('gtProv','gtCuentaProv');
+  ctaAvisoCreadas();
   if(id){
     const old = STATE.gastos.find(x=>x.id===id);
     if(old.condicion==='credito') movCartera('proveedores', old.proveedor||'Gastos varios', {tipo:'abono', concepto:'Corrección de gasto '+old.folio, monto:old.importe, fecha:todayStr()});
@@ -2436,6 +2461,7 @@ function abrirEmpleado(id){
       <div class="field"><label>Puesto</label><input id="empPuesto" value="${e.puesto||''}" placeholder="Cortador, costurera, armado…"></div>
       <div class="field"><label>Salario diario</label><input id="empSalario" type="number" step="0.01" value="${e.salarioDiario||0}"></div>
       <div class="field"><label>Activo</label><select id="empActivo"><option value="si" ${e.activo!==false?'selected':''}>Sí</option><option value="no" ${e.activo===false?'selected':''}>No</option></select></div>
+      ${ctaCampo('empCuenta', e.cuenta||_mapeo().manoObraDirecta, 'g_nom', 'Cuenta contable de sueldos (la nómina se provisiona en Sueldos por pagar)')}
     </div>
     <div class="close-row">
       <button class="btn ghost" onclick="abrirEmpleados()">Cancelar</button>
@@ -2453,7 +2479,9 @@ function guardarEmpleado(id){
     puesto: document.getElementById('empPuesto').value.trim(),
     salarioDiario: Number(document.getElementById('empSalario').value)||0,
     activo: document.getElementById('empActivo').value==='si',
+    cuenta: ctaLeerOpc('empCuenta','g_nom'),
   };
+  ctaAvisoCreadas();
   if(id){ Object.assign(STATE.empleados.find(x=>x.id===id), data); }
   else{ STATE.empleados.push(Object.assign({id:uid('emp')}, data)); }
   save(); abrirEmpleados(); toast('Empleado guardado.');
@@ -2833,6 +2861,7 @@ function eliminarMovimientoCartera(tipo, nombre, index){
   if(!confirm('¿Eliminar este movimiento? Esto corrige el saldo mostrado, pero no revierte automáticamente la venta, compra o gasto que lo originó — solo bórralo si fue un error de captura.')) return;
   const _mv = STATE[tipo][nombre][index];
   STATE[tipo][nombre].splice(index,1);
+  if(_mv && _mv.pago){ STATE.polizas=(STATE.polizas||[]).filter(p=>!(p.origenModulo==='pago-prov' && p.origenId===_mv.id)); STATE.movimientosBancarios=(STATE.movimientosBancarios||[]).filter(x=>!(x.origenModulo==='pago-prov' && x.origenId===_mv.id)); }
   if(_mv && _mv.cobro){ STATE.polizas=(STATE.polizas||[]).filter(p=>!(p.origenModulo==='cobro' && p.origenId===_mv.id)); STATE.movimientosBancarios=(STATE.movimientosBancarios||[]).filter(x=>!(x.origenModulo==='cobro' && x.origenId===_mv.id)); }
   save(); if(document.getElementById('view-ventas').classList.contains('active')) closeModal(); else verDetalleCartera(tipo, nombre); renderAll();
   toast('Movimiento eliminado.');
@@ -3137,6 +3166,7 @@ function abrirPasivo(id){
       <div class="field"><label>Fecha de inicio</label><input id="psFecha" type="date" value="${p.fechaInicio||todayStr()}"></div>
       <div class="field"><label>Monto original</label><input id="psMonto" type="number" step="0.01" value="${p.montoOriginal||0}" ${id?'disabled':''}></div>
       <div class="field"><label>Tasa de interés anual % (opcional)</label><input id="psTasa" type="number" step="0.01" value="${p.tasaInteres||0}"></div>
+      ${ctaCampo('psCuenta', p.cuenta||ctaSugerida('pasivo',p.nombre), 'pasivo', 'Cuenta contable del pasivo')}
       <div class="field" style="grid-column:1/-1"><label>Notas</label><textarea id="psNotas">${p.notas||''}</textarea></div>
     </div>
     <div class="close-row">
@@ -3153,14 +3183,15 @@ function guardarPasivo(id){
   const fechaInicio = document.getElementById('psFecha').value;
   const tasaInteres = Number(document.getElementById('psTasa').value)||0;
   const notas = document.getElementById('psNotas').value.trim();
+  const cuenta = ctaLeer('psCuenta','pasivo',nombre); ctaAvisoCreadas();
   if(!STATE.pasivos) STATE.pasivos=[];
   if(id){
     const p = STATE.pasivos.find(x=>x.id===id);
-    Object.assign(p, {nombre, institucion, fechaInicio, tasaInteres, notas});
+    Object.assign(p, {nombre, institucion, fechaInicio, tasaInteres, notas, cuenta});
   } else {
     const montoOriginal = Number(document.getElementById('psMonto').value)||0;
     if(montoOriginal<=0){ toast('Captura el monto original del pasivo.'); return; }
-    STATE.pasivos.push({id:uid('ps'), folio:folio('PS','pasivo'), nombre, institucion, montoOriginal, saldoActual:montoOriginal, tasaInteres, fechaInicio, notas, abonos:[]});
+    STATE.pasivos.push({id:uid('ps'), folio:folio('PS','pasivo'), nombre, institucion, montoOriginal, saldoActual:montoOriginal, tasaInteres, fechaInicio, notas, abonos:[], cuenta});
   }
   save(); closeModal(); renderPasivos(); toast('Pasivo guardado.');
 }
@@ -3278,10 +3309,76 @@ function abrirPoliza(id){
   polizaDraft = JSON.parse(JSON.stringify(p));
   renderEditorPoliza(!!id);
 }
+function _pzCuentaTexto(cod){ const c=(STATE.catalogoCuentas||[]).find(x=>x.codigo===cod); return c? (c.codigo+' — '+c.nombre) : (cod||''); }
+function _pzResolverCuenta(txt){
+  txt=String(txt||'').trim(); if(!txt) return '';
+  const cat=STATE.catalogoCuentas||[];
+  const m=txt.match(/^(\d{3}-\d{2}-\d{3})/); if(m && cat.some(c=>c.codigo===m[1])) return m[1];
+  const dig=txt.replace(/\D/g,'');
+  if(/^\d{8}$/.test(dig)){ const cod=dig.slice(0,3)+'-'+dig.slice(3,5)+'-'+dig.slice(5); if(cat.some(c=>c.codigo===cod)) return cod; }
+  if(/^\d{3}-\d{2}$/.test(txt)||/^\d{5}$/.test(txt)){ const p=txt.length===5?txt.slice(0,3)+'-'+txt.slice(3):txt; const c=cat.find(x=>x.codigo===p+'-000'); if(c) return c.codigo; }
+  const low=txt.toLowerCase();
+  const ex=cat.filter(c=>c.nombre.toLowerCase()===low); if(ex.length===1) return ex[0].codigo;
+  const par=cat.filter(c=>!esCuentaMadre(c.codigo) && (c.codigo+' '+c.nombre).toLowerCase().includes(low)); if(par.length===1) return par[0].codigo;
+  return null;
+}
+function pzFilaHTML(l,i){
+  return `<tr data-i="${i}">
+    <td><input class="pzC" list="dlPolizaCtas" autocomplete="off" placeholder="Código o nombre de cuenta…" style="width:100%;min-width:260px" value="${escaparHTML(_pzCuentaTexto(l.cuenta)).replace(/"/g,'&quot;')}" onchange="pzCta(${i},this)" onkeydown="pzKey(event,${i},'C')" onfocus="this.select()"></td>
+    <td><input class="pzD" type="number" step="0.01" min="0" value="${Number(l.cargo)||''}" oninput="pzMonto(${i},'cargo',this.value)" onkeydown="pzKey(event,${i},'D')" onfocus="this.select()"></td>
+    <td><input class="pzA" type="number" step="0.01" min="0" value="${Number(l.abono)||''}" oninput="pzMonto(${i},'abono',this.value)" onkeydown="pzKey(event,${i},'A')" onfocus="this.select()"></td>
+    <td><button class="btn danger sm" tabindex="-1" onclick="pzQuitar(${i})">✕</button></td></tr>`;
+}
+function pzTotales(){
+  const t=totalesPoliza(polizaDraft);
+  const a=document.getElementById('pzTotC'), b=document.getElementById('pzTotA'), e=document.getElementById('pzEstado');
+  if(a) a.innerHTML='<b>'+money(t.cargos)+'</b>'; if(b) b.innerHTML='<b>'+money(t.abonos)+'</b>';
+  if(e){ e.style.color=t.cuadra?'var(--good)':'var(--bad)'; e.textContent=t.cuadra?'✔ La póliza cuadra (Cargos = Abonos)':'⚠ Diferencia de '+money(Math.abs(t.cargos-t.abonos))+' — Cargos y Abonos deben ser iguales antes de guardar.'; }
+}
+function pzCta(i,el){
+  const cod=_pzResolverCuenta(el.value);
+  if(cod===null){ el.style.borderColor='var(--bad)'; toast('No encuentro esa cuenta. Escribe el código o parte del nombre y elígela de la lista.'); polizaDraft.lineas[i].cuenta=''; return; }
+  el.style.borderColor='';
+  if(cod && esCuentaMadre(cod) && !polizaDraft.origenModulo){ el.style.borderColor='var(--bad)'; toast('Esa es una cuenta madre (tiene subcuentas): elige una subcuenta.'); polizaDraft.lineas[i].cuenta=''; return; }
+  polizaDraft.lineas[i].cuenta=cod; el.value=_pzCuentaTexto(cod);
+}
+function pzMonto(i,col,val){
+  const v=Number(val)||0, l=polizaDraft.lineas[i];
+  l[col]=v;
+  if(v>0){ const otro=col==='cargo'?'abono':'cargo'; l[otro]=0; const oel=document.querySelector('#pzBody tr[data-i="'+i+'"] .'+(col==='cargo'?'pzA':'pzD')); if(oel) oel.value=''; }
+  pzTotales();
+}
+function pzAgregarFila(foco){
+  polizaDraft.lineas.push({cuenta:'',cargo:0,abono:0});
+  const i=polizaDraft.lineas.length-1, tb=document.getElementById('pzBody');
+  tb.insertAdjacentHTML('beforeend',pzFilaHTML(polizaDraft.lineas[i],i));
+  if(foco){ const el=tb.querySelector('tr[data-i="'+i+'"] .pzC'); if(el) el.focus(); }
+}
+function pzQuitar(i){ polizaDraft.lineas.splice(i,1); if(!polizaDraft.lineas.length) polizaDraft.lineas.push({cuenta:'',cargo:0,abono:0}); document.getElementById('pzBody').innerHTML=polizaDraft.lineas.map(pzFilaHTML).join(''); pzTotales(); }
+function pzKey(ev,i,col){
+  if(ev.key!=='Enter') return;
+  ev.preventDefault();
+  const tb=document.getElementById('pzBody'), fila=tb.querySelector('tr[data-i="'+i+'"]');
+  if(col==='C'){
+    pzCta(i,ev.target);
+    const l=polizaDraft.lineas[i];
+    if(l.cuenta && !(Number(l.cargo)||0) && !(Number(l.abono)||0)){
+      const t=totalesPoliza(polizaDraft), dif=Math.round((t.cargos-t.abonos)*100)/100;
+      if(Math.abs(dif)>0.004){ const c2=dif>0?'abono':'cargo'; l[c2]=Math.abs(dif); fila.querySelector(c2==='abono'?'.pzA':'.pzD').value=Math.abs(dif); pzTotales(); fila.querySelector(c2==='abono'?'.pzA':'.pzD').focus(); return; }
+    }
+    fila.querySelector('.pzD').focus();
+  }
+  else if(col==='D'){ fila.querySelector('.pzA').focus(); }
+  else{
+    const sig=tb.querySelector('tr[data-i="'+(i+1)+'"]');
+    if(sig) sig.querySelector('.pzC').focus();
+    else{ const t=totalesPoliza(polizaDraft); if(t.cuadra && t.cargos>0){ document.getElementById('pzConcepto').focus(); } else pzAgregarFila(true); }
+  }
+}
 function renderEditorPoliza(esExistente){
-  const cuentas = STATE.catalogoCuentas||[];
-  const t = totalesPoliza(polizaDraft);
-  const esAutomatica = !!polizaDraft.origenModulo;
+  const cuentas=(STATE.catalogoCuentas||[]).filter(c=>!esCuentaMadre(c.codigo));
+  const esAutomatica=!!polizaDraft.origenModulo;
+  if(!polizaDraft.lineas.length) polizaDraft.lineas.push({cuenta:'',cargo:0,abono:0});
   openModal(`
     <h3>${esExistente?'Póliza '+polizaDraft.folio:'Nueva póliza'}</h3>
     ${esAutomatica?`<p class="smallnote" style="background:var(--paper-2);padding:8px 10px;border-radius:6px;margin-bottom:10px">🔗 Generada automáticamente desde: <b>${polizaDraft.origenModulo}</b>. Puedes editar sus datos y asientos libremente — tus cambios se conservan y no se sobrescriben al volver a usar "Generar pólizas automáticas".</p>`:''}
@@ -3294,31 +3391,27 @@ function renderEditorPoliza(esExistente){
       </select></div>
       <div class="field"><label>Origen</label><input value="${esAutomatica?('Automática — '+polizaDraft.origenModulo):'Manual'}" disabled></div>
     </div>
-    <div class="field" style="margin-bottom:10px"><label>Concepto</label><input style="width:100%" value="${polizaDraft.concepto}" oninput="polizaDraft.concepto=this.value"></div>
+    <div class="field" style="margin-bottom:10px"><label>Concepto</label><input id="pzConcepto" style="width:100%" value="${escaparHTML(polizaDraft.concepto).replace(/"/g,'&quot;')}" oninput="polizaDraft.concepto=this.value"></div>
+    <datalist id="dlPolizaCtas">${cuentas.map(c=>`<option value="${c.codigo} — ${escaparHTML(c.nombre).replace(/"/g,'&quot;')}">`).join('')}</datalist>
+    <p class="smallnote" style="margin-bottom:6px">⌨ Captura de corrido: escribe el código (ej. 10501002) o parte del nombre y presiona <b>Enter</b> para pasar al cargo, al abono y a la siguiente línea. El sistema propone la diferencia para cuadrar la póliza.</p>
     <div class="tblwrap"><table class="tbl">
-      <thead><tr><th>Cuenta</th><th class="num">Cargo</th><th class="num">Abono</th><th></th></tr></thead>
-      <tbody>${polizaDraft.lineas.map((l,i)=>`
-        <tr>
-          <td><select onchange="polizaDraft.lineas[${i}].cuenta=this.value">
-            <option value="">Selecciona…</option>
-            ${cuentas.filter(c=>!esCuentaMadre(c.codigo) || l.cuenta===c.codigo).map(c=>`<option value="${c.codigo}" ${l.cuenta===c.codigo?'selected':''}>${c.codigo} — ${c.nombre}${esCuentaMadre(c.codigo)?'  (MADRE: no afectable)':''}</option>`).join('')}
-          </select></td>
-          <td><input type="number" step="0.01" value="${l.cargo||0}" oninput="polizaDraft.lineas[${i}].cargo=this.value;polizaDraft.lineas[${i}].abono=0;renderEditorPoliza(${esExistente})"></td>
-          <td><input type="number" step="0.01" value="${l.abono||0}" oninput="polizaDraft.lineas[${i}].abono=this.value;polizaDraft.lineas[${i}].cargo=0;renderEditorPoliza(${esExistente})"></td>
-          <td><button class="btn danger sm" onclick="polizaDraft.lineas.splice(${i},1);renderEditorPoliza(${esExistente})">✕</button></td>
-        </tr>`).join('')}</tbody>
-      <tfoot><tr><td class="right"><b>Totales</b></td><td class="num mono"><b>${money(t.cargos)}</b></td><td class="num mono"><b>${money(t.abonos)}</b></td><td></td></tr></tfoot>
+      <thead><tr><th style="width:56%">Cuenta</th><th class="num" style="width:20%">Cargo</th><th class="num" style="width:20%">Abono</th><th></th></tr></thead>
+      <tbody id="pzBody">${polizaDraft.lineas.map(pzFilaHTML).join('')}</tbody>
+      <tfoot><tr><td class="right"><b>Totales</b></td><td class="num mono" id="pzTotC"></td><td class="num mono" id="pzTotA"></td><td></td></tr></tfoot>
     </table></div>
-    <button class="btn ghost sm" style="margin-top:8px" onclick="polizaDraft.lineas.push({cuenta:'',cargo:0,abono:0});renderEditorPoliza(${esExistente})">+ Agregar línea</button>
-    <p class="smallnote" style="margin-top:8px;color:${t.cuadra?'var(--good)':'var(--bad)'}">${t.cuadra?'✔ La póliza cuadra (Cargos = Abonos)':'⚠ La póliza no cuadra — Cargos y Abonos deben ser iguales antes de guardar.'}</p>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="pzAgregarFila(true)">+ Agregar línea</button>
+    <p class="smallnote" id="pzEstado" style="margin-top:8px"></p>
     <div class="close-row">
       <button class="btn ghost" onclick="polizaDraft=null;closeModal()">Cancelar</button>
       ${esExistente?`<button class="btn danger" onclick="eliminarPoliza('${polizaDraft.id}')">Eliminar</button><button class="btn ghost" onclick="verPolizaPDF('${polizaDraft.id}')">PDF</button><button class="btn ghost" onclick="guardarComoPrepoliza()">Guardar como pre-póliza</button>`:''}
       <button class="btn clay" onclick="guardarPoliza('${esExistente?polizaDraft.id:''}')">Guardar póliza</button>
     </div>
   `);
+  pzTotales();
+  setTimeout(()=>{ const f=document.querySelector('#pzBody .pzC'); if(f&&!esExistente) f.focus(); },30);
 }
 function guardarPoliza(id){
+  polizaDraft.lineas = polizaDraft.lineas.filter(l=>l.cuenta||Number(l.cargo)||Number(l.abono));
   if(!periodoPermiteGuardar(polizaDraft.fecha)) return;
   const t = totalesPoliza(polizaDraft);
   if(!polizaDraft.concepto.trim()){ toast('Escribe un concepto para la póliza.'); return; }
@@ -3458,6 +3551,7 @@ const MAPEO_CUENTAS_LABELS = {
   ventas:'Ventas', costoVentas:'Costo de ventas', materiaPrimaConsumida:'Materia prima consumida (producción)',
   manoObraDirecta:'Mano de obra directa (producción y nómina)', gastosIndirectos:'Gastos indirectos de fabricación',
   gastosAdmin:'Gastos de administración (por defecto)', gastosVenta:'Gastos de venta', gastosFinancieros:'Gastos financieros',
+  sueldosPorPagar:'Provisión de sueldos y salarios por pagar (nómina)',
 };
 function abrirMapeoCuentasAuto(){
   const M = STATE.mapeoCuentasAuto||MAPEO_CUENTAS_AUTO_DEFAULT;
@@ -3621,19 +3715,209 @@ function exportLibroDiarioPDF(){
 }
 
 /* ---------- Generación automática de pólizas desde todos los módulos ---------- */
+/* =================================================================
+   CUENTAS CONTABLES POR ENTIDAD + PROVISIÓN + APLICACIÓN DE PAGOS
+   ================================================================= */
+function _normTxt(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim(); }
+function _attrq(s){ return escaparHTML(String(s==null?'':s)).replace(/"/g,'&quot;'); }
+const CTA_FAM = {
+  proveedor:{ pref:['201-'], seq:'201-01-', tipo:'Pasivo', nat:'acreedora', nom:'Proveedor' },
+  cliente:  { pref:['105-'], seq:'105-01-', tipo:'Activo', nat:'deudora', nom:'Cliente' },
+  materia:  { pref:['115-'], seq:'115-02-', tipo:'Activo', nat:'deudora', nom:'Materia prima' },
+  pasivo:   { pref:['202-','203-','205-','251-'], grupo:'202', nom:'Pasivo financiero' },
+  g_fab:    { pref:['504-','604-'], grupo:'504', nom:'Gasto de fabricación' },
+  g_adm:    { pref:['603-','601-'], grupo:'603', nom:'Gasto de administración' },
+  g_ven:    { pref:['602-'], grupo:'602', nom:'Gasto de venta' },
+  g_nom:    { pref:['501-06','605-','601-01','601-02','601-03','601-14'], grupo:'605', nom:'Mano de obra / sueldos' },
+};
+function ctaFamGasto(cat){ return cat==='Fabricación indirecta'?'g_fab':cat==='Venta'?'g_ven':cat==='Nómina'?'g_nom':'g_adm'; }
+function ctaExiste(cod){ return !!cod && (STATE.catalogoCuentas||[]).some(c=>c.codigo===cod); }
+function ctaNombre(cod){ const c=(STATE.catalogoCuentas||[]).find(x=>x.codigo===cod); return c?c.nombre:''; }
+function ctaTexto(cod){ return cod ? (cod+' — '+ctaNombre(cod)) : ''; }
+function ctaListaFam(fam){
+  const F=CTA_FAM[fam]; if(!F) return [];
+  return (STATE.catalogoCuentas||[]).filter(c=>F.pref.some(p=>c.codigo.startsWith(p)) && !esCuentaMadre(c.codigo));
+}
+function ctaCrear(fam,nombre){
+  const F=CTA_FAM[fam], cat=STATE.catalogoCuentas; nombre=String(nombre||'').trim()||('Cuenta '+F.nom);
+  let codigo, tipo, nat;
+  if(F.seq){
+    let max=0; cat.forEach(c=>{ if(c.codigo.startsWith(F.seq)){ const n=Number(c.codigo.slice(F.seq.length)); if(n<999 && n>max) max=n; } });
+    codigo=F.seq+String(max+1).padStart(3,'0'); tipo=F.tipo; nat=F.nat;
+  } else {
+    let max=0; cat.forEach(c=>{ if(c.codigo.startsWith(F.grupo+'-')){ const n=Number(c.codigo.split('-')[1]); if(n>max) max=n; } });
+    const molde=cat.find(c=>c.codigo.startsWith(F.grupo+'-'))||{tipo:'Gastos',naturaleza:'deudora'};
+    codigo=F.grupo+'-'+String(max+1).padStart(2,'0')+'-000'; tipo=molde.tipo; nat=molde.naturaleza;
+  }
+  cat.push({codigo, nombre, tipo, naturaleza:nat});
+  cat.sort((a,b)=>a.codigo<b.codigo?-1:a.codigo>b.codigo?1:0);
+  return codigo;
+}
+/* Devuelve {codigo, creada}. txt = lo capturado ("código — nombre", código o nombre). */
+function ctaResolver(txt,fam,nombreSug){
+  txt=String(txt||'').trim(); const cat=STATE.catalogoCuentas||[]; const F=CTA_FAM[fam];
+  if(txt){
+    const m=txt.match(/^(\d{3}-\d{2}-\d{3})/); if(m && ctaExiste(m[1])) return {codigo:m[1],creada:false};
+    const dig=txt.replace(/\D/g,''); if(/^\d{8}$/.test(dig)){ const cod=dig.slice(0,3)+'-'+dig.slice(3,5)+'-'+dig.slice(5); if(ctaExiste(cod)) return {codigo:cod,creada:false}; }
+  }
+  let nombre=txt; { const m=txt.match(/^\d{3}-\d{2}-\d{3}\s*[—-]\s*(.+)$/); if(m) nombre=m[1].trim(); }
+  if(!nombre) nombre=String(nombreSug||'').trim();
+  if(!nombre) return {codigo:'',creada:false};
+  const n=_normTxt(nombre);
+  const hit=cat.find(c=>F.pref.some(p=>c.codigo.startsWith(p)) && _normTxt(c.nombre)===n && !esCuentaMadre(c.codigo));
+  if(hit) return {codigo:hit.codigo,creada:false};
+  const cod=ctaCrear(fam,nombre);
+  window._ctasCreadas=(window._ctasCreadas||[]); window._ctasCreadas.push(cod+' '+nombre);
+  return {codigo:cod,creada:true};
+}
+function ctaAvisoCreadas(){ const l=window._ctasCreadas||[]; if(l.length){ toast('Cuenta(s) creada(s) automáticamente en el catálogo: '+l.join(' · ')); } window._ctasCreadas=[]; }
+/* Campo de formulario con lista desplegable de cuentas */
+function ctaCampo(id,valor,fam,etiqueta,estilo){
+  const lista=ctaListaFam(fam);
+  return `<div class="field" style="${estilo||'grid-column:1/-1'}"><label>${etiqueta}</label>
+    <input id="${id}" list="${id}_dl" autocomplete="off" placeholder="Elige de la lista o escribe… (si no existe se crea sola)" value="${_attrq(ctaTexto(valor))}" onfocus="this.select()">
+    <datalist id="${id}_dl">${lista.map(c=>`<option value="${c.codigo} — ${_attrq(c.nombre)}">`).join('')}</datalist>
+    <div class="smallnote" style="margin-top:2px">Si dejas vacío o escribes un nombre nuevo, la cuenta se crea automáticamente en el catálogo contable.</div></div>`;
+}
+function ctaLeer(id,fam,nombreSug){
+  const el=document.getElementById(id); if(!el) return '';
+  const r=ctaResolver(el.value,fam,nombreSug); return r.codigo;
+}
+/* ---------- accesores (usados por pólizas, cobros y pagos) ---------- */
+function _mapeo(){ return STATE.mapeoCuentasAuto||MAPEO_CUENTAS_AUTO_DEFAULT; }
+function provInfo(nombre){ if(!STATE.proveedoresInfo) STATE.proveedoresInfo={}; return STATE.proveedoresInfo[nombre]||{}; }
+function ctaProveedor(nombre){
+  nombre=String(nombre||'').trim(); if(!nombre) return _mapeo().proveedores;
+  const inf=provInfo(nombre); if(inf.cuenta && ctaExiste(inf.cuenta)) return inf.cuenta;
+  const r=ctaResolver('', 'proveedor', nombre); STATE.proveedoresInfo[nombre]=Object.assign({},inf,{cuenta:r.codigo}); return r.codigo;
+}
+function ctaCliente(nombre){
+  nombre=String(nombre||'').trim(); if(!nombre) return _mapeo().clientes;
+  const inf=(STATE.clientesInfo||{})[nombre]||{}; if(inf.cuenta && ctaExiste(inf.cuenta)) return inf.cuenta;
+  const r=ctaResolver('', 'cliente', nombre); if(!STATE.clientesInfo) STATE.clientesInfo={}; STATE.clientesInfo[nombre]=Object.assign({},inf,{cuenta:r.codigo}); return r.codigo;
+}
+function ctaMaterial(materialId){ const m=materialById(materialId); return (m && m.cuenta && ctaExiste(m.cuenta)) ? m.cuenta : _mapeo().inventarioMP; }
+function ctaGasto(g){ const M=_mapeo(); if(g.cuenta && ctaExiste(g.cuenta)) return g.cuenta; return g.categoria==='Fabricación indirecta'?M.gastosIndirectos:g.categoria==='Venta'?M.gastosVenta:g.categoria==='Nómina'?M.manoObraDirecta:M.gastosAdmin; }
+function ctaPasivo(p){ return (p && p.cuenta && ctaExiste(p.cuenta)) ? p.cuenta : _mapeo().pasivosBancarios; }
+function ctaSueldosPorPagar(){ const M=_mapeo(); return (M.sueldosPorPagar && ctaExiste(M.sueldosPorPagar)) ? M.sueldosPorPagar : '210-01-000'; }
+
+/* ---------- catálogo de proveedores ---------- */
+function listaProveedores(){
+  const s=new Set(Object.keys(STATE.proveedores||{})); Object.keys(STATE.proveedoresInfo||{}).forEach(n=>s.add(n));
+  (STATE.materiales||[]).forEach(m=>{ if(m.proveedor) s.add(m.proveedor); });
+  return [...s].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+}
+function verCatalogoProveedores(){
+  const nombres=listaProveedores();
+  openModal(`<h3>Catálogo de proveedores</h3>
+    <div class="tblwrap" style="max-height:60vh;overflow:auto"><table class="tbl"><thead><tr><th>Proveedor</th><th>RFC</th><th>Cuenta contable</th><th>Contacto</th><th class="num">Saldo</th><th></th></tr></thead>
+    <tbody>${nombres.map(n=>{ const i=provInfo(n); const s=saldoCartera((STATE.proveedores||{})[n]||[]).saldo; return `<tr><td>${escaparHTML(n)}</td><td>${escaparHTML(i.rfc||'-')}</td><td class="mono">${i.cuenta?escaparHTML(i.cuenta):'<span class="muted">(se crea al contabilizar)</span>'}</td><td>${escaparHTML(i.contacto||'-')}</td><td class="num mono">${money(s)}</td><td><button class="btn ghost sm" onclick="abrirProveedor(${jsq(n)})">Editar</button></td></tr>`; }).join('')||'<tr><td colspan="6" class="muted">Sin proveedores todavía.</td></tr>'}</tbody></table></div>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button><button class="btn clay" onclick="abrirProveedor(null)">+ Nuevo proveedor</button></div>`, true);
+}
+function abrirProveedor(nombre){
+  const i=nombre?provInfo(nombre):{};
+  openModal(`<h3>${nombre?'Editar proveedor':'Nuevo proveedor'}</h3>
+    <div class="formgrid c2">
+      <div class="field" style="grid-column:1/-1"><label>Nombre / razón social</label><input id="pvNombre" value="${_attrq(nombre||'')}" ${nombre?'disabled':''}></div>
+      <div class="field"><label>RFC</label><input id="pvRFC" value="${_attrq(i.rfc||'')}" style="text-transform:uppercase"></div>
+      <div class="field"><label>Contacto / teléfono</label><input id="pvContacto" value="${_attrq(i.contacto||'')}"></div>
+      <div class="field"><label>Días de crédito</label><input id="pvDias" type="number" min="0" value="${Number(i.diasCredito)||0}"></div>
+      <div class="field"><label>Correo</label><input id="pvCorreo" value="${_attrq(i.correo||'')}"></div>
+      ${ctaCampo('pvCuenta',i.cuenta,'proveedor','Cuenta contable del proveedor (pasivo)')}
+    </div>
+    <div class="close-row"><button class="btn ghost" onclick="verCatalogoProveedores()">Cancelar</button><button class="btn clay" onclick="guardarProveedor(${jsq(nombre||'')})">Guardar</button></div>`);
+}
+function guardarProveedor(nombreEx){
+  const nombre=nombreEx||document.getElementById('pvNombre').value.trim();
+  if(!nombre){ toast('Escribe el nombre del proveedor.'); return; }
+  if(!STATE.proveedoresInfo) STATE.proveedoresInfo={};
+  const cuenta=ctaLeer('pvCuenta','proveedor',nombre);
+  STATE.proveedoresInfo[nombre]=Object.assign({},STATE.proveedoresInfo[nombre],{cuenta, rfc:document.getElementById('pvRFC').value.trim().toUpperCase(), contacto:document.getElementById('pvContacto').value.trim(), correo:document.getElementById('pvCorreo').value.trim(), diasCredito:Number(document.getElementById('pvDias').value)||0});
+  if(!STATE.proveedores[nombre]) STATE.proveedores[nombre]=[];
+  save(); ctaAvisoCreadas(); verCatalogoProveedores(); renderAll();
+}
+/* Para formularios con proveedor + cuenta: guarda la cuenta del proveedor */
+function ctaGuardarProveedorDeForm(idNombre,idCuenta){
+  const n=(document.getElementById(idNombre)||{}).value; if(!n||!n.trim()) return;
+  const cuenta=ctaLeer(idCuenta,'proveedor',n.trim()); if(!cuenta) return;
+  if(!STATE.proveedoresInfo) STATE.proveedoresInfo={};
+  STATE.proveedoresInfo[n.trim()]=Object.assign({},STATE.proveedoresInfo[n.trim()],{cuenta});
+}
+function ctaProvAutorrelleno(idNombre,idCuenta){
+  const n=((document.getElementById(idNombre)||{}).value||'').trim(), el=document.getElementById(idCuenta); if(!el) return;
+  const inf=provInfo(n); if(inf.cuenta) el.value=ctaTexto(inf.cuenta);
+  else { const hit=ctaListaFam('proveedor').find(c=>_normTxt(c.nombre)===_normTxt(n)); el.value=hit?ctaTexto(hit.codigo):''; }
+}
+
+/* ---------- aplicación de pagos a proveedores ---------- */
+function docsPendientesProv(nombre){
+  const movs=((STATE.proveedores||{})[nombre]||[]);
+  const cargos=movs.filter(m=>m.tipo==='cargo').map(m=>({fecha:m.fecha,concepto:m.concepto,monto:Number(m.monto)||0})).sort((a,b)=>(a.fecha||'')<(b.fecha||'')?-1:1);
+  let abonos=movs.filter(m=>m.tipo==='abono').reduce((s,m)=>s+(Number(m.monto)||0),0);
+  return cargos.map(c=>{ const ap=Math.min(abonos,c.monto); abonos=r2(abonos-ap); return Object.assign({},c,{pagado:r2(ap),pendiente:r2(c.monto-ap)}); });
+}
+function abrirPagoProveedor(nombre){
+  const nombres=Object.keys(STATE.proveedores||{}).filter(n=>saldoCartera(STATE.proveedores[n]).saldo>0.005||n===nombre).sort();
+  const s0=nombre?saldoCartera((STATE.proveedores||{})[nombre]||[]).saldo:0;
+  openModal(`<h3>💳 Aplicación de pago a proveedor</h3>
+    <div class="formgrid c2">
+      <div class="field"><label>Proveedor</label><input id="pgpProv" list="pgpList" value="${_attrq(nombre||'')}" onchange="pagoProvInfo()"><datalist id="pgpList">${nombres.map(n=>`<option value="${_attrq(n)}">`).join('')}</datalist></div>
+      <div class="field"><label>Saldo por pagar</label><div id="pgpSaldo" class="mono" style="padding:8px 0"><b>${money(s0)}</b></div></div>
+      <div class="field"><label>Importe a pagar ($)</label><input id="pgpMonto" type="number" step="0.01" min="0" value="${s0>0?r2(s0):''}" oninput="pagoProvVista()"></div>
+      <div class="field"><label>Fecha de pago</label><input id="pgpFecha" type="date" value="${todayStr()}"></div>
+      <div class="field"><label>Forma de pago</label><select id="pgpForma">${FORMAS_PAGO.map(f=>`<option>${f}</option>`).join('')}</select></div>
+      <div class="field"><label>Pagar desde</label><select id="pgpBanco"><option value="">Efectivo en caja</option>${(STATE.bancos||[]).map(b=>`<option value="${b.id}">${escaparHTML(b.nombre)}</option>`).join('')}</select></div>
+      <div class="field" style="grid-column:1/-1"><label>Referencia (transferencia, cheque…)</label><input id="pgpRef"></div>
+    </div>
+    <div id="pgpDocs" style="margin-top:8px"></div>
+    <p class="smallnote">El pago se aplica a los documentos más antiguos primero, genera su póliza de egreso (cuenta del proveedor contra Caja) y, si eliges un banco, el retiro en el módulo de Bancos.</p>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarPagoProveedor()">Aplicar pago</button></div>`);
+  pagoProvVista();
+}
+function pagoProvInfo(){ const n=document.getElementById('pgpProv').value.trim(); const s=saldoCartera((STATE.proveedores||{})[n]||[]).saldo; document.getElementById('pgpSaldo').innerHTML='<b>'+money(s)+'</b>'; if(s>0) document.getElementById('pgpMonto').value=r2(s); pagoProvVista(); }
+function pagoProvVista(){
+  const n=document.getElementById('pgpProv').value.trim(), el=document.getElementById('pgpDocs'); if(!el) return;
+  let monto=Number(document.getElementById('pgpMonto').value)||0;
+  const docs=docsPendientesProv(n).filter(d=>d.pendiente>0.005);
+  if(!docs.length){ el.innerHTML='<p class="muted">Sin documentos pendientes para este proveedor.</p>'; return; }
+  let resto=monto;
+  el.innerHTML=`<div class="tblwrap" style="max-height:200px;overflow:auto"><table class="tbl"><thead><tr><th>Fecha</th><th>Documento</th><th class="num">Pendiente</th><th class="num">Se aplicará</th><th class="num">Quedará</th></tr></thead><tbody>${docs.map(d=>{ const ap=Math.min(resto,d.pendiente); resto=r2(resto-ap); return `<tr><td>${d.fecha}</td><td>${escaparHTML(d.concepto)}</td><td class="num mono">${money(d.pendiente)}</td><td class="num mono"><b>${money(ap)}</b></td><td class="num mono">${money(d.pendiente-ap)}</td></tr>`; }).join('')}</tbody></table></div>${resto>0.005?`<p class="smallnote" style="color:var(--warn)">Sobran ${money(resto)}: quedarán como anticipo a favor del proveedor.</p>`:''}`;
+}
+function polizaDePagoProv(nombre,mov){
+  const M=_mapeo();
+  crearPoliza({fecha:mov.fecha,tipo:'Egreso',concepto:'Pago '+(mov.folio||'')+' — '+nombre,origenModulo:'pago-prov',origenId:mov.id,lineas:[{cuenta:ctaProveedor(nombre),cargo:mov.monto,abono:0},{cuenta:M.caja,cargo:0,abono:mov.monto}]});
+}
+function guardarPagoProveedor(){
+  const nombre=document.getElementById('pgpProv').value.trim(), monto=Number(document.getElementById('pgpMonto').value)||0, fecha=document.getElementById('pgpFecha').value;
+  if(!nombre||monto<=0||!fecha){ toast('Captura proveedor, importe y fecha.'); return; }
+  const saldo=saldoCartera((STATE.proveedores||{})[nombre]||[]).saldo;
+  if(monto>saldo+0.005 && !confirm('El pago ('+money(monto)+') es mayor al saldo ('+money(saldo)+'). Quedará como anticipo a favor del proveedor. ¿Continuar?')) return;
+  if(!periodoPermiteGuardar(fecha)) return;
+  const bancoId=document.getElementById('pgpBanco').value||null, ref=document.getElementById('pgpRef').value.trim(), forma=document.getElementById('pgpForma').value;
+  if(!STATE.folios.pagoprov) STATE.folios.pagoprov=1;
+  const f=folio('PAG','pagoprov');
+  const mov={id:uid('mv'),tipo:'abono',concepto:'Pago '+f+(ref?' ref. '+ref:''),monto:r2(monto),fecha,pago:true,forma,bancoId,folio:f};
+  movCartera('proveedores',nombre,mov);
+  polizaDePagoProv(nombre,mov);
+  if(bancoId) STATE.movimientosBancarios.push({id:uid('mb'),cuentaId:bancoId,fecha,concepto:'Pago '+f+' — '+nombre,tipo:'retiro',monto:mov.monto,conciliado:false,origenModulo:'pago-prov',origenId:mov.id});
+  save(); closeModal(); ctaAvisoCreadas(); renderAll(); reproducirSonido('finish'); toast('Pago aplicado: '+money(monto)+' a '+nombre+'.');
+}
+
+function ctaSugerida(fam,nombre){ const F=CTA_FAM[fam], n=_normTxt(nombre); if(!n) return ''; const h=(STATE.catalogoCuentas||[]).find(c=>F.pref.some(p=>c.codigo.startsWith(p)) && _normTxt(c.nombre)===n); return h?h.codigo:''; }
+function ctaLeerOpc(id,fam){ const el=document.getElementById(id); if(!el||!el.value.trim()) return ''; return ctaResolver(el.value,fam,'').codigo; }
+
 function generarPolizasAutomaticas(){
   const M = STATE.mapeoCuentasAuto || MAPEO_CUENTAS_AUTO_DEFAULT;
   let generadas = 0;
+  const ok = p => p && !p.omitida;
+  const conProv = (p) => { if(ok(p)) p.provision = true; return p; };
 
-  // Ventas
+  // Ventas: a crédito se carga la cuenta del cliente (subcuenta propia)
   (STATE.ventas||[]).forEach(v=>{
     if(existePolizaOrigen('venta', v.id)) return;
     const lineas = [];
-    if(v.condicion==='credito'){
-      lineas.push({cuenta:M.clientes, cargo:v.total, abono:0});
-    } else {
-      lineas.push({cuenta:M.caja, cargo:v.total, abono:0});
-    }
+    if(v.condicion==='credito') lineas.push({cuenta:ctaCliente(v.cliente), cargo:v.total, abono:0});
+    else lineas.push({cuenta:M.caja, cargo:v.total, abono:0});
     lineas.push({cuenta:M.ventas, cargo:0, abono:v.total});
     crearPoliza({fecha:v.fecha, tipo:'Ingreso', concepto:'Venta '+v.folio+' — '+v.cliente, origenModulo:'venta', origenId:v.id, lineas});
     if(v.costo>0){
@@ -3644,75 +3928,123 @@ function generarPolizasAutomaticas(){
     generadas++;
   });
 
-  // Compras
+  // Compras PROVISIONADAS: cargo a inventario del material / abono a la cuenta del proveedor; si fue de contado, póliza de pago aparte
   (STATE.compras||[]).forEach(c=>{
-    if(existePolizaOrigen('compra', c.id)) return;
-    const lineas = [{cuenta:M.inventarioMP, cargo:c.importe, abono:0}];
-    lineas.push(c.condicion==='credito' ? {cuenta:M.proveedores, cargo:0, abono:c.importe} : {cuenta:M.caja, cargo:0, abono:c.importe});
-    crearPoliza({fecha:c.fecha, tipo:'Egreso', concepto:'Compra '+c.folio+' — '+c.proveedor, origenModulo:'compra', origenId:c.id, lineas});
-    generadas++;
+    const cProv = ctaProveedor(c.proveedor);
+    if(!existePolizaOrigen('compra', c.id)){
+      const p = crearPoliza({fecha:c.fecha, tipo:'Diario', concepto:'Provisión compra '+c.folio+' — '+c.proveedor, origenModulo:'compra', origenId:c.id, lineas:[
+        {cuenta:ctaMaterial(c.materialId), cargo:c.importe, abono:0}, {cuenta:cProv, cargo:0, abono:c.importe}
+      ]});
+      conProv(p); generadas++;
+    }
+    if(c.condicion==='contado' && !existePolizaOrigen('compra-pago', c.id)){
+      const prov = (STATE.polizas||[]).find(p=>p.origenModulo==='compra' && p.origenId===c.id);
+      if(prov && prov.provision){
+        crearPoliza({fecha:c.fecha, tipo:'Egreso', concepto:'Pago de contado compra '+c.folio+' — '+c.proveedor, origenModulo:'compra-pago', origenId:c.id, lineas:[
+          {cuenta:cProv, cargo:c.importe, abono:0}, {cuenta:M.caja, cargo:0, abono:c.importe}
+        ]});
+        generadas++;
+      }
+    }
   });
 
-  // Gastos
+  // Gastos PROVISIONADOS (los de nómina se contabilizan con su propia póliza de nómina)
   (STATE.gastos||[]).forEach(g=>{
-    if(existePolizaOrigen('gasto', g.id)) return;
-    const cuentaGasto = g.categoria==='Fabricación indirecta' ? M.gastosIndirectos : g.categoria==='Venta' ? M.gastosVenta : g.categoria==='Nómina' ? M.manoObraDirecta : M.gastosAdmin;
-    const lineas = [{cuenta:cuentaGasto, cargo:g.importe, abono:0}];
-    lineas.push(g.condicion==='credito' ? {cuenta:M.proveedores, cargo:0, abono:g.importe} : {cuenta:M.caja, cargo:0, abono:g.importe});
-    crearPoliza({fecha:g.fecha, tipo:'Egreso', concepto:'Gasto '+g.folio+' — '+g.concepto, origenModulo:'gasto', origenId:g.id, lineas});
-    generadas++;
+    if(g.nominaId) return;
+    const cProv = ctaProveedor(g.proveedor);
+    if(!existePolizaOrigen('gasto', g.id)){
+      const p = crearPoliza({fecha:g.fecha, tipo:'Diario', concepto:'Provisión gasto '+g.folio+' — '+g.concepto, origenModulo:'gasto', origenId:g.id, lineas:[
+        {cuenta:ctaGasto(g), cargo:g.importe, abono:0}, {cuenta:cProv, cargo:0, abono:g.importe}
+      ]});
+      conProv(p); generadas++;
+    }
+    if(g.condicion==='contado' && !existePolizaOrigen('gasto-pago', g.id)){
+      const prov = (STATE.polizas||[]).find(p=>p.origenModulo==='gasto' && p.origenId===g.id);
+      if(prov && prov.provision){
+        crearPoliza({fecha:g.fecha, tipo:'Egreso', concepto:'Pago de contado gasto '+g.folio+' — '+g.concepto, origenModulo:'gasto-pago', origenId:g.id, lineas:[
+          {cuenta:cProv, cargo:g.importe, abono:0}, {cuenta:M.caja, cargo:0, abono:g.importe}
+        ]});
+        generadas++;
+      }
+    }
   });
 
-  // Órdenes de producción confirmadas (costeo)
+  // Órdenes de producción confirmadas (costeo): el abono a inventario se reparte por la cuenta de cada material
   (STATE.ordenes||[]).filter(o=>o.estado==='confirmada').forEach(o=>{
     if(existePolizaOrigen('orden', o.id)) return;
     const c = o.costeo;
     const lineas = [{cuenta:M.inventarioPT, cargo:c.inversionTotal, abono:0}];
-    if(c.invMateriales>0) lineas.push({cuenta:M.inventarioMP, cargo:0, abono:c.invMateriales});
+    if(c.invMateriales>0){
+      const porCta = {}; let suma = 0;
+      ((o.necesidades&&o.necesidades.detalle)||[]).forEach(d=>{ const k=ctaMaterial(d.materialId); porCta[k]=(porCta[k]||0)+(Number(d.inversion)||0); suma+=(Number(d.inversion)||0); });
+      const claves = Object.keys(porCta);
+      if(!claves.length || Math.abs(suma-c.invMateriales)>0.05){ lineas.push({cuenta:M.inventarioMP, cargo:0, abono:c.invMateriales}); }
+      else {
+        let acum = 0;
+        claves.forEach((k,i)=>{ let v = r2(porCta[k]); if(i===claves.length-1) v = r2(c.invMateriales-acum); acum = r2(acum+v); if(v>0.004) lineas.push({cuenta:k, cargo:0, abono:v}); });
+      }
+    }
     const otros = c.inversionTotal - c.invMateriales;
     if(otros>0.005) lineas.push({cuenta:M.manoObraDirecta, cargo:0, abono:otros});
     crearPoliza({fecha:o.fecha, tipo:'Diario', concepto:'Producción terminada — orden '+o.folio, origenModulo:'orden', origenId:o.id, lineas});
     generadas++;
   });
 
-  // Nómina
+  // Nómina PROVISIONADA: gasto por empleado / sueldos por pagar; luego póliza de pago
   (STATE.nomina||[]).forEach(n=>{
-    if(existePolizaOrigen('nomina', n.id)) return;
-    crearPoliza({fecha:n.periodoFin, tipo:'Egreso', concepto:'Nómina '+n.folio+' ('+n.periodoInicio+' a '+n.periodoFin+')', origenModulo:'nomina', origenId:n.id, lineas:[
-      {cuenta:M.manoObraDirecta, cargo:n.total, abono:0}, {cuenta:M.caja, cargo:0, abono:n.total}
-    ]});
-    generadas++;
+    const cSyS = ctaSueldosPorPagar();
+    if(!existePolizaOrigen('nomina', n.id)){
+      const porCta = {};
+      (n.items||[]).forEach(it=>{ const e=(STATE.empleados||[]).find(x=>x.id===it.empleadoId); const k=(e&&e.cuenta&&ctaExiste(e.cuenta))?e.cuenta:M.manoObraDirecta; porCta[k]=(porCta[k]||0)+((Number(it.dias)||0)*(Number(it.salarioDiario)||0)+(Number(it.extras)||0)-(Number(it.descuentos)||0)); });
+      const claves = Object.keys(porCta);
+      let lineas = []; let acum = 0;
+      claves.forEach((k,i)=>{ let v=r2(porCta[k]); if(i===claves.length-1) v=r2(n.total-acum); acum=r2(acum+v); lineas.push({cuenta:k, cargo:v, abono:0}); });
+      if(!lineas.length) lineas=[{cuenta:M.manoObraDirecta, cargo:n.total, abono:0}];
+      lineas.push({cuenta:cSyS, cargo:0, abono:n.total});
+      const p = crearPoliza({fecha:n.periodoFin, tipo:'Diario', concepto:'Provisión nómina '+n.folio+' ('+n.periodoInicio+' a '+n.periodoFin+')', origenModulo:'nomina', origenId:n.id, lineas});
+      conProv(p); generadas++;
+    }
+    if(!existePolizaOrigen('nomina-pago', n.id)){
+      const prov = (STATE.polizas||[]).find(p=>p.origenModulo==='nomina' && p.origenId===n.id);
+      if(prov && prov.provision){
+        crearPoliza({fecha:n.periodoFin, tipo:'Egreso', concepto:'Pago de nómina '+n.folio, origenModulo:'nomina-pago', origenId:n.id, lineas:[
+          {cuenta:cSyS, cargo:n.total, abono:0}, {cuenta:M.caja, cargo:0, abono:n.total}
+        ]});
+        generadas++;
+      }
+    }
   });
 
-  // Pagos programados ya pagados
+  // Pagos programados ya pagados: contra la cuenta del proveedor
   (STATE.pagosProgramados||[]).filter(p=>p.pagado).forEach(p=>{
     if(existePolizaOrigen('pago', p.id)) return;
     crearPoliza({fecha:p.fechaPago||p.fecha, tipo:'Egreso', concepto:'Pago programado '+p.folio+' — '+p.concepto, origenModulo:'pago', origenId:p.id, lineas:[
-      {cuenta:M.proveedores, cargo:p.importe, abono:0}, {cuenta:M.caja, cargo:0, abono:p.importe}
+      {cuenta:ctaProveedor(p.proveedor), cargo:p.importe, abono:0}, {cuenta:M.caja, cargo:0, abono:p.importe}
     ]});
     generadas++;
   });
 
-  // Pasivos: alta y abonos
+  // Pasivos financieros: alta y abonos contra la cuenta propia del pasivo
   (STATE.pasivos||[]).forEach(pas=>{
+    const cP = ctaPasivo(pas);
     if(!existePolizaOrigen('pasivo-alta', pas.id)){
       crearPoliza({fecha:pas.fechaInicio, tipo:'Ingreso', concepto:'Alta de pasivo — '+pas.nombre, origenModulo:'pasivo-alta', origenId:pas.id, lineas:[
-        {cuenta:M.caja, cargo:pas.montoOriginal, abono:0}, {cuenta:M.pasivosBancarios, cargo:0, abono:pas.montoOriginal}
+        {cuenta:M.caja, cargo:pas.montoOriginal, abono:0}, {cuenta:cP, cargo:0, abono:pas.montoOriginal}
       ]});
       generadas++;
     }
     (pas.abonos||[]).forEach(ab=>{
       if(existePolizaOrigen('pasivo-abono', ab.id)) return;
       crearPoliza({fecha:ab.fecha, tipo:'Egreso', concepto:'Abono a pasivo — '+pas.nombre, origenModulo:'pasivo-abono', origenId:ab.id, lineas:[
-        {cuenta:M.pasivosBancarios, cargo:ab.monto, abono:0}, {cuenta:M.caja, cargo:0, abono:ab.monto}
+        {cuenta:cP, cargo:ab.monto, abono:0}, {cuenta:M.caja, cargo:0, abono:ab.monto}
       ]});
       generadas++;
     });
   });
 
-  { const usadas = new Set(); (STATE.polizas||[]).forEach(p=>{ if(p.origenModulo && !p._madreOk) (p.lineas||[]).forEach(l=>{ if(esCuentaMadre(l.cuenta)) usadas.add(l.cuenta); }); }); if(usadas.size) setTimeout(()=>alert('⚠ Hay pólizas automáticas que usan cuentas MADRE (con subcuentas):\n\n'+[...usadas].map(c=>'• '+c+' — '+((cuentaPorCodigo(c)||{}).nombre||'')).join('\n')+'\n\nVe a Catálogo de cuentas → "Configurar cuentas de pólizas automáticas" y elige una subcuenta; luego elimina y vuelve a generar esas pólizas.'),50); }
+  { const usadas = new Set(); (STATE.polizas||[]).forEach(p=>{ if(p.origenModulo && !p._madreOk) (p.lineas||[]).forEach(l=>{ if(esCuentaMadre(l.cuenta)) usadas.add(l.cuenta); }); }); if(usadas.size) setTimeout(()=>alert('⚠ Hay pólizas automáticas que usan cuentas MADRE (con subcuentas):\n\n'+[...usadas].map(c=>'• '+c+' — '+ctaNombre(c)).join('\n')+'\n\nElige una subcuenta en la ficha correspondiente o en Configuración de cuentas.'),50); }
   if(window._polizasOmitidas){ setTimeout(()=>alert('🔒 '+window._polizasOmitidas+' póliza(s) NO se generaron porque su fecha cae en un periodo cerrado (hasta '+STATE.cierrePeriodo+'). Solo el CEO puede autorizarlo.'),60); window._polizasOmitidas=0; }
-  save(); renderPolizas(); renderAll();
+  save(); renderPolizas(); renderAll(); ctaAvisoCreadas();
   toast(generadas>0 ? `${generadas} póliza(s) nueva(s) generada(s).` : 'No hay movimientos nuevos por registrar — todo está al día.');
 }
 
@@ -5228,7 +5560,7 @@ function exportERMesUnicoExcel(){
   const r = calcERPoliza(desde,hasta);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, hojaConEstilo(efinExcelRows(erRows(r),['Importe','% s/ventas']),[1],[52,18,14]), 'Resultado integral');
-  XLSX.writeFile(wb, `EstadoResultados_${desde}_a_${hasta}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb, `EstadoResultados_${desde}_a_${hasta}.xlsx`);
   toast('Estado de resultado integral exportado a Excel.');
 }
 function exportERMesUnicoPDF(){
@@ -5240,7 +5572,7 @@ function exportERMesUnicoPDF(){
   pdfHeader(doc, `Estado de Resultado Integral — del ${desde} al ${hasta}`);
   efinPDF(doc, erRows(r), ['Importe','% s/ventas'], 39);
   agregarNotasAlPDF(doc);
-  pdfFooter(doc);
+  pdfFirmaCEO(doc); pdfFooter(doc);
   doc.save(`EstadoResultados_${desde}_a_${hasta}.pdf`);
   toast('Estado de resultado integral exportado a PDF.');
 }
@@ -5302,7 +5634,7 @@ function exportBalanceGeneralExcel(){
   const b = window._balanceDatos;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, hojaConEstilo(efinExcelRows(bgRows(b),['Importe']),[1],[56,20]), 'Situación financiera');
-  XLSX.writeFile(wb, `BalanceGeneral_${b.fecha}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb, `BalanceGeneral_${b.fecha}.xlsx`);
   toast('Estado de situación financiera exportado a Excel.');
 }
 function exportBalanceGeneralPDF(){
@@ -5315,7 +5647,7 @@ function exportBalanceGeneralPDF(){
   doc.setFontSize(8); doc.setTextColor(90,107,133);
   doc.text(b.cuadra?'Activo = Pasivo + Capital contable.':'ATENCIÓN: el balance no cuadra; revisa pólizas de apertura y automáticas.', 14, doc.lastAutoTable.finalY+6);
   agregarNotasAlPDF(doc);
-  pdfFooter(doc);
+  pdfFirmaCEO(doc); pdfFooter(doc);
   doc.save(`BalanceGeneral_${b.fecha}.pdf`);
   toast('Estado de situación financiera exportado a PDF.');
 }
@@ -5363,8 +5695,9 @@ function flujoCalcular(desde, hasta){
       if(flujoEsEfectivo(l.cuenta)) return;
       const efecto = -((Number(l.cargo)||0)-(Number(l.abono)||0));
       if(Math.abs(efecto)<0.005) return;
-      const c = cuentaPorCodigo(l.cuenta);
-      items.push({fecha:p.fecha, folio:p.folio, polizaId:p.id, concepto:p.concepto||'', cuenta:l.cuenta, nombre:c?c.nombre:l.cuenta, cat:flujoCategoria(l.cuenta,efecto), monto:efecto});
+      let cu = l.cuenta; if(p.origenModulo==='gasto-pago'){ const gg=(STATE.gastos||[]).find(x=>x.id===p.origenId); if(gg) cu=ctaGasto(gg); }
+      const c = cuentaPorCodigo(cu);
+      items.push({fecha:p.fecha, folio:p.folio, polizaId:p.id, concepto:p.concepto||'', cuenta:cu, nombre:c?c.nombre:cu, cat:flujoCategoria(cu,efecto), monto:efecto});
     });
   });
   items.sort((a,b)=>a.fecha.localeCompare(b.fecha)||String(a.folio).localeCompare(String(b.folio)));
@@ -5634,7 +5967,7 @@ function exportFlujoExcel(){
   pr.push(Object.assign({Concepto:'Flujo neto proyectado'}, ...p.cols.map(c=>({[c.mes]:c.neto}))));
   pr.push(Object.assign({Concepto:'Saldo final proyectado'}, ...p.cols.map(c=>({[c.mes]:c.fin}))));
   XLSX.utils.book_append_sheet(wb, hojaConEstilo(pr,p.cols.map((c,i)=>i+1),[52].concat(p.cols.map(()=>16))), 'Flujo proyectado');
-  XLSX.writeFile(wb, `FlujoEfectivo_${desde}_a_${hasta}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb, `FlujoEfectivo_${desde}_a_${hasta}.xlsx`);
   toast('Flujo de efectivo exportado a Excel (resumen, analítico, diario y proyectado).');
 }
 function exportFlujoPDF(){
@@ -5650,7 +5983,7 @@ function exportFlujoPDF(){
     efinPDF(doc, filas, ['Importe'], 39);
     doc.setFontSize(8); doc.setTextColor(90,107,133);
     doc.text(f.concilia?'Saldo final conciliado con caja y bancos del libro diario.':'ATENCIÓN: no concilia con caja y bancos del libro diario.', 14, doc.lastAutoTable.finalY+6);
-    pdfFooter(doc); doc.save(`FlujoAnalitico_${desde}_a_${hasta}.pdf`);
+    pdfFirmaCEO(doc); pdfFooter(doc); doc.save(`FlujoAnalitico_${desde}_a_${hasta}.pdf`);
   } else if(FLJ_TAB==='diario'){
     const f = flujoCalcular(desde,hasta);
     const filas = flujoDiario(f, !!document.getElementById('flTodosDias')?.checked);
@@ -5661,7 +5994,7 @@ function exportFlujoPDF(){
     doc.autoTable({head:[head], body, startY:39, styles:{fontSize:7, cellPadding:1.4}, headStyles:{fillColor:accent, fontSize:6.5},
       columnStyles:Object.fromEntries(head.map((h,i)=>[i,{halign:i?'right':'left'}])),
       foot:[['Total', fmtEF(f.saldoInicial)].concat(FLJ_CATS.map(c=>fmtEF(f.porCat[c.k].total*c.signo)), [fmtEF(f.flujoNeto), fmtEF(f.saldoFinal)])], footStyles:{fillColor:accent, textColor:255}});
-    pdfFooter(doc); doc.save(`FlujoDiario_${desde}_a_${hasta}.pdf`);
+    pdfFirmaCEO(doc); pdfFooter(doc); doc.save(`FlujoDiario_${desde}_a_${hasta}.pdf`);
   } else {
     const p = flujoProyectar();
     const doc = new jsPDF({unit:'mm', format:'letter', orientation:'landscape'});
@@ -5675,7 +6008,7 @@ function exportFlujoPDF(){
       didParseCell:(d)=>{ if(d.section==='body' && d.row.index===body.length-1){ d.cell.styles.fillColor=accent; d.cell.styles.textColor=255; d.cell.styles.fontStyle='bold'; } }});
     doc.setFontSize(8); doc.setTextColor(90,107,133);
     doc.text('Proyección estimada con promedio de los 3 meses anteriores (+ pagos programados, cartera y partidas manuales si se activaron). No es garantía de resultados.', 14, doc.lastAutoTable.finalY+6);
-    pdfFooter(doc); doc.save(`FlujoProyectado.pdf`);
+    pdfFirmaCEO(doc); pdfFooter(doc); doc.save(`FlujoProyectado.pdf`);
   }
   toast('Flujo de efectivo exportado a PDF.');
 }
@@ -6206,12 +6539,12 @@ function renderEstadoCostoProduccion(){
 function exportEstadoCostoProduccionExcel(){
   if(!librosDisponibles()) return; renderEstadoCostoProduccion(); const {d,h,filas}=window._ecpDatos;
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,hojaConEstilo(efinExcelRows(filas,['Importe','% s/costo']),[1],[70,18,12]),'Costo de producción');
-  XLSX.writeFile(wb,`EstadoCostoProduccion_${d}_a_${h}.xlsx`); toast('Estado de costo de producción exportado a Excel.');
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb,`EstadoCostoProduccion_${d}_a_${h}.xlsx`); toast('Estado de costo de producción exportado a Excel.');
 }
 function exportEstadoCostoProduccionPDF(){
   const jsPDF=pdfDisponible(); if(!jsPDF) return; renderEstadoCostoProduccion(); const {d,h,filas}=window._ecpDatos;
   const doc=new jsPDF({unit:'mm',format:'letter'}); pdfHeader(doc,`Estado de Costo de Producción — ${d==='0000-01-01'?'inicio':d} al ${h}`);
-  efinPDF(doc,filas,['Importe','% s/costo'],39); pdfFooter(doc); doc.save(`EstadoCostoProduccion_${d}_a_${h}.pdf`); toast('Estado de costo de producción exportado a PDF.');
+  efinPDF(doc,filas,['Importe','% s/costo'],39); pdfFirmaCEO(doc); pdfFooter(doc); doc.save(`EstadoCostoProduccion_${d}_a_${h}.pdf`); toast('Estado de costo de producción exportado a PDF.');
 }
 
 /* ---------- Notas a los estados financieros (generadas) ---------- */
@@ -6263,16 +6596,19 @@ function renderNIF(){
   if(e.notas){
     el.innerHTML=`<div class="efin-wrap"><div class="efin-head"><div class="en">${escaparHTML(STATE.config.nombre||'')}</div><div class="et">${e.titulo}</div><div class="es">${e.sub} · (Cifras en pesos mexicanos)</div></div><div style="padding:14px 18px">${e.notas.map(n=>`<h4 style="margin:10px 0 4px;color:var(--indigo)">${escaparHTML(n[0])}</h4><p style="margin:0;font-size:13px;line-height:1.5">${escaparHTML(n[1])}</p>`).join('')}</div></div>`;
   } else el.innerHTML=efinHTML(e.titulo,e.sub,e.cols,e.filas)+(e.extra?`<p class="smallnote" style="margin-top:8px;color:${e.ok?'var(--good)':'var(--bad)'}">${e.extra}</p>`:'');
+  el.insertAdjacentHTML('beforeend',firmaHTML());
 }
 function nifPDFEstado(doc,e){
   pdfHeader(doc,e.titulo+' — '+e.sub);
   if(e.notas){
     doc.setFontSize(9); let y=42; const w=doc.internal.pageSize.getWidth()-28;
     e.notas.forEach(n=>{ doc.setFont(undefined,'bold'); doc.setTextColor(11,36,71); if(y>250){doc.addPage(); pdfHeader(doc,e.titulo); y=42;} doc.text(n[0],14,y); y+=5; doc.setFont(undefined,'normal'); doc.setTextColor(40,40,40); const ls=doc.splitTextToSize(n[1],w); if(y+ls.length*4.2>265){doc.addPage(); pdfHeader(doc,e.titulo); y=42;} doc.text(ls,14,y); y+=ls.length*4.2+5; });
+    pdfFirmaCEO(doc,y);
     return;
   }
   efinPDF(doc,e.filas,e.cols,39);
   if(e.extra){ doc.setFontSize(8); doc.setTextColor(e.ok?46:178,e.ok?125:58,e.ok?91:52); doc.text(e.extra,14,doc.lastAutoTable.finalY+6); }
+  pdfFirmaCEO(doc,doc.lastAutoTable.finalY+(e.extra?6:0));
 }
 function exportNIFPDF(todo){
   const jsPDF=pdfDisponible(); if(!jsPDF) return;
@@ -6291,6 +6627,7 @@ function exportNIFExcel(todo){
     if(e.notas) XLSX.utils.book_append_sheet(wb,hojaConEstilo(e.notas.map(n=>({Nota:n[0],Texto:n[1]})),[],[34,120]),nombre);
     else XLSX.utils.book_append_sheet(wb,hojaConEstilo(efinExcelRows(e.filas,e.cols),e.cols.map((c,i)=>i+1),[62].concat(e.cols.map(()=>20))),nombre);
   });
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma');
   XLSX.writeFile(wb,todo?`EstadosFinancieros_NIF_${desde}_a_${hasta}.xlsx`:`NIF_${NIF_TAB}_${desde}_a_${hasta}.xlsx`);
   toast(todo?'Paquete NIF exportado a Excel (una hoja por estado).':'Estado exportado a Excel.');
 }
@@ -6496,7 +6833,7 @@ function exportPresupuestoPDF(){
   const A=presAnio(PRES_ANIO); const tot=l=>l.meses.reduce((s,v)=>s+v,0);
   doc.addPage('letter','landscape'); pdfHeader(doc,`Presupuesto ${PRES_ANIO} por mes`);
   doc.autoTable({head:[['Concepto',...MESES_CORTO,'Total']],body:A.lineas.map(l=>[l.nombre,...l.meses.map(v=>fmtEF(v)),fmtEF(tot(l))]),startY:39,styles:{fontSize:6.8,cellPadding:1.2},headStyles:{fillColor:accent},columnStyles:Object.fromEntries(Array.from({length:14},(_,i)=>[i,{halign:i?'right':'left'}]))});
-  pdfFooter(doc); doc.save(`Presupuesto_${PRES_ANIO}.pdf`); toast('Presupuesto exportado a PDF.');
+  pdfFirmaCEO(doc); pdfFooter(doc); doc.save(`Presupuesto_${PRES_ANIO}.pdf`); toast('Presupuesto exportado a PDF.');
 }
 
 
@@ -6578,6 +6915,7 @@ function abrirAltaCliente(nombreExistente){
       <div class="field"><label>Límite de crédito ($) <span class="smallnote">0 = sin límite</span></label><input id="clLimite" type="number" min="0" step="0.01" value="${v(c.limiteCredito||0)}"></div>
       <div class="field"><label>Días de crédito</label><input id="clDias" type="number" min="0" value="${v(c.diasCredito||0)}"></div>
       <div class="field"><label>Descuento habitual %</label><input id="clDescuento" type="number" min="0" max="100" step="0.5" value="${v(c.descuento||0)}"></div>
+      ${ctaCampo('clCuenta', c.cuenta||ctaSugerida('cliente',nombreExistente), 'cliente', 'Cuenta contable del cliente (cuentas por cobrar)')}
     </div>
     <h4 class="fh">Contacto y domicilio</h4>
     <div class="formgrid c3">
@@ -6605,11 +6943,12 @@ function guardarCliente(nombreExistente){
   if(!STATE.clientesInfo) STATE.clientesInfo = {};
   const val=id=>document.getElementById(id).value.trim();
   const previo=STATE.clientesInfo[nombre]||{};
+  const cuentaCli=ctaLeer('clCuenta','cliente',nombre); ctaAvisoCreadas();
   STATE.clientesInfo[nombre] = Object.assign({}, previo, {
     estatus:val('clEstatus'), razonSocial:val('clRazon'), rfc:val('clRFC').toUpperCase(), tipoCliente:val('clTipo'), fechaAlta:val('clAlta')||todayStr(),
     division:val('clDivision'), vendedor:val('clVendedor'), formaPago:val('clFormaPago'),
     limiteCredito:Math.max(0,Number(val('clLimite'))||0), diasCredito:Math.max(0,Math.round(Number(val('clDias'))||0)), descuento:Math.min(100,Math.max(0,Number(val('clDescuento'))||0)),
-    contacto:val('clContacto'), celular:val('clCelular'), telefono:val('clCelular'), correo:val('clCorreo'),
+    cuenta:cuentaCli, contacto:val('clContacto'), celular:val('clCelular'), telefono:val('clCelular'), correo:val('clCorreo'),
     direccion:val('clDireccion'), codigoPostal:val('clCP'), ciudad:val('clCiudad'), estado:val('clEstado'), pais:val('clPais')||'México', referencia:val('clReferencia'), notas:val('clNotas'),
   });
   if(!STATE.clientes[nombre]) STATE.clientes[nombre]=[];
@@ -6663,7 +7002,7 @@ function ventaChequeoCredito(total){
 /* ---------- Cobranza ---------- */
 function polizaDeCobro(nombre,mov){
   const M=STATE.mapeoCuentasAuto||MAPEO_CUENTAS_AUTO_DEFAULT;
-  crearPoliza({fecha:mov.fecha,tipo:'Ingreso',concepto:(mov.folio?('Cobro '+mov.folio):'Cobro')+' — '+nombre,origenModulo:'cobro',origenId:mov.id,lineas:[{cuenta:M.caja,cargo:mov.monto,abono:0},{cuenta:M.clientes,cargo:0,abono:mov.monto}]});
+  crearPoliza({fecha:mov.fecha,tipo:'Ingreso',concepto:(mov.folio?('Cobro '+mov.folio):'Cobro')+' — '+nombre,origenModulo:'cobro',origenId:mov.id,lineas:[{cuenta:M.caja,cargo:mov.monto,abono:0},{cuenta:ctaCliente(nombre),cargo:0,abono:mov.monto}]});
 }
 function abrirCobro(nombre){
   const nombres=Object.keys(STATE.clientes||{}).filter(n=>saldoCartera(STATE.clientes[n]).saldo>0.005||n===nombre);
@@ -6853,7 +7192,7 @@ function exportBalanzaExcel(){
   const saldos = saldosPorCuenta(desde,hasta).filter(c=>c.cargos>0||c.abonos>0);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom(saldos.map(c=>({Cuenta:c.codigo, Nombre:c.nombre, Tipo:c.tipo, Cargos:c.cargos, Abonos:c.abonos, Saldo:c.saldo}))), 'Balanza');
-  XLSX.writeFile(wb, `Balanza_${desde||'inicio'}_a_${hasta||'hoy'}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb, `Balanza_${desde||'inicio'}_a_${hasta||'hoy'}.xlsx`);
   toast('Balanza exportada a Excel.');
 }
 function exportBalanzaPDF(){
@@ -6864,7 +7203,7 @@ function exportBalanzaPDF(){
   pdfHeader(doc, `Balanza de comprobación — ${desde||'inicio'} a ${hasta||'hoy'}`);
   doc.autoTable({head:[['Cuenta','Cargos','Abonos','Saldo']], body: saldos.map(c=>[c.codigo+' — '+c.nombre, money(c.cargos), money(c.abonos), money(c.saldo)]), startY:39, styles:{fontSize:9}, headStyles:{fillColor:hexToRgb(STATE.config.facturaColor)}});
   agregarNotasAlPDF(doc);
-  pdfFooter(doc);
+  pdfFirmaCEO(doc); pdfFooter(doc);
   doc.save(`Balanza_${desde||'inicio'}_a_${hasta||'hoy'}.pdf`);
   toast('Balanza exportada a PDF.');
 }
@@ -6906,7 +7245,7 @@ function exportERComparativoExcel(){
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom(rows), 'Comparativo');
-  XLSX.writeFile(wb, `EstadoResultadosComparativo_${mesA}_vs_${mesB}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb, `EstadoResultadosComparativo_${mesA}_vs_${mesB}.xlsx`);
   toast('Comparativo exportado a Excel.');
 }
 function exportERComparativoPDF(){
@@ -6927,7 +7266,7 @@ function exportERComparativoPDF(){
     ],
     startY:39, styles:{fontSize:9.5}, headStyles:{fillColor:hexToRgb(STATE.config.facturaColor)}
   });
-  pdfFooter(doc);
+  pdfFirmaCEO(doc); pdfFooter(doc);
   doc.save(`EstadoResultadosComparativo_${mesA}_vs_${mesB}.pdf`);
   toast('Comparativo exportado a PDF.');
 }
@@ -7001,7 +7340,7 @@ function exportERProyectadoExcel(){
   renderERProyectado();
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom(window._erProyDatos.map(f=>({Mes:f.mes, Ingresos:f.ingresos, Costos:f.costos, Gastos:f.gastos, 'Utilidad neta':f.utilidadNeta}))), 'Proyección');
-  XLSX.writeFile(wb, `EstadoResultadosProyectado.xlsx`);
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb, `EstadoResultadosProyectado.xlsx`);
   toast('Proyección exportada a Excel.');
 }
 function exportERProyectadoPDF(){
@@ -7011,7 +7350,7 @@ function exportERProyectadoPDF(){
   pdfHeader(doc, 'Estado de resultados proyectado');
   doc.autoTable({head:[['Mes','Ingresos','Costos','Gastos','Utilidad neta']], body: window._erProyDatos.map(f=>[f.mes,money(f.ingresos),money(f.costos),money(f.gastos),money(f.utilidadNeta)]), startY:39, styles:{fontSize:9}, headStyles:{fillColor:hexToRgb(STATE.config.facturaColor)}});
   doc.setFontSize(8); doc.text('Proyección estimada con base en el promedio de los 3 meses anteriores. No es un compromiso ni garantía de resultados.', 14, doc.lastAutoTable.finalY+8);
-  pdfFooter(doc);
+  pdfFirmaCEO(doc); pdfFooter(doc);
   doc.save(`EstadoResultadosProyectado.pdf`);
   toast('Proyección exportada a PDF.');
 }
@@ -7376,7 +7715,7 @@ function renderCartera(tipo, kpiId, tblId){
   document.getElementById(tblId).innerHTML = saldos.sort((a,b)=>b.saldo-a.saldo).map(s=>`
     <tr><td>${s.n}</td><td class="num mono">${money(s.cargos)}</td><td class="num mono">${money(s.abonos)}</td>
     <td class="num mono"><b>${money(s.saldo)}</b></td>
-    <td><button class="btn ghost sm" onclick="verDetalleCartera('${tipo}','${s.n.replace(/'/g,"\\'")}')">Ver movimientos</button></td></tr>
+    <td class="flex"><button class="btn ghost sm" onclick="verDetalleCartera('${tipo}','${s.n.replace(/'/g,"\\'")}')">Ver movimientos</button>${tipo==='proveedores'&&s.saldo>0.005?`<button class="btn clay sm" onclick="abrirPagoProveedor(${jsq(s.n)})">💳 Aplicar pago</button>`:''}</td></tr>
   `).join('') || `<tr><td colspan="5" class="muted">Sin movimientos todavía.</td></tr>`;
 }
 
@@ -7463,7 +7802,7 @@ function exportMesExcel(){
   XLSX.utils.book_append_sheet(wb, sheetFrom(r.ventasMes.map(v=>({Factura:v.folio,Fecha:v.fecha,Cliente:v.cliente,Total:v.total,Utilidad:v.utilidad}))), 'Ventas');
   XLSX.utils.book_append_sheet(wb, sheetFrom(r.gastosMes.map(g=>({Folio:g.folio,Fecha:g.fecha,Categoria:g.categoria,Concepto:g.concepto,Importe:g.importe}))), 'Gastos');
   XLSX.utils.book_append_sheet(wb, sheetFrom(r.comprasMes.map(c=>({Folio:c.folio,Fecha:c.fecha,Proveedor:c.proveedor,Importe:c.importe}))), 'Compras');
-  XLSX.writeFile(wb, `ArtesaniasDMitzy_Reporte_${mes}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb, `ArtesaniasDMitzy_Reporte_${mes}.xlsx`);
   toast('Reporte mensual (Excel) generado.');
 }
 function exportMesPDF(){
@@ -7485,7 +7824,7 @@ function exportMesPDF(){
     ],
     startY:37, styles:{fontSize:10}, headStyles:{fillColor:[11,36,71]}
   });
-  pdfFooter(doc);
+  pdfFirmaCEO(doc); pdfFooter(doc);
   doc.save(`ArtesaniasDMitzy_Reporte_${mes}.pdf`);
   toast('Reporte mensual (PDF) generado.');
 }
@@ -7537,7 +7876,7 @@ function exportEstadoResultadosPDF(){
     ['= Utilidad neta', money(r.utilidadNeta)],
   ];
   doc.autoTable({head:[['Concepto','Importe']], body, startY:37, styles:{fontSize:10}, headStyles:{fillColor:[11,36,71]}});
-  pdfFooter(doc);
+  pdfFirmaCEO(doc); pdfFooter(doc);
   doc.save(`ArtesaniasDMitzy_EstadoResultados.pdf`);
   toast('Estado de resultados (PDF) generado.');
 }
@@ -7554,7 +7893,7 @@ function exportEstadoResultadosExcel(){
   if(!librosDisponibles()) return;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheetFrom(rows), 'Estado de resultados');
-  XLSX.writeFile(wb, `ArtesaniasDMitzy_EstadoResultados.xlsx`);
+  XLSX.utils.book_append_sheet(wb,hojaFirmaExcel(),'Firma'); XLSX.writeFile(wb, `ArtesaniasDMitzy_EstadoResultados.xlsx`);
   toast('Estado de resultados (Excel) generado.');
 }
 
@@ -7606,6 +7945,8 @@ function renderAll(){
   renderResumenClientesMini();
   renderUsuariosResumen();
   document.getElementById('cfgNombre').value = STATE.config.nombre||'';
+  document.getElementById('cfgFirmaNombre').value = STATE.config.firmaNombre||'';
+  document.getElementById('cfgFirmaCargo').value = STATE.config.firmaCargo||'';
   document.getElementById('cfgRfc').value = STATE.config.rfc||'';
   document.getElementById('cfgDireccion').value = STATE.config.direccion||'';
   document.getElementById('cfgCorreo').value = STATE.config.correo||'';
@@ -7904,6 +8245,11 @@ function hojaPortada(desde, hasta){
     ['  14. Cuentas por Cobrar'],
     ['  15. Cuentas por Pagar'],
     ['  16. Plan de Pagos'],
+    ['  17. Estados conforme a NIF (situación financiera, resultado integral, cambios en capital, flujos, costo de producción y notas)'],
+    ['  18. Tema fiscal: resumen, ISR provisional e IVA mensual'],
+    ['  19. Firma de autorización'],
+    [''],
+    ['Autorizó: '+firmaCEO().nombre+' — '+firmaCEO().cargo],
     [''],
     ['Nota: este es un documento de gestión interna. Los saldos y cifras deben ser validados por el contador de la empresa antes de usarse con fines fiscales o legales.'],
   ];
@@ -7984,6 +8330,22 @@ function generarPaqueteFinanciero(){
   if(STATE.notasEstadosFinancieros && STATE.notasEstadosFinancieros.trim()){
     XLSX.utils.book_append_sheet(wb, hojaConEstilo([{Notas:STATE.notasEstadosFinancieros}], null, [90]), 'Notas');
   }
+  // ---- Estados conforme a NIF (incluye estado de costo de producción) ----
+  NIF_TABS.forEach(t=>{
+    try{
+      const e=nifEstado(t.k,desde,hasta); const nm=('NIF '+t.n).replace(/[\\\/\?\*\[\]:]/g,'').slice(0,31);
+      if(e.notas) XLSX.utils.book_append_sheet(wb,hojaConEstilo(e.notas.map(n=>({Nota:n[0],Texto:n[1]})),[],[34,120]),nm);
+      else XLSX.utils.book_append_sheet(wb,hojaConEstilo(efinExcelRows(e.filas,e.cols),e.cols.map((c,i)=>i+1),[62].concat(e.cols.map(()=>20))),nm);
+    }catch(err){ console.warn('NIF',t.k,err); }
+  });
+  // ---- Tema fiscal: resumen, ISR provisional e IVA mensual del ejercicio ----
+  try{
+    const fx=hojasFiscalesPaquete(hasta);
+    XLSX.utils.book_append_sheet(wb, hojaConEstilo(fx.sum,[],[52,70]), 'Fiscal - Resumen');
+    XLSX.utils.book_append_sheet(wb, hojaConEstilo(fx.isr,[1,2,3,4,5,6,7,8,9,10,11],null), 'Fiscal - ISR');
+    XLSX.utils.book_append_sheet(wb, hojaConEstilo(fx.iva,[1,2,3,4,5,6,7,8,9],null), 'Fiscal - IVA');
+  }catch(err){ console.warn('Fiscal',err); }
+  XLSX.utils.book_append_sheet(wb, hojaFirmaExcel(), 'Firma');
 
   XLSX.writeFile(wb, `PaqueteFinanciero_ArtesaniasDMitzy_${desde}_a_${hasta}.xlsx`, {cellStyles:true});
   reproducirSonido('finish');
@@ -7992,6 +8354,7 @@ function generarPaqueteFinanciero(){
 
 function guardarConfig(){
   STATE.config.nombre = document.getElementById('cfgNombre').value.trim()||'Artesanías D Mitzy';
+  guardarFirmaConfig();
   STATE.config.rfc = document.getElementById('cfgRfc').value.trim();
   STATE.config.direccion = document.getElementById('cfgDireccion').value.trim();
   STATE.config.correo = document.getElementById('cfgCorreo').value.trim();
@@ -8407,6 +8770,45 @@ function exportExcelCompleto(){
 /* =================================================================
    EXPORTACIÓN — PDF (jsPDF + autotable)
    ================================================================= */
+/* =================================================================
+   FIRMA DEL CEO EN ESTADOS FINANCIEROS
+   ================================================================= */
+const FIRMA_CEO_DEFAULT = {nombre:'C.P. Jorge Fabián Villanueva Ávalos', cargo:'CEO / Director General'};
+function firmaCEO(){ const c=STATE.config||{}; return {nombre:(c.firmaNombre||FIRMA_CEO_DEFAULT.nombre), cargo:(c.firmaCargo||FIRMA_CEO_DEFAULT.cargo)}; }
+function firmaHTML(){
+  const f=firmaCEO();
+  return `<div class="firma-bloque"><p class="smallnote" style="text-align:center;margin:0 0 26px">Bajo protesta de decir verdad, se declara que los presentes estados financieros y sus notas fueron preparados con base en los registros contables de la entidad.</p>
+    <div style="width:280px;margin:0 auto;text-align:center"><div style="border-top:1.5px solid var(--ink,#0B2447);padding-top:6px"><b>${escaparHTML(f.nombre)}</b><br><span class="muted">${escaparHTML(f.cargo)}</span><br><span class="smallnote">Autorizó</span></div></div></div>`;
+}
+function pdfFirmaCEO(doc,yMin){
+  const f=firmaCEO(); const w=doc.internal.pageSize.getWidth(), h=doc.internal.pageSize.getHeight();
+  let y=Math.max(yMin||0,(doc.lastAutoTable&&doc.lastAutoTable.finalY)||0)+22;
+  if(y>h-48){ doc.addPage(); y=60; }
+  doc.setFontSize(7.5); doc.setFont(undefined,'normal'); doc.setTextColor(110,110,110);
+  doc.text('Bajo protesta de decir verdad, se declara que los presentes estados financieros y sus notas fueron preparados con base en los registros contables de la entidad.', w/2, y-10, {align:'center', maxWidth:w-40});
+  doc.setDrawColor(11,36,71); doc.setLineWidth(0.4); doc.line(w/2-48, y+10, w/2+48, y+10);
+  doc.setTextColor(11,36,71); doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.text(f.nombre, w/2, y+16, {align:'center'});
+  doc.setFont(undefined,'normal'); doc.setFontSize(8.5); doc.setTextColor(80,80,80); doc.text(f.cargo, w/2, y+21, {align:'center'}); doc.text('Autorizó', w/2, y+25.5, {align:'center'});
+}
+function hojaFirmaExcel(){
+  const f=firmaCEO();
+  const ws=XLSX.utils.aoa_to_sheet([[STATE.config.nombre||'Artesanías D Mitzy'],['Firma de autorización de los estados financieros'],[''],['Bajo protesta de decir verdad, se declara que los presentes estados financieros y sus notas fueron preparados con base en los registros contables de la entidad.'],[''],[''],['______________________________________'],[f.nombre],[f.cargo],['Autorizó']]);
+  try{ ws['A1'].s=estiloTitulo(); ws['A2'].s=estiloSubtitulo(); }catch(e){}
+  anchoColumnas(ws,[90]); return ws;
+}
+function guardarFirmaConfig(){
+  STATE.config.firmaNombre=(document.getElementById('cfgFirmaNombre').value.trim()||FIRMA_CEO_DEFAULT.nombre);
+  STATE.config.firmaCargo=(document.getElementById('cfgFirmaCargo').value.trim()||FIRMA_CEO_DEFAULT.cargo);
+}
+/* ---------- Paquete financiero: hojas fiscales y estados NIF ---------- */
+function hojasFiscalesPaquete(hasta){
+  const ej=(hasta||todayStr()).slice(0,4); const res=calcFiscalEjercicio(ej);
+  const isr=res.map(r=>({Mes:r.nombre,'Ingresos del mes':r.ingMes,'Ingresos acumulados':r.ingAcum,'Deducciones acumuladas':r.dedAcum,'PTU acumulada':r.ptuAcum,'Utilidad fiscal antes de pérdidas':r.utilAntes,'Pérdidas aplicadas':r.perdAplicada,'Base gravable':r.base,'ISR causado acumulado':r.isrCausado,'Retenciones acumuladas':r.retAcum,'ISR pagado en provisionales previos':r.isrPagadoPrev,'ISR a pagar del mes':r.isrPagado,'Fecha límite de pago':r.limite}));
+  const iva=res.map(r=>({Mes:r.nombre,'Ingresos del mes':r.ingMes,'IVA trasladado':r.ivaTras,'IVA acreditable':r.ivaAcredMes,'IVA retenido':r.retIVA,'IVA neto':r.neto,'Saldo a favor inicial':r.saldoIni,'Saldo aplicado':r.aplicado,'IVA a pagar':r.ivaPagar,'Saldo a favor final':r.saldoFin,'Fecha límite de pago':r.limite}));
+  const sum=[{Concepto:'Ejercicio fiscal',Valor:ej},{Concepto:'Ingresos acumulados del ejercicio',Valor:res[res.length-1].ingAcum},{Concepto:'Deducciones acumuladas',Valor:res[res.length-1].dedAcum},{Concepto:'ISR causado acumulado (cierre del ejercicio)',Valor:res[res.length-1].isrCausado},{Concepto:'ISR pagado en provisionales del ejercicio',Valor:r2(res.reduce((s,r)=>s+r.isrPagado,0))},{Concepto:'IVA a pagar acumulado del ejercicio',Valor:r2(res.reduce((s,r)=>s+r.ivaPagar,0))},{Concepto:'Saldo a favor de IVA al cierre',Valor:res[res.length-1].saldoFin},{Concepto:'Nota',Valor:'Cifras calculadas con la información capturada en el módulo Fiscal (tarifa ISR, INPC, egresos con IVA). Validar con el contador antes de presentar declaraciones.'}];
+  return {sum,isr,iva};
+}
+
 function pdfHeader(doc,title){
   const cfg = STATE.config;
   const accent = hexToRgb(cfg.facturaColor);
