@@ -325,6 +325,7 @@ body.emp-nomanuf #view-dashboard > :not(.topbar):not(#dashFin){display:none !imp
 .ep-sub{color:#cfe0f5;font-size:14px;margin-bottom:22px}
 .ep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;text-align:left}
 .ep-item{background:#fff;color:var(--ink);border:2px solid transparent;border-radius:14px;padding:16px;cursor:pointer;text-align:left;font:inherit;transition:transform .12s,border-color .12s,box-shadow .12s;display:flex;flex-direction:column;gap:4px}
+.ep-item{position:relative}.ep-del{position:absolute;top:8px;right:8px;font-size:11px;background:#fdeceb;color:#b3261e;border:1px solid #f1b8b4;border-radius:8px;padding:2px 8px;opacity:.85}.ep-del:hover{background:#b3261e;color:#fff;opacity:1}
 .ep-item:hover{transform:translateY(-3px);border-color:#C9A24B;box-shadow:0 10px 24px rgba(0,0,0,.3)}
 .ep-item img{height:64px;max-width:100%;object-fit:contain;object-position:left;margin-bottom:6px}
 .ep-item .ep-ic{font-size:40px;height:64px;line-height:64px}
@@ -376,6 +377,13 @@ body.emp-nomanuf #view-dashboard > :not(.topbar):not(#dashFin){display:none !imp
     <div class="menu-tools"><input id="menuBuscar" type="search" placeholder="Buscar módulo…" oninput="menuFiltrar(this.value)" autocomplete="off"><button type="button" title="Desplegar todo" onclick="menuTodo(true)">＋</button><button type="button" title="Contraer todo" onclick="menuTodo(false)">－</button></div>
     <div class="navgroup single">
       <button class="navbtn active" data-view="dashboard"><span class="ic">🏠</span> Panel general</button>
+    </div>
+    <div class="navgroup" data-grupo="Herramientas">
+      <div class="navlabel">Herramientas</div>
+      <button class="navbtn" data-view="alertas"><span class="ic">🔔</span> Centro de alertas <span id="alertaBadge" class="badge" style="display:none;margin-left:4px"></span></button>
+      <button class="navbtn" data-view="razones"><span class="ic">📐</span> Razones financieras</button>
+      <button class="navbtn" data-view="bitacora"><span class="ic">📜</span> Bitácora de actividad</button>
+      <button class="navbtn" type="button" onclick="abrirBusqueda()"><span class="ic">🔎</span> Buscar (Ctrl+K)</button>
     </div>
     <div class="navgroup" data-grupo="Arrendamiento">
       <div class="navlabel">Arrendamiento</div>
@@ -1137,6 +1145,18 @@ body.emp-nomanuf #view-dashboard > :not(.topbar):not(#dashFin){display:none !imp
       <div class="topbar"><div class="titles"><div class="eyebrow">Arrendamiento</div><h1>Bienes, contratos y rentas</h1></div></div>
       <div id="arrBody"></div>
     </section>
+    <section class="view" id="view-alertas">
+      <div class="topbar"><div class="titles"><div class="eyebrow">Herramientas</div><h1>Centro de alertas</h1></div></div>
+      <div id="alertasBody"></div>
+    </section>
+    <section class="view" id="view-razones">
+      <div class="topbar"><div class="titles"><div class="eyebrow">Herramientas</div><h1>Razones financieras</h1></div></div>
+      <div id="razonesBody"></div>
+    </section>
+    <section class="view" id="view-bitacora">
+      <div class="topbar"><div class="titles"><div class="eyebrow">Herramientas</div><h1>Bitácora de actividad</h1></div></div>
+      <div id="bitacoraBody"></div>
+    </section>
     <section class="view" id="view-eliminaciones">
       <div class="topbar"><div class="titles"><div class="eyebrow">Grupo de empresas</div><h1>Consolidación y eliminaciones</h1></div></div>
       <div id="elimBody"></div>
@@ -1439,11 +1459,11 @@ function save(){
 const CONSOL_ID = '__consol';
 let DB = null;
 const TIPOS_EMPRESA = {manufactura:'Manufactura / producción', arrendamiento:'Arrendamiento de casas y vehículos', otra:'Otra (solo finanzas y contabilidad)'};
-const MODULOS_FINANZAS = ['dashboard','gastos','cxc','cxp','pagos','pasivos','bancos','flujo','presupuesto','polizas','estadosfinancieros','fiscal','reportes','respaldo','config'];
+const MODULOS_FINANZAS = ['dashboard','alertas','razones','bitacora','gastos','cxc','cxp','pagos','pasivos','bancos','flujo','presupuesto','polizas','estadosfinancieros','fiscal','reportes','respaldo','config'];
 const MODULOS_EMPRESA = {
   arrendamiento: ['dashboard','arrendamiento'].concat(MODULOS_FINANZAS.slice(1)),
   otra: MODULOS_FINANZAS,
-  consolidado: ['eliminaciones','estadosfinancieros','flujo'],
+  consolidado: ['eliminaciones','estadosfinancieros','flujo','razones'],
 };
 const INTERCO_PREFIJOS = ['105-90-','201-90-','401-90-','603-90-'];
 const CTA_ELIM = '199-99-000';
@@ -1804,15 +1824,18 @@ function arrGenerarRentas(hasta){
       const base=r2(Number(c.renta)||0), iva=r2(base*(Number(c.ivaPct)||0)/100), total=r2(base+iva);
       const rel=esRelacionadaCliente(c.cliente);
       const ctaCli=ctaCliente(c.cliente), ctaIng=rel?'401-90-001':arrCta(b.tipo,'ing');
-      const lineas=[{cuenta:ctaCli,cargo:total,abono:0},{cuenta:ctaIng,cargo:0,abono:base}];
+      const rISR=(c.retencion&&ctaExiste('114-01-000'))?r2(base*0.10):0, rIVA=(c.retencion&&iva>0&&ctaExiste('113-01-000'))?r2(iva*2/3):0, porCobrar=r2(total-rISR-rIVA);
+      const lineas=[{cuenta:ctaCli,cargo:porCobrar,abono:0},{cuenta:ctaIng,cargo:0,abono:base}];
       if(iva>0) lineas.push({cuenta:'207-01-000',cargo:0,abono:iva});
+      if(rISR>0) lineas.push({cuenta:'114-01-000',cargo:rISR,abono:0});
+      if(rIVA>0) lineas.push({cuenta:'113-01-000',cargo:rIVA,abono:0});
       const rid=uid('rn'), fol=folio('REN','renta');
       const p=crearPoliza({fecha,tipo:'Diario',concepto:'Renta '+m+' — '+b.nombre+' — '+c.cliente,origenModulo:'arr-renta',origenId:rid,lineas});
       if(p.omitida) return;
       p.provision=true;
       const cargoId=uid('mv');
-      movCartera('clientes',c.cliente,{id:cargoId,tipo:'cargo',concepto:'Renta '+m+' — '+b.nombre,monto:total,fecha,vence:fecha,renta:true,rentaId:rid});
-      STATE.arr.rentas.push({id:rid,folio:fol,contratoId:c.id,bienId:b.id,cliente:c.cliente,periodo:m,fecha,base,iva,total,cargoId});
+      movCartera('clientes',c.cliente,{id:cargoId,tipo:'cargo',concepto:'Renta '+m+' — '+b.nombre+(rISR||rIVA?' (neto de retenciones)':''),monto:porCobrar,fecha,vence:fecha,renta:true,rentaId:rid});
+      STATE.arr.rentas.push({id:rid,folio:fol,contratoId:c.id,bienId:b.id,cliente:c.cliente,periodo:m,fecha,base,iva,total,retISR:rISR,retIVA:rIVA,cargoId});
       n++;
     });
   });
@@ -1830,7 +1853,7 @@ function renderArrendamiento(){
     <div class="tblwrap"><table class="tbl"><thead><tr><th>Tipo</th><th>Bien</th><th>Referencia</th><th class="num">Valor</th><th class="num">Dep. acumulada</th><th class="num">Valor en libros</th><th>Estatus</th><th></th></tr></thead><tbody>${A.bienes.map(b=>{ const da=arrDepAcum(b); return `<tr><td>${ARR_CFG[b.tipo].etq}</td><td><b>${escaparHTML(b.nombre)}</b></td><td>${escaparHTML(b.ref||'')}</td><td class="num mono">${money(b.valor)}</td><td class="num mono">${money(da)}</td><td class="num mono">${money(r2((b.valor||0)-da))}</td><td><span class="badge ${b.estatus==='rentado'?'ok':b.estatus==='baja'?'bad':''}">${b.estatus}</span></td><td class="flex"><button class="btn ghost sm" onclick="abrirBien('${b.id}')">Editar</button><button class="btn danger sm" onclick="borrarBien('${b.id}')">✕</button></td></tr>`; }).join('')||'<tr><td colspan="8" class="muted">Aún no hay bienes. Da de alta tus casas y vehículos.</td></tr>'}</tbody></table></div>`;
   } else if(ARR_TAB==='contratos'){
     h=`<div class="flex" style="justify-content:space-between"><h3>Contratos de arrendamiento</h3><div class="flex" style="flex-wrap:wrap;gap:6px"><button class="btn ghost sm" onclick="abrirDatosArrendador()">👤 Datos del arrendador</button><button class="btn ghost sm" onclick="abrirMachotes()">📄 Machotes en blanco</button><button class="btn clay sm" onclick="abrirContrato(null)">+ Nuevo contrato</button></div></div>
-    <div class="tblwrap"><table class="tbl"><thead><tr><th>Bien</th><th>Arrendatario</th><th class="num">Renta mensual</th><th class="num">IVA</th><th>Inicio</th><th>Fin</th><th>Día pago</th><th class="num">Depósito</th><th>Estatus</th><th></th></tr></thead><tbody>${A.contratos.map(c=>{ const b=arrBien(c.bienId); return `<tr><td>${escaparHTML(b?b.nombre:'—')}</td><td>${escaparHTML(c.cliente)}${esRelacionadaCliente(c.cliente)?' <span class="badge">relacionada</span>':''}</td><td class="num mono">${money(c.renta)}</td><td class="num">${c.ivaPct||0}%</td><td>${c.inicio}</td><td>${c.fin||'indef.'}</td><td>${c.diaPago||1}</td><td class="num mono">${money(c.deposito||0)}</td><td><span class="badge ${c.estatus==='vigente'?'ok':''}">${c.estatus}</span></td><td class="flex"><button class="btn ghost sm" onclick="contratoPDF('${c.id}')">📄 Contrato PDF</button>${c.estatus==='vigente'?`<button class="btn ghost sm" onclick="abrirContrato('${c.id}')">Editar</button><button class="btn ghost sm" onclick="terminarContrato('${c.id}')">Terminar</button>`:''}</td></tr>`; }).join('')||'<tr><td colspan="10" class="muted">Sin contratos.</td></tr>'}</tbody></table></div>`;
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Bien</th><th>Arrendatario</th><th class="num">Renta mensual</th><th class="num">IVA</th><th>Inicio</th><th>Fin</th><th>Día pago</th><th class="num">Depósito</th><th>Estatus</th><th></th></tr></thead><tbody>${A.contratos.map(c=>{ const b=arrBien(c.bienId); return `<tr><td>${escaparHTML(b?b.nombre:'—')}</td><td>${escaparHTML(c.cliente)}${esRelacionadaCliente(c.cliente)?' <span class="badge">relacionada</span>':''}</td><td class="num mono">${money(c.renta)}</td><td class="num">${c.ivaPct||0}%</td><td>${c.inicio}</td><td>${c.fin||'indef.'}</td><td>${c.diaPago||1}</td><td class="num mono">${money(c.deposito||0)}</td><td><span class="badge ${c.estatus==='vigente'?'ok':''}">${c.estatus}</span></td><td class="flex"><button class="btn ghost sm" onclick="contratoPDF('${c.id}')">📄 Contrato PDF</button>${c.estatus==='vigente'?`<button class="btn ghost sm" onclick="abrirContrato('${c.id}')">Editar</button><button class="btn ghost sm" onclick="abrirRenovar('${c.id}')">Renovar</button><button class="btn ghost sm" onclick="terminarContrato('${c.id}')">Terminar</button>`:''}</td></tr>`; }).join('')||'<tr><td colspan="10" class="muted">Sin contratos.</td></tr>'}</tbody></table></div>`;
   } else if(ARR_TAB==='rentas'){
     const hoy=mesStr(todayStr());
     const det={}; A.rentas.forEach(r=>{ if(!det[r.cliente]) det[r.cliente]=carteraDetalle(r.cliente); });
@@ -1899,6 +1922,7 @@ function abrirContrato(id){
     <div class="field"><label>Fin (opcional)</label><input id="coFin" type="date" value="${c.fin||''}"></div>
     <div class="field"><label>Día de pago</label><input id="coDia" type="number" min="1" max="28" value="${c.diaPago||1}"></div>
     <div class="field"><label>Depósito en garantía</label><input id="coDep" type="number" step="0.01" value="${c.deposito||''}"></div>
+    <div class="field" style="grid-column:1/-1"><label><input type="checkbox" id="coRet" ${c.retencion?'checked':''}> El arrendatario es persona moral y me retiene ISR (10% de la renta) e IVA (2/3 partes del IVA)</label></div>
     ${id?'':`<div class="field" style="grid-column:1/-1"><label><input type="checkbox" id="coDepRec"> Ya recibí el depósito (genera póliza Caja / Depósitos en garantía)</label></div>`}
   </div>${contratoExtraHTML(c)}<p class="smallnote">Si el arrendatario es una empresa de tu grupo, aparece en la lista y se marcará como parte relacionada: sus rentas se eliminarán en el consolidado.</p>
   <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="guardarContrato('${id||''}')">Guardar</button></div>`);
@@ -1912,7 +1936,7 @@ function marcarRelacionada(nombre,tipos){
 }
 function guardarContrato(id){
   const d={bienId:document.getElementById('coBien').value,cliente:document.getElementById('coCli').value.trim(),renta:Number(document.getElementById('coRenta').value)||0,ivaPct:Number(document.getElementById('coIva').value)||0,inicio:document.getElementById('coIni').value,fin:document.getElementById('coFin').value,diaPago:Number(document.getElementById('coDia').value)||1,deposito:Number(document.getElementById('coDep').value)||0};
-  Object.assign(d,contratoExtraLeer());
+  Object.assign(d,contratoExtraLeer()); d.retencion=!!(document.getElementById('coRet')&&document.getElementById('coRet').checked);
   if(!d.bienId||!d.cliente||d.renta<=0||!d.inicio){ toast('Captura bien, arrendatario, renta e inicio.'); return; }
   if(d.fin&&d.fin<d.inicio){ toast('La fecha fin es anterior al inicio.'); return; }
   const hermana=Object.values(DB.empresas).find(e=>e.id!==DB.activa&&_normTxt(e.nombre)===_normTxt(d.cliente));
@@ -2300,7 +2324,7 @@ function mostrarSelectorEmpresa(forzar){
   if(!DB) return; const perm=empresasPermitidas(); const esCEO=!SESION_ACTUAL||SESION_ACTUAL.rol==='CEO';
   if(!forzar && perm.length===1 && !puedeConsolidar() && !esCEO){ return abrirEmpresaDesdeSelector(perm[0].id); }
   const cards=perm.map(e=>{ const st=e.state; const logo=(st.config&&st.config.logoBase64)?st.config.logoBase64:(e.id==='e1'?LOGO_DEFAULT:logoGenerico(e.nombre));
-    return `<button class="ep-item ${DB.activa===e.id?'activa':''}" onclick="abrirEmpresaDesdeSelector('${e.id}')"><img src="${logo}" alt=""><div class="ep-n">${escaparHTML(e.nombre)}</div><div class="ep-t">${TIPO_ETQ[e.tipo]||e.tipo}${st.config&&st.config.rfc?' · '+escaparHTML(st.config.rfc):''}</div><div class="ep-go">Abrir →</div></button>`; }).join('');
+    return `<button class="ep-item ${DB.activa===e.id?'activa':''}" onclick="abrirEmpresaDesdeSelector('${e.id}')">${(esCEO&&!esEmpresaProtegida(e))?`<span class="ep-del" title="Eliminar empresa" onclick="event.stopPropagation();eliminarEmpresa('${e.id}')">🗑 Eliminar</span>`:''}<img src="${logo}" alt=""><div class="ep-n">${escaparHTML(e.nombre)}</div><div class="ep-t">${TIPO_ETQ[e.tipo]||e.tipo}${st.config&&st.config.rfc?' · '+escaparHTML(st.config.rfc):''}</div><div class="ep-go">Abrir →</div></button>`; }).join('');
   const cons=(perm.length>=2&&puedeConsolidar())?`<button class="ep-item cons ${esConsolidado()?'activa':''}" onclick="abrirEmpresaDesdeSelector('${CONSOL_ID}')"><div class="ep-ic">📊</div><div class="ep-n">CONSOLIDADO</div><div class="ep-t">Estados financieros de ${perm.length} empresas relacionadas</div><div class="ep-go">Abrir →</div></button>`:'';
   const nueva=esCEO?`<button class="ep-item nueva" onclick="abrirNuevaEmpresa()"><div class="ep-ic">＋</div><div class="ep-n">Agregar empresa</div><div class="ep-t">Crear otra empresa del grupo</div></button>`:'';
   document.getElementById('epGrid').innerHTML=cards+cons+nueva;
@@ -2313,6 +2337,35 @@ function abrirEmpresaDesdeSelector(id){
   ocultarSelectorEmpresa(); activarEmpresa(id); reproducirSonido('login');
 }
 function cambiarDeEmpresa(){ mostrarSelectorEmpresa(true); }
+/* ---------- Eliminar empresa (Artesanías D Mitzy nunca se elimina) ---------- */
+function esEmpresaProtegida(e){ return !!e && (e.id==='e1' || _normTxt(e.nombre).indexOf('artesanias d mitzy')===0); }
+function eliminarEmpresa(id){
+  const e=DB.empresas[id]; if(!e) return;
+  if(esEmpresaProtegida(e)){ toast('"'+e.nombre+'" es la empresa principal y no se puede eliminar.'); return; }
+  if(SESION_ACTUAL && SESION_ACTUAL.rol!=='CEO'){ toast('Solo el CEO puede eliminar empresas.'); return; }
+  const st=e.state||{}, nPol=(st.polizas||[]).length;
+  openModal(`<h3>🗑 Eliminar empresa</h3><p>Vas a eliminar <b>${escaparHTML(e.nombre)}</b> con <b>toda su información</b> (${nPol} póliza(s), clientes, bancos, contratos, etc.). <b>Esta acción no se puede deshacer.</b></p>
+  <div class="box" style="background:#fbf5e6;padding:8px;border-left:4px solid #c9972b;margin:8px 0">Te recomiendo descargar antes una copia de esta empresa.<br><button class="btn ghost sm" style="margin-top:6px" onclick="descargarCopiaEmpresa('${id}')">⬇ Descargar copia de la empresa</button></div>
+  <div class="field"><label>Para confirmar, escribe el nombre exacto de la empresa:</label><input id="delEmpNombre" autocomplete="off" placeholder="${_attrq(e.nombre)}"></div>
+  <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn danger" onclick="eliminarEmpresaOk('${id}')">Eliminar definitivamente</button></div>`);
+}
+function descargarCopiaEmpresa(id){
+  const e=DB.empresas[id]; if(!e) return; const copia=JSON.parse(JSON.stringify(e)); if(copia.state) delete copia.state.usuarios;
+  const blob=new Blob([JSON.stringify({tipo:'copia-empresa',fecha:new Date().toISOString(),empresa:copia})],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='Copia_empresa_'+String(e.nombre).replace(/\W+/g,'_')+'_'+todayStr()+'.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+}
+function eliminarEmpresaOk(id){
+  const e=DB.empresas[id]; if(!e||esEmpresaProtegida(e)) return;
+  if(_normTxt(document.getElementById('delEmpNombre').value.trim())!==_normTxt(e.nombre)){ toast('El nombre no coincide. No se eliminó nada.'); return; }
+  const nombre=e.nombre, quien=SESION_ACTUAL?SESION_ACTUAL.usuario:'(sin sesión)';
+  delete DB.empresas[id];
+  (DB.usuarios||[]).forEach(u=>{ if(Array.isArray(u.empresas)) u.empresas=u.empresas.filter(x=>x!==id); });
+  if(DB.consolidacion&&Array.isArray(DB.consolidacion.incluir)) DB.consolidacion.incluir=DB.consolidacion.incluir.filter(x=>x!==id);
+  if(DB.ultima===id) DB.ultima='e1';
+  const p=DB.empresas.e1||Object.values(DB.empresas)[0]; if(p&&p.state){ if(!p.state.bitacora) p.state.bitacora=[]; p.state.bitacora.push({id:uid('bt'),t:new Date().toISOString(),ms:Date.now(),u:quien,a:'Eliminar empresa',d:nombre}); }
+  DB.activa=p.id; STATE=p.state; STATE.usuarios=DB.usuarios; save(); closeModal();
+  activarEmpresa(p.id); mostrarSelectorEmpresa(true); toast('Empresa "'+nombre+'" eliminada.');
+}
 /* ---------- Formato de Excel (xlsx-js-style) ---------- */
 const XL_AZUL='0B2447', XL_DORADO='C9A24B', XL_GRIS='F2F5FA', XL_BORDE='C9D3E3';
 const _bd=(c,st)=>({style:st||'thin',color:{rgb:c||XL_BORDE}});
@@ -2380,6 +2433,158 @@ function pulirLibro(wb,fn){
   if(typeof XLSX==='undefined'||XLSX.__envuelto) return; const orig=XLSX.writeFile; XLSX.__envuelto=true;
   XLSX.writeFile=function(wb,fn,opts){ try{ pulirLibro(wb,fn); }catch(e){ console.error('pulirLibro',e); } return orig.call(XLSX,wb,fn,Object.assign({cellStyles:true},opts||{})); };
 })();
+
+/* =================================================================
+   HERRAMIENTAS ADICIONALES: alertas, razones financieras, bitácora,
+   búsqueda global, renovación de contratos
+   ================================================================= */
+const _fmtN=(v,d)=>Number(v).toLocaleString('es-MX',{minimumFractionDigits:d,maximumFractionDigits:d});
+function _diasEntre(a,b){ return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000); }
+/* ---------------- CENTRO DE ALERTAS ---------------- */
+function alertasCalc(){
+  const A=[], hoy=todayStr(), mesAct=hoy.slice(0,7); const add=(n,area,txt,ver,monto)=>A.push({n,area,txt,ver,monto:monto||0});
+  try{ let tot=0,k=0,cl=0,g=0; Object.keys(STATE.clientes||{}).forEach(nm=>{ const d=carteraDetalle(nm); let v=0; d.cargos.forEach(c=>{ if(c.restante>0.005&&c.diasVencido>0){ v+=c.restante; k++; if(c.diasVencido>60) g++; } }); if(v>0){ tot+=v; cl++; } });
+    if(tot>0) add(g?1:2,'Cobranza',cl+' cliente(s) con '+k+' documento(s) vencido(s) por cobrar'+(g?' ('+g+' con más de 60 días)':''),'cxc',tot); }catch(e){}
+  try{ let tot=0,k=0,pv=0; Object.keys(STATE.proveedores||{}).forEach(nm=>{ const movs=STATE.proveedores[nm]||[]; const cg=movs.filter(m=>m.tipo==='cargo').map(m=>({...m,r:Number(m.monto)||0})).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))); let ab=movs.filter(m=>m.tipo==='abono').reduce((s,m)=>s+(Number(m.monto)||0),0); const dc=((STATE.proveedoresInfo||{})[nm]||{}).diasCredito||0; let v=0;
+      cg.forEach(c=>{ const x=Math.min(c.r,ab); c.r=r2(c.r-x); ab-=x; const vence=c.vence||sumarDias(c.fecha,dc); if(c.r>0.005&&vence<hoy){ v+=c.r; k++; } }); if(v>0){ tot+=v; pv++; } });
+    if(tot>0) add(2,'Pagos',pv+' proveedor(es) con '+k+' documento(s) vencido(s) por pagar','cxp',tot); }catch(e){}
+  try{ if(STATE.arr){ (STATE.arr.contratos||[]).filter(c=>c.estatus==='vigente').forEach(c=>{ const b=arrBien(c.bienId); const nom=(b?b.nombre:'bien')+' — '+c.cliente;
+      if(c.fin){ const d=_diasEntre(hoy,c.fin); if(d<0) add(1,'Contratos','Contrato VENCIDO hace '+(-d)+' día(s) y sigue vigente: '+nom+'. Renueva o termina el contrato.','arrendamiento',0); else if(d<=60) add(d<=30?1:2,'Contratos','Contrato por vencer en '+d+' día(s): '+nom+'.','arrendamiento',0); }
+      const dia=Math.min(Number(c.diaPago)||1,28); if(mesStr(c.inicio)<=mesAct && (!c.fin||mesStr(c.fin)>=mesAct) && Number(hoy.slice(8,10))>=dia && !(STATE.arr.rentas||[]).some(r=>r.contratoId===c.id&&r.periodo===mesAct)) add(2,'Rentas','Renta de '+mesAct+' sin generar: '+nom+'.','arrendamiento',Number(c.renta)||0); });
+    const mp=sumaMeses(mesAct,-1); const sinDep=(STATE.arr.bienes||[]).filter(b=>b.estatus!=='baja'&&mp>=(b.depDesde||mesStr(b.fechaAdq))&&arrDepAcum(b)<arrDepBase(b)-0.01&&!existePolizaOrigen('arr-dep',b.id+':'+mp)).length;
+    if(sinDep) add(2,'Depreciación',sinDep+' bien(es) sin depreciación de '+mp+'.','arrendamiento',0); } }catch(e){}
+  try{ if(moduloEnEmpresa('inventario')){ const bajos=(STATE.materiales||[]).filter(m=>Number(m.minimo)>0&&Number(m.stock)<Number(m.minimo)); if(bajos.length) add(2,'Inventario',bajos.length+' material(es) por debajo del mínimo: '+bajos.slice(0,5).map(m=>m.nombre).join(', ')+(bajos.length>5?'…':''),'inventario',0); } }catch(e){}
+  try{ const mal=(STATE.polizas||[]).filter(p=>Math.abs(p.lineas.reduce((s,l)=>s+(Number(l.cargo)||0)-(Number(l.abono)||0),0))>0.005); if(mal.length) add(1,'Contabilidad',mal.length+' póliza(s) DESCUADRADA(S) (cargos ≠ abonos), ej. '+mal[0].folio,'polizas',0); }catch(e){}
+  try{ const b=calcBalanceGeneral(hoy); if(!b.cuadra) add(1,'Contabilidad','El Balance General no cuadra (diferencia '+money(b.totalActivo-b.totalPasivo-b.totalCapital)+'). Revisa pólizas.','estadosfinancieros',0); }catch(e){}
+  try{ (STATE.bancos||[]).forEach(c=>{ const s=saldoBanco(c.id); if(s<0) add(1,'Bancos','Saldo NEGATIVO en '+(c.nombre||c.banco||'cuenta')+': '+money(s),'bancos',s); }); const sc=(STATE.movimientosBancarios||[]).filter(m=>!m.conciliado).length; if(sc>0) add(3,'Bancos',sc+' movimiento(s) bancario(s) sin conciliar','bancos',0); }catch(e){}
+  try{ const cp=STATE.cierrePeriodo; const mesPrev=sumaMeses(mesAct,-1); if(!cp||cp<ultimoDiaMes(sumaMeses(mesAct,-2))) add(3,'Cierre','No has cerrado el periodo contable de '+sumaMeses(mesAct,-2)+' o anteriores. Cierra periodos para proteger la información.','config',0); }catch(e){}
+  { const dia=Number(hoy.slice(8,10)); if(dia>=10&&dia<=17) add(2,'Fiscal','Recordatorio: el día 17 vence el pago provisional de ISR y la declaración de IVA del mes anterior (verifica tu régimen y calendario con tu contador).','fiscal',0); }
+  return A.sort((a,b)=>a.n-b.n);
+}
+function alertasConteo(){ try{ const a=alertasCalc(); return {total:a.length,altas:a.filter(x=>x.n===1).length}; }catch(e){ return {total:0,altas:0}; } }
+function renderAlertas(){
+  const el=document.getElementById('alertasBody'); if(!el) return; const A=alertasCalc();
+  const col={1:'bad',2:'warn',3:''}, et={1:'Urgente',2:'Atención',3:'Informativo'};
+  el.innerHTML=`<div class="grid cols-3"><div class="card kpi bad"><div class="num">${A.filter(a=>a.n===1).length}</div><div class="lbl">Urgentes</div></div><div class="card kpi warn"><div class="num">${A.filter(a=>a.n===2).length}</div><div class="lbl">Atención</div></div><div class="card kpi"><div class="num">${A.filter(a=>a.n===3).length}</div><div class="lbl">Informativas</div></div></div>
+  <div class="card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Nivel</th><th>Área</th><th>Alerta</th><th class="num">Importe</th><th></th></tr></thead><tbody>${A.map(a=>`<tr><td><span class="badge ${col[a.n]}">${et[a.n]}</span></td><td>${a.area}</td><td>${escaparHTML(a.txt)}</td><td class="num mono">${a.monto?money(a.monto):''}</td><td>${puedeAcceder(a.ver)?`<button class="btn ghost sm" onclick="go('${a.ver}')">Ir →</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">✔ Sin alertas. Todo en orden.</td></tr>'}</tbody></table></div>
+  <p class="smallnote">Las alertas se calculan en vivo con la información de la empresa activa. Son avisos de apoyo, no sustituyen la revisión de tu contador.</p></div>`;
+}
+/* ---------------- RAZONES FINANCIERAS ---------------- */
+function razonesCalc(desde,hasta){
+  const b=calcBalanceGeneral(hasta), er=calcERPoliza(desde,hasta); const sm=(a,re)=>a.filter(re).reduce((s,c)=>s+c.saldo,0);
+  const inv=sm(b.activoCirc,c=>/inventar|almac|materia prima|producto terminado|en proceso/i.test(c.nombre));
+  const cli=sm(b.activoCirc,c=>String(c.codigo).startsWith('105')), prov=sm(b.pasivoCP,c=>String(c.codigo).startsWith('201'));
+  const dias=Math.max(1,_diasEntre(desde,hasta)+1), v=er.ingresos; const dv=(a,c)=>Math.abs(c)<0.005?null:a/c;
+  const R=[
+    {g:'Liquidez',n:'Liquidez corriente',v:dv(b.totalActivoCirc,b.totalPasivoCP),t:'x',f:'Activo circulante ÷ Pasivo a corto plazo',s:x=>x>=1.5?'ok':x>=1?'warn':'bad',l:'Por cada $1 de deuda a corto plazo, cuántos pesos tienes para pagarla. Ideal ≥ 1.5.'},
+    {g:'Liquidez',n:'Prueba ácida',v:dv(b.totalActivoCirc-inv,b.totalPasivoCP),t:'x',f:'(Activo circulante − Inventarios) ÷ Pasivo corto plazo',s:x=>x>=1?'ok':x>=0.7?'warn':'bad',l:'Liquidez sin depender de vender inventario. Ideal ≥ 1.'},
+    {g:'Liquidez',n:'Capital de trabajo',v:b.totalActivoCirc-b.totalPasivoCP,t:'$',f:'Activo circulante − Pasivo corto plazo',s:x=>x>0?'ok':'bad',l:'Recursos disponibles para operar. Debe ser positivo.'},
+    {g:'Endeudamiento',n:'Endeudamiento',v:dv(b.totalPasivo,b.totalActivo),t:'%',f:'Pasivo total ÷ Activo total',s:x=>x<=0.5?'ok':x<=0.7?'warn':'bad',l:'Qué parte de tus activos está financiada con deuda. Menor a 50% es sano.'},
+    {g:'Endeudamiento',n:'Apalancamiento',v:dv(b.totalPasivo,b.totalCapital),t:'x',f:'Pasivo total ÷ Capital contable',s:x=>x<=1?'ok':x<=2?'warn':'bad',l:'Pesos de deuda por cada peso de capital propio.'},
+    {g:'Rentabilidad',n:'Margen bruto',v:dv(er.utilidadBruta,v),t:'%',f:'Utilidad bruta ÷ Ventas',s:null,l:'Lo que queda de cada $1 vendido después del costo directo.'},
+    {g:'Rentabilidad',n:'Margen operativo',v:dv(er.utilidadOperacion,v),t:'%',f:'Utilidad de operación ÷ Ventas',s:null,l:'Rentabilidad de la operación antes de gastos financieros.'},
+    {g:'Rentabilidad',n:'Margen neto',v:dv(er.utilidadNeta,v),t:'%',f:'Utilidad neta ÷ Ventas',s:x=>x>0?'ok':'bad',l:'Utilidad final por cada $1 vendido.'},
+    {g:'Rentabilidad',n:'Rendimiento sobre activos (ROA)',v:dv(er.utilidadNeta,b.totalActivo),t:'%',f:'Utilidad neta del periodo ÷ Activo total',s:null,l:'Qué tan productivos son los activos. Es del periodo elegido (no anualizado).'},
+    {g:'Rentabilidad',n:'Rendimiento sobre capital (ROE)',v:dv(er.utilidadNeta,b.totalCapital),t:'%',f:'Utilidad neta del periodo ÷ Capital contable',s:null,l:'Rendimiento para el dueño. Es del periodo elegido (no anualizado).'},
+    {g:'Actividad',n:'Días de cobranza',v:dv(cli*dias,v),t:'d',f:'Clientes ÷ Ventas × días del periodo',s:x=>x<=30?'ok':x<=60?'warn':'bad',l:'Días promedio que tardas en cobrar.'},
+    {g:'Actividad',n:'Días de pago a proveedores',v:dv(prov*dias,er.costos+er.totalGastosOperacion),t:'d',f:'Proveedores ÷ (Costos + Gastos de operación) × días',s:null,l:'Días promedio que tardas en pagar.'},
+    {g:'Actividad',n:'Días de inventario',v:dv(inv*dias,er.costos),t:'d',f:'Inventarios ÷ Costo de ventas × días',s:null,l:'Días que dura el inventario antes de venderse.'},
+  ];
+  return {R,b,er,dias};
+}
+function razonTxt(r){ if(r.v===null||isNaN(r.v)) return '—'; return r.t==='x'?_fmtN(r.v,2)+'x':r.t==='%'?_fmtN(r.v*100,1)+'%':r.t==='d'?_fmtN(r.v,0)+' días':money(r.v); }
+let RAZ_PER={d:'',h:''};
+function razPer(){ const d=document.getElementById('razDesde'), h=document.getElementById('razHasta'); const hoy=todayStr(); if(d&&!d.value) d.value=hoy.slice(0,4)+'-01-01'; if(h&&!h.value) h.value=hoy; return {d:d?d.value:hoy.slice(0,4)+'-01-01',h:h?h.value:hoy}; }
+function renderRazones(){
+  const el=document.getElementById('razonesBody'); if(!el) return; const p=razPer(); const X=razonesCalc(p.d,p.h); let g='';
+  const filas=X.R.map(r=>{ let h=''; if(r.g!==g){ g=r.g; h=`<tr><td colspan="4" style="background:var(--sand,#f3ede4);font-weight:700">${g}</td></tr>`; }
+    const cls=(r.s&&r.v!==null)?r.s(r.v):''; return h+`<tr><td><b>${r.n}</b><div class="muted" style="font-size:11.5px">${r.f}</div></td><td class="num mono"><span class="badge ${cls}" style="font-size:14px">${razonTxt(r)}</span></td><td class="muted" style="font-size:12.5px">${r.l}</td></tr>`; }).join('');
+  let comp=''; if(typeof DB!=='undefined'&&DB&&!esConsolidado()&&puedeConsolidar&&puedeConsolidar()){
+    const emps=empresasPermitidas(); const calc=emps.map(e=>({n:e.nombre,R:conEstado(e.state,()=>razonesCalc(p.d,p.h)).R}));
+    comp=`<div class="card"><h3>Comparativo por empresa</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Razón</th>${calc.map(c=>`<th class="num">${escaparHTML(c.n)}</th>`).join('')}</tr></thead><tbody>${X.R.map((r,i)=>`<tr><td>${r.n}</td>${calc.map(c=>`<td class="num mono">${razonTxt(c.R[i])}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="smallnote">Para ver las razones del grupo consolidado, entra a "Consolidado" en el selector de empresa.</p></div>`; }
+  el.innerHTML=`<div class="card"><div class="flex" style="flex-wrap:wrap;gap:8px"><label class="muted">Del</label><input type="date" id="razDesde" value="${p.d}" onchange="renderRazones()"><label class="muted">al</label><input type="date" id="razHasta" value="${p.h}" onchange="renderRazones()"><button class="btn ghost sm" onclick="exportarRazones()">⬇ Excel</button><button class="btn ghost sm" onclick="exportarRazonesPDF()">⬇ PDF</button></div></div>
+  <div class="card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Razón financiera</th><th class="num">Resultado</th><th>Qué significa</th></tr></thead><tbody>${filas}</tbody></table></div><p class="smallnote">Calculadas con el Balance General al ${p.h} y el Estado de Resultados del ${p.d} al ${p.h}. Los semáforos son referencias generales; el giro de cada empresa puede requerir otros parámetros.</p></div>${comp}`;
+}
+function exportarRazones(){ const p=razPer(); const X=razonesCalc(p.d,p.h); const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,hojaConEstilo(X.R.map(r=>({Grupo:r.g,Razón:r.n,Resultado:razonTxt(r),Fórmula:r.f,Interpretación:r.l})),[],[16,34,16,50,70]),'Razones');
+  XLSX.writeFile(wb,'Razones_financieras_'+p.h+'.xlsx'); }
+function exportarRazonesPDF(){ const p=razPer(); const X=razonesCalc(p.d,p.h); const doc=new window.jspdf.jsPDF({unit:'mm',format:'letter'}); pdfHeader(doc,'Razones financieras — del '+p.d+' al '+p.h);
+  doc.autoTable({startY:36,head:[['Grupo','Razón','Resultado','Fórmula']],body:X.R.map(r=>[r.g,r.n,razonTxt(r),r.f]),styles:{fontSize:8.5},headStyles:{fillColor:[111,78,55]}}); pdfFooter(doc); doc.save('Razones_financieras_'+p.h+'.pdf'); }
+/* ---------------- BITÁCORA GENERAL ---------------- */
+function bitacoraReg(a,d){
+  if(!STATE||esConsolidado()) return; if(!STATE.bitacora) STATE.bitacora=[];
+  const u=SESION_ACTUAL?SESION_ACTUAL.usuario:'(sin sesión)'; const L=STATE.bitacora, last=L[L.length-1], now=Date.now();
+  if(last&&last.a===a&&last.u===u&&now-last.ms<400&&last.d===d) return;
+  L.push({id:uid('bt'),t:new Date().toISOString(),ms:now,u,a,d:d||''}); if(L.length>3000) L.splice(0,L.length-3000);
+  clearTimeout(window._btSave); window._btSave=setTimeout(()=>{ try{ save(); }catch(e){} },700);
+}
+function _humaniza(n){ const s=n.replace(/([A-Z])/g,' $1').toLowerCase().trim(); return s.charAt(0).toUpperCase()+s.slice(1); }
+function bitacoraInstalar(){
+  if(window.__btInst) return; window.__btInst=true; const re=/^(guardar|eliminar|borrar|cancelar|importar|cerrar|reabrir|restaurar|terminar|renovar|registrar|cobrar|pagar|autorizar|conciliar)[A-Z]/, extra=['arrBtnGenerarRentas','arrBtnDep','aplicarPago','generarNomina','generarPolizaCorrido','confirmarEliminar'], mal=/(Modal|EmpresaOk|UI|Nav|Marca|Logo|Formato|Sonido|Tema|Menu|Picker|Selector)/;
+  Object.getOwnPropertyNames(window).filter(n=>(re.test(n)||extra.includes(n))&&!mal.test(n)&&typeof window[n]==='function'&&n!=='cerrarSesion').forEach(n=>{ const o=window[n];
+    window[n]=function(){ const r=o.apply(this,arguments); try{ let d=''; const x=arguments[0]; if(typeof x==='string'&&x.length<40) d=x; bitacoraReg(_humaniza(n),d); }catch(e){} return r; }; });
+  const oc=window.cerrarSesion; if(typeof oc==='function') window.cerrarSesion=function(){ try{ bitacoraReg('Cierre de sesión',''); }catch(e){} return oc.apply(this,arguments); };
+}
+function renderBitacora(){
+  const el=document.getElementById('bitacoraBody'); if(!el) return; const q=(document.getElementById('btQ')||{}).value||''; const L=(STATE.bitacora||[]).slice().reverse().filter(x=>!q||(x.u+' '+x.a+' '+x.d+' '+x.t).toLowerCase().includes(q.toLowerCase()));
+  const hc=(STATE.historialCierres||[]).length;
+  el.innerHTML=`<div class="card"><div class="flex" style="flex-wrap:wrap;gap:8px"><input id="btQ" type="search" placeholder="Buscar usuario, acción…" value="${_attrq(q)}" oninput="renderBitacora();document.getElementById('btQ').focus()" style="min-width:240px"><button class="btn ghost sm" onclick="exportarBitacora()">⬇ Excel</button><span class="muted">${(STATE.bitacora||[]).length} registro(s) · ${hc} de cierre de periodo en su bitácora propia</span></div></div>
+  <div class="card"><div class="tblwrap" style="max-height:60vh;overflow:auto"><table class="tbl"><thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead><tbody>${L.slice(0,500).map(x=>`<tr><td class="mono">${new Date(x.t).toLocaleString('es-MX')}</td><td>${escaparHTML(x.u)}</td><td>${escaparHTML(x.a)}</td><td>${escaparHTML(x.d)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Aún no hay registros. Se llenará conforme uses el sistema.</td></tr>'}</tbody></table></div><p class="smallnote">Registra quién guardó, eliminó, generó, cerró o importó información. Se guarda por empresa (máx. 3,000 registros). Es una bitácora de la aplicación: quien tenga acceso al archivo de datos podría alterarla.</p></div>`;
+}
+function exportarBitacora(){ const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,hojaConEstilo((STATE.bitacora||[]).slice().reverse().map(x=>({'Fecha y hora':new Date(x.t).toLocaleString('es-MX'),Usuario:x.u,Acción:x.a,Detalle:x.d})),[],[22,18,36,40]),'Bitácora'); XLSX.writeFile(wb,'Bitacora_'+todayStr()+'.xlsx'); }
+/* ---------------- BÚSQUEDA GLOBAL (Ctrl+K) ---------------- */
+function abrirBusqueda(){ openModal(`<h3>🔎 Buscar en el sistema</h3><input id="gbQ" type="search" placeholder="Módulo, cliente, proveedor, póliza, contrato…" oninput="busquedaRender()" style="width:100%;font-size:15px" autocomplete="off"><div id="gbRes" style="margin-top:10px;max-height:55vh;overflow:auto"></div><div class="close-row"><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>`); setTimeout(()=>{ const i=document.getElementById('gbQ'); if(i) i.focus(); busquedaRender(); },50); }
+function busquedaCalc(q){
+  q=String(q||'').toLowerCase().trim(); const out=[]; const m=s=>String(s||'').toLowerCase().includes(q); if(!q) return out;
+  document.querySelectorAll('.navbtn[data-view]').forEach(b=>{ if(m(b.textContent)&&puedeAcceder(b.dataset.view)) out.push({t:'Módulo',x:b.textContent.trim(),v:b.dataset.view}); });
+  Object.keys(STATE.clientes||{}).filter(m).slice(0,8).forEach(n=>out.push({t:'Cliente',x:n,v:'cxc'}));
+  Object.keys(STATE.proveedores||{}).filter(m).slice(0,8).forEach(n=>out.push({t:'Proveedor',x:n,v:'cxp'}));
+  (STATE.polizas||[]).filter(p=>m(p.folio)||m(p.concepto)).slice(0,10).forEach(p=>out.push({t:'Póliza',x:p.folio+' · '+p.fecha+' · '+p.concepto,v:'polizas'}));
+  (STATE.catalogoCuentas||[]).filter(c=>m(c.codigo)||m(c.nombre)).slice(0,8).forEach(c=>out.push({t:'Cuenta',x:c.codigo+' — '+c.nombre,v:'polizas'}));
+  if(STATE.arr){ (STATE.arr.bienes||[]).filter(b=>m(b.nombre)||m(b.ref)).slice(0,6).forEach(b=>out.push({t:'Bien',x:b.nombre,v:'arrendamiento'})); (STATE.arr.contratos||[]).filter(c=>m(c.cliente)).slice(0,6).forEach(c=>out.push({t:'Contrato',x:c.cliente,v:'arrendamiento'})); }
+  return out.filter(o=>puedeAcceder(o.v));
+}
+function busquedaRender(){ const el=document.getElementById('gbRes'); if(!el) return; const r=busquedaCalc((document.getElementById('gbQ')||{}).value); el.innerHTML=r.map(o=>`<div class="flex" style="padding:7px 4px;border-bottom:1px solid #eee;gap:10px;cursor:pointer" onclick="closeModal();go('${o.v}')"><span class="badge">${o.t}</span><span>${escaparHTML(o.x)}</span></div>`).join('')||'<p class="muted">Escribe para buscar.</p>'; }
+document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){ const l=document.getElementById('login'); if(l&&getComputedStyle(l).display!=='none') return; e.preventDefault(); abrirBusqueda(); } });
+/* ---------------- RENOVAR CONTRATO ---------------- */
+function abrirRenovar(id){
+  const c=arrContrato(id); if(!c) return; const base=c.fin||todayStr(); const nuevoFin=sumaMeses(base.slice(0,7),12)+'-'+base.slice(8,10);
+  openModal(`<h3>Renovar contrato</h3><p class="muted">${escaparHTML(c.cliente)} · renta actual ${money(c.renta)} · vence ${c.fin||'indefinido'}</p><div class="formgrid c2">
+    <div class="field"><label>Nueva fecha de fin</label><input id="rnFin" type="date" value="${nuevoFin}"></div>
+    <div class="field"><label>Incremento de renta (%)</label><input id="rnInc" type="number" step="0.01" value="0"></div>
+    <div class="field" style="grid-column:1/-1"><label><input type="checkbox" id="rnPdf" checked> Generar el convenio de renovación en PDF</label></div></div>
+    <p class="smallnote">El incremento aplica a las rentas que se generen de aquí en adelante; las ya generadas no cambian. Se registra en el historial del contrato.</p>
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn clay" onclick="renovarContratoOk('${id}')">Renovar</button></div>`);
+}
+function renovarContratoOk(id){
+  const c=arrContrato(id); const fin=document.getElementById('rnFin').value, inc=Number(document.getElementById('rnInc').value)||0;
+  if(!fin||fin<=(c.fin||c.inicio)){ toast('La nueva fecha de fin debe ser posterior a la actual.'); return; }
+  const ant={fin:c.fin,renta:c.renta}; if(!c.renovaciones) c.renovaciones=[]; c.renovaciones.push({fecha:todayStr(),finAnterior:c.fin||'',rentaAnterior:c.renta,incremento:inc,finNuevo:fin});
+  c.renta=r2(c.renta*(1+inc/100)); c.fin=fin; c.estatus='vigente'; const pdf=document.getElementById('rnPdf').checked;
+  save(); closeModal(); renderAll(); toast('Contrato renovado hasta '+fin+'. Renta: '+money(c.renta));
+  if(pdf) try{ renovacionPDF(c,ant,inc); }catch(e){ console.error(e); toast('Contrato renovado, pero no se pudo generar el PDF.'); }
+}
+function renovacionPDF(c,ant,inc){
+  const A=STATE.arr.arrendador||{}; const b=arrBien(c.bienId)||{}; const W=pdfLegalNuevo();
+  const texto=['CONVENIO DE RENOVACIÓN DE CONTRATO DE ARRENDAMIENTO','',
+  'Convenio que celebran, por una parte, '+ARRENDADOR_NOMBRE+', en lo sucesivo "EL ARRENDADOR", y por la otra '+c.cliente+', en lo sucesivo "EL ARRENDATARIO", respecto del contrato de arrendamiento celebrado sobre '+(b.nombre||'el bien arrendado')+(b.ref?' ('+b.ref+')':'')+', con inicio el '+c.inicio+'.','',
+  'CLÁUSULAS','',
+  'PRIMERA. Las partes acuerdan renovar el contrato de arrendamiento, ampliando su vigencia'+(ant.fin?' que concluía el '+ant.fin:'')+' hasta el '+c.fin+'.','',
+  'SEGUNDA. La renta mensual será de '+money(c.renta)+' ('+numALetras(c.renta)+')'+(c.ivaPct?', más el Impuesto al Valor Agregado correspondiente':'')+(inc>0?', lo que representa un incremento del '+inc+'% sobre la renta anterior de '+money(ant.renta):', sin modificación respecto de la renta anterior')+', pagadera conforme a lo pactado en el contrato original.','',
+  'TERCERA. Las demás cláusulas del contrato original permanecen vigentes y sin modificación, y las partes se obligan a cumplirlas en sus términos.','',
+  'Leído que fue el presente convenio y enteradas las partes de su contenido y alcance legal, lo firman de conformidad el día '+todayStr()+'.','','','',
+  '______________________________          ______________________________','EL ARRENDADOR                                         EL ARRENDATARIO',ARRENDADOR_NOMBRE+'                    '+c.cliente];
+  texto.forEach((t,i)=>{ if(i===0) W.p(t,{bold:true,center:true,size:12,after:2}); else if(t==='') W.y=W.y+2; else if(t==='CLÁUSULAS') W.p(t,{bold:true,center:true}); else if(i>=texto.length-3) W.p(t,{left:true}); else W.p(t); });
+  pdfLegalPie(W.doc,'Convenio de renovación — '+c.cliente); W.doc.save('Renovacion_'+String(c.cliente).replace(/\W+/g,'_')+'.pdf');
+}
+/* ---------------- render general ---------------- */
+function renderHerramientas(){
+  const n=alertasConteo(); const b=document.getElementById('alertaBadge'); if(b){ b.textContent=n.total?n.total:''; b.style.display=n.total?'inline-block':'none'; b.className='badge '+(n.altas?'bad':'warn'); }
+  if(document.getElementById('view-alertas')?.classList.contains('active')) renderAlertas();
+  if(document.getElementById('view-razones')?.classList.contains('active')) renderRazones();
+  if(document.getElementById('view-bitacora')?.classList.contains('active')) renderBitacora();
+}
+window.addEventListener('load',()=>{ setTimeout(()=>{ try{ bitacoraInstalar(); }catch(e){ console.error(e); } },300); });
 
 function uid(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function money(n){ n = Number(n)||0; return '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -7102,6 +7307,7 @@ const MENU_GRUPOS_PERMISO = [
   {n:'Finanzas',         k:['bancos','pasivos','flujo','presupuesto']},
   {n:'Contabilidad',     k:['polizas','estadosfinancieros','fiscal']},
   {n:'Sistema',          k:['procesos','reportes','respaldo','config']},
+  {n:'Herramientas',k:['alertas','razones','bitacora']},
   {n:'Grupo de empresas',k:['arrendamiento','eliminaciones']},
 ];
 const ROLES_USUARIO = ['CEO','Administrador','Contabilidad','Vendedor','Producción','Almacén'];
@@ -8966,6 +9172,7 @@ function exportResumenClientesExcel(){
 function renderAll(){
   renderDashboard();
   if(DB){ renderArrendamiento(); renderEliminaciones(); renderRelacionadas(); }
+  renderHerramientas();
   renderFlujo(); renderPresupuesto();
   if(document.getElementById('view-estadosfinancieros')?.classList.contains('active')) renderNIF();
   renderProduccion();
@@ -9074,6 +9281,9 @@ function renderUsuariosResumen(){
 
 const MODULOS_PERMISO = [
   {key:'dashboard', label:'Panel general'},
+  {key:'alertas', label:'Centro de alertas'},
+  {key:'razones', label:'Razones financieras'},
+  {key:'bitacora', label:'Bitácora de actividad'},
   {key:'produccion', label:'Producción'},
   {key:'control', label:'Control de producción'},
   {key:'costeo', label:'Costeo'},
